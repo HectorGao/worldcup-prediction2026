@@ -15,6 +15,7 @@ function setStatus(message, kind = '') {
   const node = statusEl();
   node.textContent = message;
   node.className = `status-line ${kind}`.trim();
+  node.setAttribute('aria-busy', kind ? 'false' : 'true');
 }
 
 async function api(path, options = {}) {
@@ -39,6 +40,7 @@ function teamDisplay(entity, side = '') {
 
 async function bootstrap() {
   try {
+    updateActiveNav();
     await loadAvailableDates();
     await loadMatches();
     await loadHealth();
@@ -87,6 +89,7 @@ async function syncMatches() {
     await loadReport();
     await loadRankings();
     await loadKnockout();
+    await loadRosterHealth();
     setStatus('同步完成：赛程、历史结果和 Elo 画像已刷新。', 'success');
   } catch (error) {
     setStatus(`同步失败：${error.message}`, 'error');
@@ -258,7 +261,7 @@ function renderMatches() {
           <strong>${teamDisplay(match, 'home')} <span class="meta">vs</span> ${teamDisplay(match, 'away')}</strong>
           <span class="meta">${match.group || 'World Cup'} · ${match.venue || 'venue pending'} · ${match.kickoff}</span>
         </div>
-        <span class="status-pill">${match.status}</span>
+        <span class="status-pill" data-status="${match.status}">${statusLabel(match.status)}</span>
         <button data-predict="${match.id}" aria-label="生成预测 ${teamDisplay(match, 'home')} vs ${teamDisplay(match, 'away')}">生成预测</button>
       </article>
     `
@@ -267,6 +270,12 @@ function renderMatches() {
   list.querySelectorAll('[data-predict]').forEach((button) => {
     button.addEventListener('click', () => loadPrediction(button.dataset.predict));
   });
+}
+
+function statusLabel(status) {
+  if (status === 'final') return '已完赛';
+  if (status === 'live') return '进行中';
+  return '未开赛';
 }
 
 function renderPrediction(prediction, analysis = null) {
@@ -365,24 +374,49 @@ function bar(label, value, className) {
 function scoreHeatmap(matrix) {
   const cells = new Map(matrix.map((item) => [`${item.home_goals}-${item.away_goals}`, item.probability]));
   const goals = [0, 1, 2, 3, 4];
+  const visibleProbabilities = goals.flatMap((home) => goals.map((away) => cells.get(`${home}-${away}`) || 0));
+  const maxProbability = Math.max(...visibleProbabilities, 0.01);
   return `
-    <div class="heatmap">
-      <div class="heatmap-head"></div>
-      ${goals.map((goal) => `<div class="heatmap-head">${goal}</div>`).join('')}
-      ${goals
-        .map((home) => {
-          const row = [`<div class="heatmap-head">${home}</div>`];
-          goals.forEach((away) => {
-            const probability = cells.get(`${home}-${away}`) || 0;
-            row.push(
-              `<div class="heat-cell" style="--p:${Math.min(1, probability / 0.14)}"><strong>${home}-${away}</strong><span>${formatPercent(probability)}</span></div>`
-            );
-          });
-          return row.join('');
-        })
-        .join('')}
+    <div class="heatmap-wrap" aria-label="比分概率热力图，颜色越暖代表概率越高">
+      <div class="heatmap">
+        <div class="heatmap-head"></div>
+        ${goals.map((goal) => `<div class="heatmap-head">客 ${goal}</div>`).join('')}
+        ${goals
+          .map((home) => {
+            const row = [`<div class="heatmap-head">主 ${home}</div>`];
+            goals.forEach((away) => {
+              const probability = cells.get(`${home}-${away}`) || 0;
+              const level = heatLevel(probability, maxProbability);
+              row.push(
+                `<div class="heat-cell heat-level-${level}" title="${home}-${away} ${formatPercent(probability)}"><strong>${home}-${away}</strong><span>${formatPercent(probability)}</span></div>`
+              );
+            });
+            return row.join('');
+          })
+          .join('')}
+      </div>
+      <div class="heat-legend" aria-hidden="true">
+        <span>低</span>
+        <i class="heat-level-1"></i>
+        <i class="heat-level-2"></i>
+        <i class="heat-level-3"></i>
+        <i class="heat-level-4"></i>
+        <i class="heat-level-5"></i>
+        <i class="heat-level-6"></i>
+        <span>高</span>
+      </div>
     </div>
   `;
+}
+
+function heatLevel(probability, maxProbability) {
+  const ratio = probability / maxProbability;
+  if (ratio >= 0.82) return 6;
+  if (ratio >= 0.62) return 5;
+  if (ratio >= 0.44) return 4;
+  if (ratio >= 0.27) return 3;
+  if (ratio >= 0.12) return 2;
+  return 1;
 }
 
 function profileCard(teamName, profile = {}) {
@@ -530,5 +564,15 @@ document.querySelector('#knockout-button').addEventListener('click', async () =>
     setStatus(`刷新淘汰赛模拟失败：${error.message}`, 'error');
   }
 });
+window.addEventListener('hashchange', updateActiveNav);
+
+function updateActiveNav() {
+  const currentHash = window.location.hash || '#today';
+  document.querySelectorAll('.rail a').forEach((link) => {
+    const active = link.getAttribute('href') === currentHash;
+    link.classList.toggle('active', active);
+    link.setAttribute('aria-current', active ? 'page' : 'false');
+  });
+}
 
 bootstrap();
