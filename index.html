@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Cup Prediction System</title>
+    <link rel="stylesheet" href="src/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="rail">
+        <div class="brand-mark">WC</div>
+        <nav aria-label="主导航">
+          <a href="#today" class="active">今日</a>
+          <a href="#detail">单场</a>
+          <a href="#simulation">模拟</a>
+          <a href="#health">数据</a>
+        </nav>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Local-first prediction desk</p>
+            <h1>世界杯预测控制台</h1>
+          </div>
+          <div class="date-control">
+            <label for="match-date">比赛日</label>
+            <input id="match-date" type="date" value="2026-06-15" />
+            <button id="sync-button" class="icon-button" title="同步数据">↻</button>
+          </div>
+        </header>
+
+        <div id="status" class="status-line" role="status">正在加载公开数据源...</div>
+
+        <section class="notice">
+          <strong>只做数据分析，不做投注建议。</strong>
+          <span>预测会随 15 分钟赛果轮询、赔率和已完赛结果更新。</span>
+        </section>
+
+        <section id="today" class="layout">
+          <div class="panel wide">
+            <div class="panel-head">
+              <h2>今日比赛</h2>
+              <span id="match-count">等待同步</span>
+            </div>
+            <div id="matches" class="match-list"></div>
+          </div>
+
+          <div id="detail" class="panel detail-panel">
+            <div class="panel-head">
+              <h2>预测详情</h2>
+              <span id="selected-fixture">未选择</span>
+            </div>
+            <div id="prediction-detail" class="empty-state">选择一场比赛生成预测。</div>
+          </div>
+        </section>
+
+        <section class="layout lower">
+          <div id="simulation" class="panel">
+            <div class="panel-head">
+              <h2>模拟摘要</h2>
+              <span>Monte Carlo</span>
+            </div>
+            <div id="simulation-summary" class="metric-grid"></div>
+          </div>
+
+          <div id="health" class="panel">
+            <div class="panel-head">
+              <h2>数据健康</h2>
+              <div class="button-row">
+                <button id="validate-sources-button">校验数据源</button>
+                <button id="process-roster-button">补全阵容队列</button>
+              </div>
+            </div>
+            <div class="panel-subhead" id="cadence">轮询未知</div>
+            <div id="health-list" class="health-list"></div>
+            <div class="panel-subhead">阵容与球员统计</div>
+            <div id="roster-health" class="health-list"></div>
+          </div>
+        </section>
+
+        <section class="layout lower">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>球队 Elo 与近期权重</h2>
+              <button id="ranking-button">刷新排名</button>
+            </div>
+            <div id="team-rankings" class="rank-list"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>淘汰赛模拟</h2>
+              <button id="knockout-button">刷新模拟</button>
+            </div>
+            <div id="knockout-view" class="rank-list"></div>
+          </div>
+        </section>
+
+        <section class="panel report-panel">
+          <div class="panel-head">
+            <h2>中文日报</h2>
+            <button id="report-button">生成日报</button>
+          </div>
+          <pre id="daily-report">日报会在同步后生成。</pre>
+        </section>
+      </main>
+    </div>
+    <script defer src="src/main.js"></script>
+  </body>
+</html>
