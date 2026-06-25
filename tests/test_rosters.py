@@ -4,7 +4,12 @@ import httpx
 from fastapi.testclient import TestClient
 
 from worldcup_predictor.api import create_app
-from worldcup_predictor.data.rosters import ApiFootballRosterProvider
+from worldcup_predictor.data.rosters import (
+    API_FOOTBALL_LINEUPS_URL,
+    ApiFootballLineupsPageScraper,
+    ApiFootballRosterProvider,
+    TheSportsDBRosterProvider,
+)
 from worldcup_predictor.roster_strength import (
     aggregate_team_strength,
     league_tier_score,
@@ -114,6 +119,112 @@ def test_api_football_roster_provider_parses_squad_coach_and_player_stats(monkey
     assert "secret-key" not in str(stats)
 
 
+def test_api_football_lineups_page_parser_extracts_position_groups():
+    html = """
+    <h2>Portugal squad list</h2>
+    <p>Goalkeepers: Diogo Costa · José Sá</p>
+    <p>Defenders: Rúben Dias · João Cancelo</p>
+    <p>Midfielders: Bruno Fernandes · Bernardo Silva</p>
+    <p>Forwards: Cristiano Ronaldo · Gonçalo Ramos</p>
+    <h2>Uzbekistan squad list</h2>
+    <p>Goalkeepers: Utkir Yusupov</p>
+    <p>Defenders: Abdukodir Khusanov</p>
+    <p>Midfielders: Abbosbek Fayzullaev</p>
+    <p>Forwards: Eldor Shomurodov</p>
+    """
+
+    squad = ApiFootballLineupsPageScraper().parse_squad("Portugal", html)
+
+    assert squad["source_url"] == API_FOOTBALL_LINEUPS_URL
+    assert [player["name"] for player in squad["players"]] == [
+        "Diogo Costa",
+        "José Sá",
+        "Rúben Dias",
+        "João Cancelo",
+        "Bruno Fernandes",
+        "Bernardo Silva",
+        "Cristiano Ronaldo",
+        "Gonçalo Ramos",
+    ]
+    assert squad["players"][0]["position"] == "Goalkeeper"
+    assert squad["players"][-1]["position"] == "Attacker"
+
+
+def test_thesportsdb_provider_enriches_abbreviated_player_via_public_lineups(monkeypatch):
+    def fake_get(url, params=None, headers=None, timeout=20, follow_redirects=False):
+        if "searchplayers.php" in url:
+            assert params["p"] == "Bukayo Saka"
+            return DummyResponse(
+                {
+                    "player": [
+                        {
+                            "idPlayer": "34169884",
+                            "idTeam": "133604",
+                            "strPlayer": "Bukayo Saka",
+                            "strTeam": "Arsenal",
+                            "strNationality": "England",
+                            "strPosition": "Right Winger",
+                            "strThumb": "https://example.test/saka.png",
+                            "relevance": "42.7",
+                        }
+                    ]
+                }
+            )
+        if "lookupteam.php" in url:
+            return DummyResponse({"teams": [{"idTeam": "133604", "strTeam": "Arsenal", "strLeague": "English Premier League"}]})
+        raise AssertionError((url, params))
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+    lineups = {
+        "England": [
+            {"name": "Bukayo Saka", "position": "Attacker"},
+            {"name": "Harry Kane", "position": "Attacker"},
+        ]
+    }
+
+    provider = TheSportsDBRosterProvider(lineup_aliases=lineups)
+    stats = provider.enrich_player({"player_id": 1460, "name": "B. Saka", "position": "Attacker"}, team="England")
+
+    assert stats["stats_status"] == "enriched"
+    assert stats["name"] == "Bukayo Saka"
+    assert stats["club"] == "Arsenal"
+    assert stats["league"] == "English Premier League"
+    assert stats["position"] == "Right Winger"
+    assert stats["source"] == "thesportsdb"
+
+
+def test_thesportsdb_provider_uses_verified_alias_when_lineup_fetch_is_unavailable(monkeypatch):
+    def fake_get(url, params=None, headers=None, timeout=20, follow_redirects=False):
+        if "searchplayers.php" in url:
+            assert params["p"] == "Ollie Watkins"
+            return DummyResponse(
+                {
+                    "player": [
+                        {
+                            "idPlayer": "34157367",
+                            "idTeam": "133601",
+                            "strPlayer": "Ollie Watkins",
+                            "strTeam": "Aston Villa",
+                            "strNationality": "England",
+                            "strPosition": "Centre-Forward",
+                        }
+                    ]
+                }
+            )
+        if "lookupteam.php" in url:
+            return DummyResponse({"teams": [{"strLeague": "English Premier League"}]})
+        raise AssertionError((url, params))
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+    provider = TheSportsDBRosterProvider(lineup_aliases={"England": []})
+
+    stats = provider.enrich_player({"player_id": 19366, "name": "O. Watkins", "position": "Midfielder"}, team="England")
+
+    assert stats["stats_status"] == "enriched"
+    assert stats["name"] == "Ollie Watkins"
+    assert stats["club"] == "Aston Villa"
+
+
 def test_player_strength_rewards_tier_one_regulars_over_lower_tier_substitutes():
     elite = player_strength(
         {
@@ -174,6 +285,26 @@ def test_team_strength_regresses_uncompleted_players_to_neutral_not_low_score():
 
     assert strength["attack_strength"] == 65.0
     assert strength["coverage"] == 0.0
+
+
+def test_team_strength_counts_public_enriched_players_as_usable_coverage():
+    strength = aggregate_team_strength(
+        "Portugal",
+        [
+            {
+                "position": "Attacker",
+                "stats_status": "enriched",
+                "club": "Al-Nassr",
+                "league": "Saudi Pro League",
+                "player_strength": 68,
+            },
+            {"position": "Defender", "stats_status": "queued"},
+        ],
+    )
+
+    assert strength["attack_strength"] == 68
+    assert strength["coverage"] == 0.5
+    assert strength["missing_player_stats"] == 1
 
 
 def test_service_syncs_squad_processes_queue_and_exposes_roster_endpoints(tmp_path: Path):
@@ -241,6 +372,40 @@ def test_service_syncs_squad_processes_queue_and_exposes_roster_endpoints(tmp_pa
     health = client.get("/api/health/roster-data").json()
     assert health["queue_pending"] == 0
     assert "secret" not in str(health).lower()
+
+
+def test_service_enriches_roster_queue_from_public_sources(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.save_team_squad(
+        "England",
+        {
+            "team": "England",
+            "team_id": 10,
+            "source": "test",
+            "players": [{"player_id": 1460, "name": "B. Saka", "position": "Attacker"}],
+        },
+    )
+    service.public_roster_provider.enrich_player = lambda player, team: {
+        "player_id": player["player_id"],
+        "name": "Bukayo Saka",
+        "season": 2026,
+        "club": "Arsenal",
+        "league": "English Premier League",
+        "position": "Right Winger",
+        "stats_status": "enriched",
+        "source": "thesportsdb",
+    }
+
+    result = service.enrich_roster_queue_from_public(limit=5)
+    squad = service.get_team_squad("England")
+    strength = service.get_team_strength("England")
+
+    assert result["enriched"] == 1
+    assert squad["coverage"] == 1.0
+    assert squad["players"][0]["club"] == "Arsenal"
+    assert squad["players"][0]["stats_status"] == "enriched"
+    assert strength["coverage"] == 1.0
+    assert service.roster_data_health()["players_with_stats"] == 1
 
 
 def test_roster_weight_changes_prediction_when_strengths_are_available(tmp_path: Path):

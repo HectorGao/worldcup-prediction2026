@@ -88,12 +88,15 @@ def build_team_profiles(
     matches: Iterable[HistoricalMatch],
     as_of: str | None = None,
     half_life_years: float = 5.0,
+    max_age_years: float | None = None,
 ) -> dict[str, dict]:
     as_of = as_of or datetime.utcnow().date().isoformat()
     ratings: dict[str, float] = {}
     profiles: dict[str, dict] = {}
 
     for match in sorted(matches, key=lambda item: item.date):
+        if max_age_years is not None and _age_years(match.date, as_of) > max_age_years:
+            continue
         ratings.setdefault(match.home_team, 1500.0)
         ratings.setdefault(match.away_team, 1500.0)
         profiles.setdefault(match.home_team, _empty_profile())
@@ -119,6 +122,12 @@ def build_team_profiles(
         profile["attack_rating"] = round(profile["weighted_goals_for"] / matches_weight, 3)
         profile["defense_rating"] = round(profile["weighted_goals_against"] / matches_weight, 3)
     return profiles
+
+
+def _age_years(match_date: str, as_of: str) -> float:
+    played = date.fromisoformat(match_date)
+    current = date.fromisoformat(as_of)
+    return max(0, (current - played).days / 365.25)
 
 
 def _empty_profile() -> dict:

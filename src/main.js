@@ -1,10 +1,16 @@
 const state = {
   matches: [],
   selectedPrediction: null,
+  matchPredictions: {},
   availableDates: [],
   sourceValidation: [],
   rosterWeight: 0.25,
-  rosterHealth: null
+  rosterHealth: null,
+  rounds: [],
+  roundMatches: [],
+  selectedStage: null,
+  activeView: 'rounds',
+  selectedTeamDetail: null
 };
 
 const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
@@ -40,11 +46,12 @@ function teamDisplay(entity, side = '') {
 
 async function bootstrap() {
   try {
-    updateActiveNav();
+    updateActiveView();
     await loadAvailableDates();
     await loadMatches();
     await loadHealth();
     await loadRosterHealth();
+    await loadRounds();
     await loadReport();
     await loadRankings();
     await loadKnockout();
@@ -73,6 +80,7 @@ async function loadMatches() {
   document.querySelector('#match-date').value = payload.date || date;
   renderMatches();
   setStatus(`已显示 ${payload.date || date} 的 ${state.matches.length} 场比赛。`, 'success');
+  loadMatchCardPredictions();
 }
 
 async function syncMatches() {
@@ -84,8 +92,10 @@ async function syncMatches() {
   try {
     await api(`/api/sync?date=${date}`, { method: 'POST' });
     await api('/api/scrape/public-web', { method: 'POST' });
+    await api('/api/scrape/lyihub?include_details=true&detail_limit=120', { method: 'POST' });
     await loadAvailableDates();
     await loadMatches();
+    await loadRounds();
     await loadReport();
     await loadRankings();
     await loadKnockout();
@@ -99,10 +109,34 @@ async function syncMatches() {
   }
 }
 
+async function syncReferenceData() {
+  const button = document.querySelector('#sync-reference-button');
+  button.disabled = true;
+  button.textContent = '刷新中...';
+  setStatus('正在同步 worldcup.lyihub.com 全赛程、赛果和球员能力值...');
+  try {
+    const payload = await api('/api/scrape/lyihub?include_details=true&detail_limit=120', { method: 'POST' });
+    await loadAvailableDates();
+    await loadMatches();
+    await loadRounds();
+    await loadRosterHealth();
+    setStatus(
+      `参考数据已刷新：${payload.match_count} 场，详情 ${payload.detail_synced} 场，48队覆盖 ${payload.coverage.complete_teams}/${payload.coverage.expected_teams}。`,
+      'success'
+    );
+  } catch (error) {
+    setStatus(`参考数据刷新失败：${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = '刷新参考数据';
+  }
+}
+
 async function loadPrediction(fixtureId) {
   setStatus('正在生成单场预测...');
   try {
     const prediction = await api(`/api/predict/${fixtureId}?roster_weight=${state.rosterWeight}`, { method: 'POST' });
+    state.matchPredictions[fixtureId] = { status: 'ready', prediction };
     let analysis = null;
     try {
       analysis = await api(`/api/matches/${fixtureId}/analysis`);
@@ -113,10 +147,52 @@ async function loadPrediction(fixtureId) {
     renderPrediction(state.selectedPrediction, analysis);
     await loadSquadPanels(state.selectedPrediction.fixture);
     renderSimulation(state.selectedPrediction);
+    renderMatches();
+    showView('detail');
     setStatus('单场预测已生成。', 'success');
   } catch (error) {
     setStatus(`生成预测失败：${error.message}`, 'error');
   }
+}
+
+async function loadMatchCardPredictions() {
+  const missing = state.matches.filter((match) => !state.matchPredictions[match.id]);
+  if (!missing.length) return;
+  missing.forEach((match) => {
+    state.matchPredictions[match.id] = { status: 'loading' };
+  });
+  renderMatches();
+  await Promise.all(
+    missing.map(async (match) => {
+      try {
+        const prediction = await api(`/api/predict/${match.id}?roster_weight=${state.rosterWeight}`, { method: 'POST' });
+        state.matchPredictions[match.id] = { status: 'ready', prediction };
+      } catch (error) {
+        state.matchPredictions[match.id] = { status: 'error', error: error.message };
+      }
+      renderMatches();
+    })
+  );
+}
+
+async function loadRounds() {
+  const payload = await api('/api/lyihub/rounds');
+  state.rounds = payload.rounds || [];
+  const stages = new Set(['all', ...state.rounds.map((round) => round.stage)]);
+  if (!state.selectedStage || !stages.has(state.selectedStage)) {
+    state.selectedStage = defaultRoundStage(state.rounds);
+  }
+  renderRounds();
+  await loadRoundMatches(state.selectedStage);
+}
+
+async function loadRoundMatches(stage = 'all') {
+  state.selectedStage = stage;
+  const query = stage && stage !== 'all' ? `?stage=${encodeURIComponent(stage)}` : '';
+  const payload = await api(`/api/lyihub/matches${query}`);
+  state.roundMatches = payload.matches || [];
+  renderRounds();
+  renderRoundMatches();
 }
 
 async function loadHealth() {
@@ -149,6 +225,10 @@ function renderRosterHealth() {
     <div class="health-item ${provider.configured ? 'ok' : 'warn'}">
       <strong>${provider.name || 'API-Football rosters'}</strong>
       <span>${provider.configured ? '已配置' : '未配置'} · season ${provider.season_priority?.join(' → ') || '2026 → 2025 → 2024'}</span>
+    </div>
+    <div class="health-item ${health.public_provider?.configured ? 'ok' : 'warn'}">
+      <strong>${health.public_provider?.name || 'TheSportsDB public player search'}</strong>
+      <span>${health.public_provider?.configured ? '已配置' : '未配置'} · ${health.public_provider?.rate_limit || '公开补全源'}</span>
     </div>
     <div class="health-item">
       <strong>补全队列</strong>
@@ -256,13 +336,22 @@ function renderMatches() {
   list.innerHTML = state.matches
     .map(
       (match) => `
-      <article class="match-row">
+      <article class="match-row ${state.selectedPrediction?.fixture?.id === match.id ? 'selected' : ''}">
         <div class="teams">
-          <strong>${teamDisplay(match, 'home')} <span class="meta">vs</span> ${teamDisplay(match, 'away')}</strong>
+          <strong>
+            ${teamButton(match.home_team, teamDisplay(match, 'home'))}
+            <span class="meta">vs</span>
+            ${teamButton(match.away_team, teamDisplay(match, 'away'))}
+          </strong>
           <span class="meta">${match.group || 'World Cup'} · ${match.venue || 'venue pending'} · ${match.kickoff}</span>
         </div>
-        <span class="status-pill" data-status="${match.status}">${statusLabel(match.status)}</span>
-        <button data-predict="${match.id}" aria-label="生成预测 ${teamDisplay(match, 'home')} vs ${teamDisplay(match, 'away')}">生成预测</button>
+        ${inlinePrediction(match)}
+        <div class="match-actions">
+          <span class="status-pill" data-status="${match.status}">${statusLabel(match.status)}</span>
+          <button data-predict="${match.id}" aria-label="查看预测 ${teamDisplay(match, 'home')} vs ${teamDisplay(match, 'away')}">${
+            state.matchPredictions[match.id]?.status === 'ready' ? '查看详情' : '生成预测'
+          }</button>
+        </div>
       </article>
     `
     )
@@ -270,6 +359,265 @@ function renderMatches() {
   list.querySelectorAll('[data-predict]').forEach((button) => {
     button.addEventListener('click', () => loadPrediction(button.dataset.predict));
   });
+  list.querySelectorAll('[data-team]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      loadTeamDetail(button.dataset.team);
+    });
+  });
+}
+
+function inlinePrediction(match) {
+  const entry = state.matchPredictions[match.id];
+  const actualScore = match.actual_score || actualScoreText(match);
+  const predictedScore = predictionScore(match, entry);
+  const accuracy = predictionAccuracy(predictedScore, actualScore, match.prediction_accuracy);
+  if (!entry || entry.status === 'loading') {
+    return `
+      <div class="inline-forecast loading" aria-label="预测概率加载中">
+        <span>${forecastLabel(match, 'home')} --</span>
+        <span>平局 --</span>
+        <span>${forecastLabel(match, 'away')} --</span>
+        ${scoreSummary(actualScore, predictedScore, accuracy)}
+      </div>
+    `;
+  }
+  if (entry.status === 'error') {
+    return `<div class="inline-forecast error">预测暂不可用</div>`;
+  }
+  const probs = entry.prediction.probabilities;
+  const best = Object.entries(probs).sort((left, right) => right[1] - left[1])[0][0];
+  return `
+    <div class="inline-forecast" aria-label="胜平负预测概率">
+      ${forecastPill(forecastLabel(match, 'home'), probs.home, best === 'home')}
+      ${forecastPill('平局', probs.draw, best === 'draw')}
+      ${forecastPill(forecastLabel(match, 'away'), probs.away, best === 'away')}
+      ${scoreSummary(actualScore, predictedScore, accuracy)}
+    </div>
+  `;
+}
+
+function teamButton(team, label) {
+  return `<button class="team-link" data-team="${escapeAttr(team || '')}" title="查看${escapeAttr(label)}本届世界杯详情">${label}</button>`;
+}
+
+function actualScoreText(match) {
+  if (match.home_score === null || match.home_score === undefined || match.away_score === null || match.away_score === undefined) {
+    return null;
+  }
+  return `${match.home_score}-${match.away_score}`;
+}
+
+function predictionScore(match, entry) {
+  if (entry?.prediction?.top_scorelines?.[0]?.score) return entry.prediction.top_scorelines[0].score;
+  return match.predicted_score || null;
+}
+
+function scoreSummary(actualScore, predictedScore, accuracy) {
+  const accuracyText = accuracyLabel(accuracy);
+  return `
+    <span class="score-summary">
+      <b>实际</b>${actualScore || '未赛'}
+      <b>预测</b>${predictedScore || '--'}
+      <b>准确</b>${accuracyText}
+    </span>
+  `;
+}
+
+function predictionAccuracy(predictedScore, actualScore, serverAccuracy = null) {
+  if (serverAccuracy && predictedScore) return serverAccuracy;
+  if (!predictedScore || !actualScore || !predictedScore.includes('-') || !actualScore.includes('-')) return null;
+  const [ph, pa] = predictedScore.split('-').map(Number);
+  const [ah, aa] = actualScore.split('-').map(Number);
+  if (![ph, pa, ah, aa].every(Number.isFinite)) return null;
+  const predOutcome = ph > pa ? 'home' : ph < pa ? 'away' : 'draw';
+  const actualOutcome = ah > aa ? 'home' : ah < aa ? 'away' : 'draw';
+  return {
+    exact_score: ph === ah && pa === aa,
+    outcome_hit: predOutcome === actualOutcome,
+    goal_diff_error: Math.abs(ph - pa - (ah - aa)),
+    total_goal_error: Math.abs(ph + pa - (ah + aa))
+  };
+}
+
+function accuracyLabel(accuracy) {
+  if (!accuracy) return '待赛后';
+  if (accuracy.exact_score) return '比分命中';
+  if (accuracy.outcome_hit) return `赛果命中 · 差${accuracy.goal_diff_error}`;
+  return `未命中 · 差${accuracy.goal_diff_error}`;
+}
+
+function forecastLabel(match, side) {
+  const flag = match[`${side}_flag`] || '';
+  const name = match[`${side}_team_zh`] || match[`${side}_team`] || '';
+  return `${flag ? `${flag} ` : ''}${name}胜`;
+}
+
+function forecastPill(label, value, active) {
+  return `<span class="forecast-pill ${active ? 'is-best' : ''}"><b>${label}</b>${formatPercent(value)}</span>`;
+}
+
+function renderRounds() {
+  const total = state.rounds.reduce((sum, item) => sum + Number(item.match_count || 0), 0);
+  document.querySelector('#round-count').textContent = state.rounds.length ? `${state.rounds.length} 个轮次 · ${total} 场` : '等待同步';
+  const tabs = [
+    {
+      stage: 'all',
+      label: '全部比赛',
+      helper: '完整赛程',
+      match_count: total,
+      finished_count: state.rounds.reduce((sum, item) => sum + Number(item.finished_count || 0), 0)
+    },
+    ...state.rounds
+  ];
+  document.querySelector('#round-tabs').innerHTML = tabs
+    .map(
+      (round) => `
+        <button class="round-switch-card ${state.selectedStage === round.stage ? 'active' : ''}" data-stage="${escapeAttr(round.stage)}" aria-pressed="${state.selectedStage === round.stage}">
+          <span>${round.label || round.stage}</span>
+          <strong>${round.finished_count || 0}/${round.match_count || 0}</strong>
+          <small>${round.helper || stageHint(round)}</small>
+        </button>
+      `
+    )
+    .join('');
+  document.querySelectorAll('#round-tabs [data-stage]').forEach((button) => {
+    button.addEventListener('click', () => {
+      loadRoundMatches(button.dataset.stage);
+      showView('rounds');
+    });
+  });
+}
+
+function renderRoundMatches() {
+  const target = document.querySelector('#round-matches');
+  const title = document.querySelector('#selected-round-title');
+  const selectedRound = selectedRoundSummary();
+  if (title) {
+    title.textContent = `${selectedRound.label} · ${selectedRound.finished}/${selectedRound.total} 已完赛`;
+  }
+  if (!state.roundMatches.length) {
+    target.innerHTML = '<div class="empty-state">暂无轮次数据。点击“刷新参考数据”。</div>';
+    return;
+  }
+  target.innerHTML = state.roundMatches
+    .map(
+      (match) => `
+        <article class="round-card">
+          <div class="round-card-top">
+            <span>${match.stage || match.group || 'World Cup'}</span>
+            <span class="status-pill" data-status="${match.status}">${statusLabel(match.status)}</span>
+          </div>
+          <div class="round-card-score">
+            ${teamButton(match.home_team, teamDisplay(match, 'home'))}
+            <strong>${actualScoreText(match) || matchTime(match.kickoff)}</strong>
+            ${teamButton(match.away_team, teamDisplay(match, 'away'))}
+          </div>
+          <div class="round-card-meta">${match.date} · ${match.venue || 'venue pending'}</div>
+          <div class="round-card-meta">预测 ${match.predicted_score || '--'} · ${accuracyLabel(match.prediction_accuracy)}</div>
+        </article>
+      `
+    )
+    .join('');
+  target.querySelectorAll('[data-team]').forEach((button) => {
+    button.addEventListener('click', () => loadTeamDetail(button.dataset.team));
+  });
+}
+
+function defaultRoundStage(rounds) {
+  const activeRound = rounds.find((round) => Number(round.finished_count || 0) < Number(round.match_count || 0));
+  return activeRound?.stage || rounds.at(-1)?.stage || 'all';
+}
+
+function stageHint(round) {
+  const finished = Number(round.finished_count || 0);
+  const total = Number(round.match_count || 0);
+  if (total && finished >= total) return '已完成';
+  if (finished > 0) return '进行中';
+  return '未开始';
+}
+
+function selectedRoundSummary() {
+  const total = state.rounds.reduce((sum, item) => sum + Number(item.match_count || 0), 0);
+  const finished = state.rounds.reduce((sum, item) => sum + Number(item.finished_count || 0), 0);
+  if (state.selectedStage === 'all') {
+    return { label: '全部比赛', total, finished };
+  }
+  const round = state.rounds.find((item) => item.stage === state.selectedStage) || {};
+  return {
+    label: round.stage || '轮次',
+    total: Number(round.match_count || state.roundMatches.length || 0),
+    finished: Number(round.finished_count || 0)
+  };
+}
+
+function matchTime(value) {
+  if (!value) return '--:--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '--:--';
+  return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Shanghai' });
+}
+
+async function loadTeamDetail(team) {
+  setStatus(`正在加载 ${team} 的本届世界杯详情...`);
+  try {
+    const detail = await api(`/api/teams/${encodeURIComponent(team)}/world-cup-detail`);
+    state.selectedTeamDetail = detail;
+    renderTeamDetail(detail);
+    showView('team-detail');
+    setStatus(`${detail.display.flag || ''}${detail.display.zh || detail.team}：${detail.coverage.matches} 场比赛，${detail.coverage.players} 名球员。`, 'success');
+  } catch (error) {
+    setStatus(`加载球队详情失败：${error.message}`, 'error');
+  }
+}
+
+function renderTeamDetail(detail) {
+  document.querySelector('#selected-team').textContent = `${detail.display.flag || ''} ${detail.display.zh || detail.team}`;
+  const matchRows = detail.matches
+    .map(
+      (match) => `
+        <div class="team-match-row">
+          <strong>${match.stage || '-'} · ${match.date}</strong>
+          <span>${teamDisplay(match, 'home')} ${actualScoreText(match) || matchTime(match.kickoff)} ${teamDisplay(match, 'away')}</span>
+        </div>
+      `
+    )
+    .join('');
+  const playerRows = detail.players
+    .map(
+      (player) => {
+        const abilityLabel = player.ability == null ? '-' : `${player.ability}${player.ability_estimated ? '（估算）' : ''}`;
+        return `
+        <div class="player-row">
+          <strong>${player.shirt_number || '-'} · ${player.player_name}${player.club ? `（${player.club}）` : ''}</strong>
+          <span>${positionLabel(player.position)} · 能力 ${abilityLabel} · ${player.league || '俱乐部待确认'}</span>
+        </div>
+      `;
+      }
+    )
+    .join('');
+  document.querySelector('#team-detail-view').innerHTML = `
+    <div class="team-detail-grid">
+      <section>
+        <h3>本届对阵</h3>
+        <div class="team-match-list">${matchRows || '<div class="empty-state">暂无比赛数据</div>'}</div>
+      </section>
+      <section>
+        <h3>阵容与能力值</h3>
+        <div class="coach-line">球员 ${detail.coverage.players} · 能力值 ${detail.coverage.players_with_ability} · 源能力 ${detail.coverage.players_with_source_ability ?? detail.coverage.players_with_ability} · 估算 ${detail.coverage.players_with_estimated_ability || 0} · 已知俱乐部 ${detail.coverage.players_with_club}</div>
+        <div class="player-table">${playerRows || '<div class="empty-state">暂无球员数据</div>'}</div>
+      </section>
+    </div>
+  `;
+}
+
+function positionLabel(value) {
+  const labels = { goalkeeper: '门将', defender: '后卫', midfielder: '中场', attacker: '前锋' };
+  return labels[String(value || '').toLowerCase()] || value || '-';
+}
+
+function escapeAttr(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
 }
 
 function statusLabel(status) {
@@ -533,9 +881,35 @@ async function processRosterQueue() {
   }
 }
 
+async function enrichPublicRosterQueue() {
+  const button = document.querySelector('#public-roster-button');
+  if (button) {
+    button.disabled = true;
+    button.textContent = '公开源中...';
+  }
+  setStatus('正在用公开来源补全球员俱乐部与联赛信息...');
+  try {
+    const payload = await api('/api/squads/enrich-public?limit=10', { method: 'POST' });
+    await loadRosterHealth();
+    if (state.selectedPrediction) {
+      await loadPrediction(state.selectedPrediction.fixture.id);
+    }
+    setStatus(`公开源补全完成：成功 ${payload.enriched}，失败 ${payload.failed}。`, 'success');
+  } catch (error) {
+    setStatus(`公开源补全失败：${error.message}`, 'error');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = '公开源补全';
+    }
+  }
+}
+
 document.querySelector('#sync-button').addEventListener('click', syncMatches);
+document.querySelector('#sync-reference-button').addEventListener('click', syncReferenceData);
 document.querySelector('#validate-sources-button').addEventListener('click', validateSources);
 document.querySelector('#process-roster-button').addEventListener('click', processRosterQueue);
+document.querySelector('#public-roster-button').addEventListener('click', enrichPublicRosterQueue);
 document.querySelector('#match-date').addEventListener('change', loadMatches);
 document.querySelector('#report-button').addEventListener('click', async () => {
   setStatus('正在生成中文日报...');
@@ -564,15 +938,39 @@ document.querySelector('#knockout-button').addEventListener('click', async () =>
     setStatus(`刷新淘汰赛模拟失败：${error.message}`, 'error');
   }
 });
-window.addEventListener('hashchange', updateActiveNav);
+document.querySelectorAll('[data-view-tab]').forEach((button) => {
+  button.addEventListener('click', () => showView(button.dataset.viewTab));
+});
+window.addEventListener('hashchange', updateActiveView);
 
-function updateActiveNav() {
-  const currentHash = window.location.hash || '#today';
-  document.querySelectorAll('.rail a').forEach((link) => {
-    const active = link.getAttribute('href') === currentHash;
-    link.classList.toggle('active', active);
-    link.setAttribute('aria-current', active ? 'page' : 'false');
+function updateActiveView() {
+  const hashView = (window.location.hash || '#rounds').slice(1);
+  showView(normalizeView(hashView), { updateHash: false });
+}
+
+function showView(view, options = {}) {
+  const nextView = normalizeView(view);
+  state.activeView = nextView;
+  document.querySelectorAll('[data-view]').forEach((panel) => {
+    const active = panel.dataset.view === nextView;
+    panel.classList.toggle('active', active);
+    panel.setAttribute('aria-hidden', active ? 'false' : 'true');
   });
+  document.querySelectorAll('[data-view-tab]').forEach((button) => {
+    const active = button.dataset.viewTab === nextView;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-current', active ? 'page' : 'false');
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  if (options.updateHash !== false && window.location.hash !== `#${nextView}`) {
+    window.location.hash = nextView;
+  }
+}
+
+function normalizeView(value) {
+  const validViews = new Set(['rounds', 'today', 'detail', 'team-detail', 'models', 'health', 'report']);
+  if (value === 'simulation') return 'models';
+  return validViews.has(value) ? value : 'rounds';
 }
 
 bootstrap();

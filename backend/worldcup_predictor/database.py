@@ -157,6 +157,46 @@ CREATE TABLE IF NOT EXISTS roster_sync_queue (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(team, player_id)
 );
+
+CREATE TABLE IF NOT EXISTS lyihub_match_details (
+  match_id TEXT PRIMARY KEY,
+  fixture_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  kickoff TEXT NOT NULL,
+  stage TEXT,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  home_team_zh TEXT,
+  away_team_zh TEXT,
+  home_team_source_id TEXT,
+  away_team_source_id TEXT,
+  venue TEXT,
+  status TEXT NOT NULL,
+  home_score INTEGER,
+  away_score INTEGER,
+  has_predict INTEGER NOT NULL DEFAULT 0,
+  source_url TEXT,
+  payload_json TEXT NOT NULL,
+  detail_json TEXT,
+  synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS lyihub_players (
+  team TEXT NOT NULL,
+  team_zh TEXT NOT NULL,
+  team_source_id TEXT,
+  player_id TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  shirt_number INTEGER,
+  position TEXT,
+  ability REAL,
+  score10_json TEXT,
+  fitness_json TEXT,
+  payload_json TEXT NOT NULL,
+  first_match_id TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(team, player_id)
+);
 """
 
 
@@ -402,6 +442,217 @@ class Database:
             ).fetchone()
         return json.loads(row["payload_json"]) if row else None
 
+    def upsert_lyihub_match(self, match: dict[str, Any]) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO lyihub_match_details (
+                  match_id, fixture_id, date, kickoff, stage, home_team, away_team,
+                  home_team_zh, away_team_zh, home_team_source_id, away_team_source_id,
+                  venue, status, home_score, away_score, has_predict, source_url, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(match_id) DO UPDATE SET
+                  fixture_id=excluded.fixture_id,
+                  date=excluded.date,
+                  kickoff=excluded.kickoff,
+                  stage=excluded.stage,
+                  home_team=excluded.home_team,
+                  away_team=excluded.away_team,
+                  home_team_zh=excluded.home_team_zh,
+                  away_team_zh=excluded.away_team_zh,
+                  home_team_source_id=excluded.home_team_source_id,
+                  away_team_source_id=excluded.away_team_source_id,
+                  venue=excluded.venue,
+                  status=excluded.status,
+                  home_score=excluded.home_score,
+                  away_score=excluded.away_score,
+                  has_predict=excluded.has_predict,
+                  source_url=excluded.source_url,
+                  payload_json=excluded.payload_json,
+                  synced_at=CURRENT_TIMESTAMP
+                """,
+                (
+                    match["match_id"],
+                    match["id"],
+                    match["date"],
+                    match["kickoff"],
+                    match.get("stage") or match.get("group"),
+                    match["home_team"],
+                    match["away_team"],
+                    match.get("home_team_zh_source"),
+                    match.get("away_team_zh_source"),
+                    match.get("home_team_id_source"),
+                    match.get("away_team_id_source"),
+                    match.get("venue"),
+                    match.get("status", "scheduled"),
+                    match.get("home_score"),
+                    match.get("away_score"),
+                    1 if match.get("has_predict") else 0,
+                    match.get("source_url"),
+                    json.dumps(match.get("payload") or match, ensure_ascii=False),
+                ),
+            )
+
+    def save_lyihub_match_detail(self, match: dict[str, Any]) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                UPDATE lyihub_match_details
+                SET detail_json = ?, synced_at = CURRENT_TIMESTAMP
+                WHERE match_id = ?
+                """,
+                (json.dumps(match.get("detail") or {}, ensure_ascii=False), match["match_id"]),
+            )
+            for player in match.get("players", []):
+                connection.execute(
+                    """
+                    INSERT INTO lyihub_players (
+                      team, team_zh, team_source_id, player_id, player_name, shirt_number,
+                      position, ability, score10_json, fitness_json, payload_json, first_match_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(team, player_id) DO UPDATE SET
+                      team_zh=excluded.team_zh,
+                      team_source_id=excluded.team_source_id,
+                      player_name=excluded.player_name,
+                      shirt_number=excluded.shirt_number,
+                      position=excluded.position,
+                      ability=excluded.ability,
+                      score10_json=excluded.score10_json,
+                      fitness_json=excluded.fitness_json,
+                      payload_json=excluded.payload_json,
+                      updated_at=CURRENT_TIMESTAMP
+                    """,
+                    (
+                        player["team"],
+                        player["team_zh"],
+                        player.get("team_id_source"),
+                        player["player_id"],
+                        player["player_name"],
+                        player.get("shirt_number"),
+                        player.get("position"),
+                        player.get("ability"),
+                        json.dumps(player.get("score10") or {}, ensure_ascii=False),
+                        json.dumps(player.get("fitness") or {}, ensure_ascii=False),
+                        json.dumps(player.get("payload") or player, ensure_ascii=False),
+                        player.get("match_id"),
+                    ),
+                )
+
+    def list_lyihub_matches(self, date: str | None = None, stage: str | None = None) -> list[dict[str, Any]]:
+        query = "SELECT * FROM lyihub_match_details"
+        clauses: list[str] = []
+        params: list[Any] = []
+        if date:
+            clauses.append("date = ?")
+            params.append(date)
+        if stage and stage != "all":
+            clauses.append("stage = ?")
+            params.append(stage)
+        if clauses:
+            query += " WHERE " + " AND ".join(clauses)
+        query += " ORDER BY kickoff, match_id"
+        with self.connect() as connection:
+            rows = connection.execute(query, params).fetchall()
+        return [self._lyihub_match_row(row) for row in rows]
+
+    def get_lyihub_match_by_fixture(self, fixture_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM lyihub_match_details WHERE fixture_id = ? OR match_id = ?",
+                (fixture_id, fixture_id.replace("lyihub-", "")),
+            ).fetchone()
+        return self._lyihub_match_row(row) if row else None
+
+    def lyihub_stages(self) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT stage, COUNT(*) AS match_count,
+                  SUM(CASE WHEN status = 'final' THEN 1 ELSE 0 END) AS finished_count,
+                  MIN(date) AS start_date,
+                  MAX(date) AS end_date
+                FROM lyihub_match_details
+                GROUP BY stage
+                ORDER BY MIN(kickoff)
+                """
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def lyihub_group_teams(self) -> list[str]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                    SELECT home_team AS team FROM lyihub_match_details WHERE stage LIKE '%小组赛%'
+                    UNION
+                    SELECT away_team AS team FROM lyihub_match_details WHERE stage LIKE '%小组赛%'
+                    ORDER BY team
+                """
+            ).fetchall()
+        return [row["team"] for row in rows]
+
+    def lyihub_team_matches(self, team: str) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM lyihub_match_details
+                WHERE home_team = ? OR away_team = ? OR home_team_zh = ? OR away_team_zh = ?
+                ORDER BY kickoff, match_id
+                """,
+                (team, team, team, team),
+            ).fetchall()
+        return [self._lyihub_match_row(row) for row in rows]
+
+    def lyihub_team_players(self, team: str) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM lyihub_players
+                WHERE team = ? OR team_zh = ?
+                ORDER BY shirt_number IS NULL, shirt_number, player_name
+                """,
+                (team, team),
+            ).fetchall()
+        return [self._lyihub_player_row(row) for row in rows]
+
+    def lyihub_player_coverage(self) -> dict[str, Any]:
+        teams = self.lyihub_group_teams()
+        per_team = []
+        with self.connect() as connection:
+            for team in teams:
+                row = connection.execute(
+                    """
+                    SELECT COUNT(*) AS players,
+                      SUM(CASE WHEN ability IS NOT NULL THEN 1 ELSE 0 END) AS with_ability
+                    FROM lyihub_players
+                    WHERE team = ?
+                    """,
+                    (team,),
+                ).fetchone()
+                per_team.append(
+                    {
+                        "team": team,
+                        "players": int(row["players"] or 0),
+                        "players_with_ability": int(row["with_ability"] or 0),
+                    }
+                )
+                per_team[-1]["roster_complete"] = per_team[-1]["players"] >= 26
+                per_team[-1]["ability_complete"] = (
+                    per_team[-1]["players"] > 0
+                    and per_team[-1]["players_with_ability"] == per_team[-1]["players"]
+                )
+                per_team[-1]["complete"] = (
+                    per_team[-1]["roster_complete"] and per_team[-1]["players_with_ability"] >= 20
+                )
+        return {
+            "expected_teams": 48,
+            "teams_found": len(teams),
+            "complete_teams": len([item for item in per_team if item["complete"]]),
+            "roster_complete_teams": len([item for item in per_team if item["roster_complete"]]),
+            "ability_complete_teams": len([item for item in per_team if item["ability_complete"]]),
+            "missing_ability_players": sum(item["players"] - item["players_with_ability"] for item in per_team),
+            "teams": per_team,
+        }
+
     def save_team_squad(self, team: str, squad: dict[str, Any]) -> None:
         with self.connect() as connection:
             connection.execute(
@@ -612,7 +863,7 @@ class Database:
                 """
                 SELECT
                   COUNT(*) AS total,
-                  SUM(CASE WHEN stats_status = 'complete' THEN 1 ELSE 0 END) AS complete
+                  SUM(CASE WHEN stats_status IN ('complete', 'enriched') THEN 1 ELSE 0 END) AS complete
                 FROM squad_players
                 """
             ).fetchone()
@@ -641,6 +892,48 @@ class Database:
         payload["player_strength"] = row["player_strength"]
         payload["stats_status"] = row["stats_status"]
         return payload
+
+    def _lyihub_match_row(self, row: sqlite3.Row) -> dict[str, Any]:
+        payload = json.loads(row["payload_json"] or "{}")
+        detail = json.loads(row["detail_json"]) if row["detail_json"] else None
+        return {
+            "id": row["fixture_id"],
+            "match_id": row["match_id"],
+            "date": row["date"],
+            "kickoff": row["kickoff"],
+            "stage": row["stage"],
+            "group": row["stage"],
+            "home_team": row["home_team"],
+            "away_team": row["away_team"],
+            "home_team_zh": row["home_team_zh"],
+            "away_team_zh": row["away_team_zh"],
+            "home_team_source_id": row["home_team_source_id"],
+            "away_team_source_id": row["away_team_source_id"],
+            "venue": row["venue"],
+            "status": row["status"],
+            "home_score": row["home_score"],
+            "away_score": row["away_score"],
+            "has_predict": bool(row["has_predict"]),
+            "source_url": row["source_url"],
+            "source_name": "lyihub_worldcup_static_json",
+            "payload": payload,
+            "detail": detail,
+        }
+
+    def _lyihub_player_row(self, row: sqlite3.Row) -> dict[str, Any]:
+        return {
+            "team": row["team"],
+            "team_zh": row["team_zh"],
+            "team_source_id": row["team_source_id"],
+            "player_id": row["player_id"],
+            "player_name": row["player_name"],
+            "shirt_number": row["shirt_number"],
+            "position": row["position"],
+            "ability": row["ability"],
+            "score10": json.loads(row["score10_json"] or "{}"),
+            "fitness": json.loads(row["fitness_json"] or "{}"),
+            "payload": json.loads(row["payload_json"] or "{}"),
+        }
 
     def _web_fixture_row(self, row: sqlite3.Row) -> dict[str, Any]:
         payload = json.loads(row["payload_json"])

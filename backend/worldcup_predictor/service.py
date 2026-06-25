@@ -8,8 +8,9 @@ from typing import Any
 import httpx
 
 from .data.providers import ProviderRegistry
+from .data.lyihub import LyihubWorldCupScraper, canonical_team
 from .data.public_sources import HISTORICAL_RESULTS_URL, WIKIPEDIA_PARSE_URL, PublicWorldCupScraper
-from .data.rosters import ApiFootballRosterProvider
+from .data.rosters import ApiFootballRosterProvider, TheSportsDBRosterProvider
 from .data.training import HistoricalMatch, build_team_profiles
 from .database import Database
 from .prediction.calibration import calibrate_score_matrix_to_market
@@ -23,7 +24,7 @@ from .prediction.dixon_coles import (
 )
 from .prediction.metrics import evaluate_result
 from .prediction.odds import devig
-from .roster_strength import aggregate_team_strength, player_strength
+from .roster_strength import USABLE_STATUSES, aggregate_team_strength, player_strength
 from .team_metadata import display_team, enrich_fixture, enrich_profile
 
 
@@ -33,6 +34,8 @@ class WorldCupService:
         self.providers = ProviderRegistry()
         self.public_scraper = PublicWorldCupScraper()
         self.roster_provider = ApiFootballRosterProvider()
+        self.public_roster_provider = TheSportsDBRosterProvider()
+        self.lyihub_scraper = LyihubWorldCupScraper()
 
     def sync_date(self, date: str) -> dict[str, Any]:
         source, fixtures = self.providers.fetch_fixtures(date)
@@ -59,8 +62,18 @@ class WorldCupService:
         effective_date = date
         if self.db.count_fixtures(effective_date) == 0:
             effective_date = self.default_match_date(date)
+        lyihub_rows = self.db.list_lyihub_matches(date=effective_date)
+        if lyihub_rows:
+            return [self._lyihub_match_response(row) for row in lyihub_rows]
         rows = self.db.list_fixtures(effective_date) + self.db.list_web_fixtures(effective_date)
         return [self._fixture_response(row) for row in self._dedupe_match_rows(rows)]
+
+    def list_matches_with_prediction_summary(self, date: str) -> list[dict[str, Any]]:
+        matches = self.list_matches(date)
+        return [
+            match if "prediction_accuracy" in match else self._attach_prediction_summary(match)
+            for match in matches
+        ]
 
     def available_dates(self) -> list[str]:
         return self.db.available_dates()
@@ -253,12 +266,49 @@ class WorldCupService:
             "remaining": self.db.roster_health()["queue_pending"],
         }
 
+    def enrich_roster_queue_from_public(self, limit: int = 20) -> dict[str, Any]:
+        queue = self.db.get_next_roster_queue(max(1, min(10, int(limit))))
+        enriched = 0
+        failed = 0
+        teams_touched: set[str] = set()
+        for item in queue:
+            player = self._queued_player_payload(item["team"], item["player_id"])
+            if not player:
+                self.db.mark_roster_queue_item(item["team"], item["player_id"], "failed", "queued player not found")
+                failed += 1
+                continue
+            try:
+                stats = self.public_roster_provider.enrich_player(player, item["team"])
+            except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                self.db.mark_roster_queue_item(item["team"], item["player_id"], "failed", str(exc))
+                failed += 1
+                continue
+            if stats.get("stats_status") == "enriched":
+                stats["player_strength"] = player_strength(stats)
+                self.db.save_player_club_stats(item["player_id"], stats)
+                self.db.mark_roster_queue_item(item["team"], item["player_id"], "done")
+                enriched += 1
+                teams_touched.add(item["team"])
+            else:
+                self.db.save_player_club_stats(item["player_id"], stats)
+                self.db.mark_roster_queue_item(item["team"], item["player_id"], "failed", stats.get("last_error"))
+                failed += 1
+        for team in teams_touched:
+            self._recompute_squad_strength(team)
+        return {
+            "requested_limit": limit,
+            "enriched": enriched,
+            "failed": failed,
+            "remaining": self.db.roster_health()["queue_pending"],
+            "source": self.public_roster_provider.name,
+        }
+
     def get_team_squad(self, team: str) -> dict[str, Any]:
         squad = self.db.get_team_squad(team)
         if not squad:
             raise KeyError(f"Unknown squad: {team}")
         players = squad.get("players", [])
-        completed = len([player for player in players if player.get("stats_status") == "complete"])
+        completed = len([player for player in players if player.get("stats_status") in USABLE_STATUSES])
         squad["coverage"] = round(completed / len(players), 4) if players else 0.0
         return squad
 
@@ -295,6 +345,13 @@ class WorldCupService:
                     "purpose": "optional fixture/result fallback",
                 }
             ],
+        }
+        health["public_provider"] = {
+            "name": self.public_roster_provider.name,
+            "configured": self.public_roster_provider.configured(),
+            "docs": "https://www.thesportsdb.com/documentation",
+            "rate_limit": "30 requests/minute on free key 123",
+            "fields": ["club", "league", "position", "photo", "source_confidence"],
         }
         return health
 
@@ -378,7 +435,7 @@ class WorldCupService:
     def validate_data_sources(self) -> dict[str, Any]:
         return {
             "sources": self.providers.validate_sources()
-            + [self.roster_provider.validate()]
+            + [self.roster_provider.validate(), self.public_roster_provider.validate(), self.lyihub_scraper.validate()]
             + self._validate_public_sources()
         }
 
@@ -394,6 +451,54 @@ class WorldCupService:
             "sources": self.data_source_health(),
         }
 
+    def scrape_lyihub(self, include_details: bool = True, detail_limit: int = 120) -> dict[str, Any]:
+        index = self.lyihub_scraper.fetch_index()
+        raw_matches = index.get("matches") or []
+        normalized = [self.lyihub_scraper.normalize_index_match(match) for match in raw_matches]
+        normalized = self._normalize_lyihub_group_rounds(normalized)
+        for match in normalized:
+            self.db.upsert_lyihub_match(match)
+            self.db.upsert_web_fixture(match, source_name="lyihub_worldcup_static_json")
+
+        detail_synced = 0
+        detail_errors = []
+        if include_details:
+            detail_candidates = [match for match in normalized if match.get("has_predict")]
+            for match in detail_candidates[: max(0, int(detail_limit))]:
+                try:
+                    detail = self.lyihub_scraper.fetch_match_detail(match["match_id"])
+                    normalized_detail = self.lyihub_scraper.normalize_detail(detail)
+                    self.db.save_lyihub_match_detail(normalized_detail)
+                    detail_synced += 1
+                except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                    detail_errors.append({"match_id": match["match_id"], "error": str(exc)})
+
+        coverage = self.db.lyihub_player_coverage()
+        return {
+            "source": "https://worldcup.lyihub.com/",
+            "match_count": len(normalized),
+            "detail_synced": detail_synced,
+            "detail_errors": detail_errors[:20],
+            "available_dates": self.available_dates(),
+            "coverage": coverage,
+        }
+
+    def _normalize_lyihub_group_rounds(self, matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        group_matches = [
+            match
+            for match in matches
+            if "小组赛" in str(match.get("stage") or "") and "第" not in str(match.get("stage") or "")
+        ]
+        group_matches.sort(key=lambda item: (item.get("kickoff") or "", item.get("match_id") or ""))
+        for index, match in enumerate(group_matches):
+            round_number = min(3, (index // 2) + 1)
+            match["stage"] = f"小组赛 第{round_number}轮"
+            match["group"] = match["stage"]
+            payload = dict(match.get("payload") or {})
+            payload["stage"] = match["stage"]
+            match["payload"] = payload
+        return matches
+
     def save_web_fixtures(self, fixtures: list[dict[str, Any]], source_name: str) -> None:
         for fixture in fixtures:
             self.db.upsert_web_fixture(fixture, source_name=source_name)
@@ -401,12 +506,60 @@ class WorldCupService:
     def save_historical_matches(self, matches: list[HistoricalMatch]) -> None:
         for match in matches:
             self.db.save_historical_match(match)
-        profiles = build_team_profiles(matches, as_of="2026-06-16", half_life_years=5.0)
+        profiles = build_team_profiles(
+            matches,
+            as_of="2026-06-24",
+            half_life_years=5.0,
+            max_age_years=16,
+        )
         for team, profile in profiles.items():
             self.db.save_team_profile(team, profile)
 
     def team_rankings(self) -> list[dict[str, Any]]:
         return self._team_profiles(compact=True)
+
+    def lyihub_matches(self, date: str | None = None, stage: str | None = None) -> dict[str, Any]:
+        rows = self.db.list_lyihub_matches(date=date, stage=stage)
+        matches = [self._lyihub_match_response(row) for row in rows]
+        return {
+            "date": date,
+            "stage": stage or "all",
+            "matches": matches,
+            "count": len(matches),
+        }
+
+    def lyihub_rounds(self) -> dict[str, Any]:
+        return {"rounds": self.db.lyihub_stages()}
+
+    def lyihub_coverage(self) -> dict[str, Any]:
+        return self.db.lyihub_player_coverage()
+
+    def team_world_cup_detail(self, team: str) -> dict[str, Any]:
+        canonical = canonical_team(team)
+        matches = [self._lyihub_match_response(match) for match in self.db.lyihub_team_matches(canonical)]
+        if not matches and canonical != team:
+            matches = [self._lyihub_match_response(match) for match in self.db.lyihub_team_matches(team)]
+        players = self._players_with_known_clubs(canonical, self.db.lyihub_team_players(canonical))
+        if not players and canonical != team:
+            players = self._players_with_known_clubs(canonical, self.db.lyihub_team_players(team))
+        return {
+            "team": canonical,
+            "display": display_team(canonical),
+            "matches": matches,
+            "players": players,
+            "coverage": {
+                "matches": len(matches),
+                "players": len(players),
+                "players_with_ability": len([player for player in players if player.get("ability") is not None]),
+                "players_with_source_ability": len(
+                    [player for player in players if not player.get("ability_estimated")]
+                ),
+                "players_with_estimated_ability": len(
+                    [player for player in players if player.get("ability_estimated")]
+                ),
+                "players_with_club": len([player for player in players if player.get("club")]),
+            },
+        }
 
     def knockout(self) -> dict[str, Any]:
         teams = self.team_rankings()[:8]
@@ -440,14 +593,15 @@ class WorldCupService:
         return {
             "last_pipeline_run": None,
             "reference_source": {
-                "used_for_data": False,
-                "note": "参考站仅用于展示结构参考，未作为比赛数据源。",
+                "used_for_data": True,
+                "note": "worldcup.lyihub.com 用作用户指定的只读赛程、赛果、球员能力值补充源。",
             },
             "web_sources": {
                 "fixture_count": self.db.web_fixture_count(),
                 "historical_match_count": self.db.historical_match_count(),
                 "available_dates": self.available_dates(),
             },
+            "lyihub_coverage": self.lyihub_coverage(),
         }
 
     def _market_probabilities(self, fixture: dict[str, Any]) -> dict[str, float] | None:
@@ -647,6 +801,12 @@ class WorldCupService:
         self.db.save_squad_strength(team, strength)
         return strength
 
+    def _queued_player_payload(self, team: str, player_id: str) -> dict[str, Any] | None:
+        squad = self.db.get_team_squad(team)
+        if not squad:
+            return None
+        return next((player for player in squad.get("players", []) if str(player.get("player_id")) == str(player_id)), None)
+
     def _score_matrix_from_inputs(
         self,
         home_xg: float,
@@ -795,6 +955,121 @@ class WorldCupService:
             "market_over_2_5": row.get("market_over_2_5"),
             "market_under_2_5": row.get("market_under_2_5"),
         })
+
+    def _lyihub_match_response(self, row: dict[str, Any]) -> dict[str, Any]:
+        response = enrich_fixture(
+            {
+                "id": row["id"],
+                "date": row["date"],
+                "kickoff": row["kickoff"],
+                "home_team": row["home_team"],
+                "away_team": row["away_team"],
+                "group": row.get("stage") or row.get("group"),
+                "venue": row.get("venue"),
+                "status": row["status"],
+                "home_score": row.get("home_score"),
+                "away_score": row.get("away_score"),
+                "source_url": row.get("source_url"),
+                "source_name": row.get("source_name"),
+            }
+        )
+        response.update(
+            {
+                "match_id": row.get("match_id"),
+                "stage": row.get("stage"),
+                "has_predict": row.get("has_predict"),
+                "source_home_team_zh": row.get("home_team_zh"),
+                "source_away_team_zh": row.get("away_team_zh"),
+            }
+        )
+        return self._attach_prediction_summary(response)
+
+    def _attach_prediction_summary(self, match: dict[str, Any]) -> dict[str, Any]:
+        enriched = dict(match)
+        actual_score = self._actual_score(match)
+        enriched["actual_score"] = actual_score
+        try:
+            prediction = self.get_prediction(match["id"])
+            top = prediction.get("top_scorelines", [{}])[0]
+            predicted_score = top.get("score")
+        except (KeyError, ValueError, TypeError, RuntimeError):
+            predicted_score = None
+        enriched["predicted_score"] = predicted_score
+        enriched["prediction_accuracy"] = self._prediction_accuracy(predicted_score, actual_score)
+        return enriched
+
+    def _actual_score(self, match: dict[str, Any]) -> str | None:
+        if match.get("home_score") is None or match.get("away_score") is None:
+            return None
+        return f"{match['home_score']}-{match['away_score']}"
+
+    def _prediction_accuracy(self, predicted_score: str | None, actual_score: str | None) -> dict[str, Any] | None:
+        if not predicted_score or not actual_score or "-" not in predicted_score or "-" not in actual_score:
+            return None
+        try:
+            pred_home, pred_away = [int(part) for part in predicted_score.split("-", 1)]
+            actual_home, actual_away = [int(part) for part in actual_score.split("-", 1)]
+        except ValueError:
+            return None
+        pred_outcome = "home" if pred_home > pred_away else "away" if pred_home < pred_away else "draw"
+        actual_outcome = "home" if actual_home > actual_away else "away" if actual_home < actual_away else "draw"
+        return {
+            "exact_score": pred_home == actual_home and pred_away == actual_away,
+            "outcome_hit": pred_outcome == actual_outcome,
+            "goal_diff_error": abs((pred_home - pred_away) - (actual_home - actual_away)),
+            "total_goal_error": abs((pred_home + pred_away) - (actual_home + actual_away)),
+        }
+
+    def _players_with_known_clubs(self, team: str, players: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        squad_by_number: dict[int, dict[str, Any]] = {}
+        try:
+            squad = self.get_team_squad(team)
+            for player in squad.get("players", []):
+                if player.get("number") is not None:
+                    squad_by_number[int(player["number"])] = player
+        except KeyError:
+            squad_by_number = {}
+        enriched = []
+        for player in players:
+            item = dict(player)
+            item["ability_estimated"] = False
+            known = squad_by_number.get(int(player["shirt_number"])) if player.get("shirt_number") is not None else None
+            if known:
+                item["club"] = known.get("club")
+                item["league"] = known.get("league")
+                item["club_source"] = known.get("source") or known.get("source_name")
+            else:
+                item["club"] = None
+                item["league"] = None
+                item["club_source"] = None
+            enriched.append(item)
+        return self._estimate_missing_player_abilities(enriched)
+
+    def _estimate_missing_player_abilities(self, players: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        known_values = [
+            float(player["ability"])
+            for player in players
+            if player.get("ability") is not None
+        ]
+        team_average = sum(known_values) / len(known_values) if known_values else 6.5
+        by_position: dict[str, list[float]] = {}
+        for player in players:
+            if player.get("ability") is None:
+                continue
+            position = str(player.get("position") or "unknown")
+            by_position.setdefault(position, []).append(float(player["ability"]))
+        position_average = {
+            position: sum(values) / len(values)
+            for position, values in by_position.items()
+            if values
+        }
+        for player in players:
+            if player.get("ability") is not None:
+                continue
+            position = str(player.get("position") or "unknown")
+            player["ability"] = round(position_average.get(position, team_average), 1)
+            player["ability_estimated"] = True
+        return players
 
     def _serialize_score_matrix(self, matrix: dict[tuple[Any, Any], float]) -> list[dict[str, Any]]:
         return [

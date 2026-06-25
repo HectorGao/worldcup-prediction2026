@@ -29,6 +29,8 @@ TIER_TWO_LEAGUES = {
     "super lig",
 }
 
+USABLE_STATUSES = {"complete", "enriched"}
+
 
 def league_tier_score(league: str | None) -> float:
     normalized = (league or "").strip().lower()
@@ -62,7 +64,7 @@ def aggregate_team_strength(team: str, players: list[dict[str, Any]]) -> dict[st
     attack = [_strength(player) for player in players if position_bucket(player.get("position")) == "attack"]
     midfield = [_strength(player) for player in players if position_bucket(player.get("position")) == "midfield"]
     defense = [_strength(player) for player in players if position_bucket(player.get("position")) == "defense_gk"]
-    completed = [player for player in players if player.get("stats_status") == "complete"]
+    completed = [player for player in players if player.get("stats_status") in USABLE_STATUSES]
     total = len(players)
     return {
         "team": team,
@@ -126,7 +128,7 @@ def _stability_score(stats: dict[str, Any]) -> float:
 def _strength(player: dict[str, Any]) -> float:
     if player.get("player_strength") is not None:
         return float(player["player_strength"])
-    if player.get("stats_status") != "complete":
+    if player.get("stats_status") not in USABLE_STATUSES:
         return 65.0
     return player_strength(player)
 

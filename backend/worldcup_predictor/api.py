@@ -35,7 +35,7 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
     @app.get("/api/matches")
     def matches(date: str):
         effective_date = service.default_match_date(date)
-        return {"date": effective_date, "requested_date": date, "matches": service.list_matches(date)}
+        return {"date": effective_date, "requested_date": date, "matches": service.list_matches_with_prediction_summary(date)}
 
     @app.get("/api/matches/available-dates")
     def available_dates():
@@ -69,11 +69,24 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
         return service.scrape_public_sources()
 
     @app.post("/api/scrape/reference-site")
-    def reference_site_not_used():
-        return {
-            "used_for_data": False,
-            "message": "参考站只用于展示结构参考。实际数据通过公开网页/CSV/Kaggle fallback 获取。",
-        }
+    def scrape_reference_site(include_details: bool = True, detail_limit: int = 120):
+        return service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit)
+
+    @app.post("/api/scrape/lyihub")
+    def scrape_lyihub(include_details: bool = True, detail_limit: int = 120):
+        return service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit)
+
+    @app.get("/api/lyihub/matches")
+    def lyihub_matches(date: str | None = None, stage: str | None = None):
+        return service.lyihub_matches(date=date, stage=stage)
+
+    @app.get("/api/lyihub/rounds")
+    def lyihub_rounds():
+        return service.lyihub_rounds()
+
+    @app.get("/api/lyihub/coverage")
+    def lyihub_coverage():
+        return service.lyihub_coverage()
 
     @app.post("/api/predict/{fixture_id}")
     def predict(fixture_id: str, roster_weight: float = 0.25):
@@ -114,6 +127,10 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
     def process_roster_queue(limit: int = 20):
         return service.process_roster_queue(limit=limit)
 
+    @app.post("/api/squads/enrich-public")
+    def enrich_public_roster_queue(limit: int = 20):
+        return service.enrich_roster_queue_from_public(limit=limit)
+
     @app.get("/api/teams/{team}/squad")
     def team_squad(team: str):
         try:
@@ -127,6 +144,10 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
             return service.get_team_strength(team)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.get("/api/teams/{team}/world-cup-detail")
+    def team_world_cup_detail(team: str):
+        return service.team_world_cup_detail(team)
 
     @app.get("/api/teams/rankings")
     def team_rankings():

@@ -57,6 +57,40 @@ def test_historical_csv_builds_recently_weighted_profiles_and_h2h():
     assert profiles["Belgium"]["h2h"]["Egypt"]["matches"] == 3
 
 
+def test_team_profiles_exclude_matches_older_than_sixteen_years_from_decisions():
+    matches = [
+        HistoricalMatch(
+            date="2009-06-15",
+            home_team="Belgium",
+            away_team="Egypt",
+            home_score=0,
+            away_score=6,
+            tournament="Friendly",
+            neutral=True,
+        ),
+        HistoricalMatch(
+            date="2012-06-15",
+            home_team="Belgium",
+            away_team="Egypt",
+            home_score=2,
+            away_score=0,
+            tournament="Friendly",
+            neutral=True,
+        ),
+    ]
+
+    profiles = build_team_profiles(
+        matches,
+        as_of="2026-06-16",
+        half_life_years=5.0,
+        max_age_years=16,
+    )
+
+    assert profiles["Belgium"]["wins"] == 1
+    assert profiles["Belgium"]["losses"] == 0
+    assert profiles["Belgium"]["h2h"]["Egypt"]["matches"] == 1
+
+
 def test_public_data_api_endpoints_and_date_fallback(tmp_path: Path):
     service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
     service.save_web_fixtures(

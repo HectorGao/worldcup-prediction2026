@@ -4,39 +4,41 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Cup Prediction System</title>
-    <link rel="stylesheet" href="src/styles.css" />
+    <link rel="stylesheet" href="src/styles.css?v=20260625-top-tabs" />
   </head>
   <body>
     <div class="app-shell">
-      <aside class="rail">
-        <div class="brand-mark">
-          <span>WC</span>
-          <small>26</small>
-        </div>
-        <nav aria-label="主导航">
-          <a href="#today" class="active">今日</a>
-          <a href="#detail">单场</a>
-          <a href="#simulation">模拟</a>
-          <a href="#health">数据</a>
-        </nav>
-      </aside>
-
       <main>
         <header class="topbar">
-          <div>
-            <p class="eyebrow">Local-first prediction desk</p>
-            <h1>世界杯预测控制台</h1>
-            <div class="operator-strip" aria-label="系统状态">
-              <span><i></i> 15 分钟轮询</span>
-              <span>Dixon-Coles + Elo</span>
-              <span>阵容权重可调</span>
+          <div class="topbar-main">
+            <div class="brand-mark">
+              <span>WC</span>
+              <small>26</small>
+            </div>
+            <div>
+              <p class="eyebrow">Local-first prediction desk</p>
+              <h1>世界杯预测控制台</h1>
+              <div class="operator-strip" aria-label="系统状态">
+                <span><i></i> 15 分钟轮询</span>
+                <span>Dixon-Coles + Elo</span>
+                <span>阵容权重可调</span>
+              </div>
+            </div>
+            <div class="date-control">
+              <label for="match-date">比赛日</label>
+              <input id="match-date" type="date" value="2026-06-15" />
+              <button id="sync-button" class="icon-button" title="同步数据">↻</button>
             </div>
           </div>
-          <div class="date-control">
-            <label for="match-date">比赛日</label>
-            <input id="match-date" type="date" value="2026-06-15" />
-            <button id="sync-button" class="icon-button" title="同步数据">↻</button>
-          </div>
+          <nav class="top-tabs" aria-label="工作区选项卡">
+            <button class="active" data-view-tab="rounds" type="button">赛程总览</button>
+            <button data-view-tab="today" type="button">今日比赛</button>
+            <button data-view-tab="detail" type="button">单场预测</button>
+            <button data-view-tab="team-detail" type="button">球队详情</button>
+            <button data-view-tab="models" type="button">模拟排名</button>
+            <button data-view-tab="health" type="button">数据健康</button>
+            <button data-view-tab="report" type="button">中文日报</button>
+          </nav>
         </header>
 
         <div id="status" class="status-line" role="status">正在加载公开数据源...</div>
@@ -46,7 +48,22 @@
           <span>预测会随 15 分钟赛果轮询、赔率和已完赛结果更新。</span>
         </section>
 
-        <section id="today" class="layout">
+        <section id="rounds" class="panel rounds-panel view-panel active" data-view="rounds">
+          <div class="panel-head">
+            <div>
+              <h2>赛程总览</h2>
+              <span id="selected-round-title" class="panel-subhead">点击顶部卡片切换轮次</span>
+            </div>
+            <div class="button-row">
+              <button id="sync-reference-button">刷新参考数据</button>
+              <span id="round-count">等待同步</span>
+            </div>
+          </div>
+          <div id="round-tabs" class="round-tabs"></div>
+          <div id="round-matches" class="round-grid"></div>
+        </section>
+
+        <section id="today" class="layout view-panel" data-view="today">
           <div class="panel wide">
             <div class="panel-head">
               <h2>今日比赛</h2>
@@ -54,17 +71,25 @@
             </div>
             <div id="matches" class="match-list"></div>
           </div>
-
-          <div id="detail" class="panel detail-panel">
-            <div class="panel-head">
-              <h2>预测详情</h2>
-              <span id="selected-fixture">未选择</span>
-            </div>
-            <div id="prediction-detail" class="empty-state">选择一场比赛生成预测。</div>
-          </div>
         </section>
 
-        <section class="layout lower">
+        <section id="detail" class="panel detail-panel view-panel" data-view="detail">
+          <div class="panel-head">
+            <h2>预测详情</h2>
+            <span id="selected-fixture">未选择</span>
+          </div>
+          <div id="prediction-detail" class="empty-state">选择一场比赛生成预测。</div>
+        </section>
+
+        <section id="team-detail" class="panel team-detail-panel view-panel" data-view="team-detail">
+          <div class="panel-head">
+            <h2>球队本届世界杯详情</h2>
+            <span id="selected-team">点击比赛卡中的球队</span>
+          </div>
+          <div id="team-detail-view" class="empty-state">选择球队后显示本届世界杯赛程、比分、阵容和球员能力值。</div>
+        </section>
+
+        <section id="models" class="layout lower view-panel" data-view="models">
           <div id="simulation" class="panel">
             <div class="panel-head">
               <h2>模拟摘要</h2>
@@ -73,22 +98,6 @@
             <div id="simulation-summary" class="metric-grid"></div>
           </div>
 
-          <div id="health" class="panel">
-            <div class="panel-head">
-              <h2>数据健康</h2>
-              <div class="button-row">
-                <button id="validate-sources-button">校验数据源</button>
-                <button id="process-roster-button">补全阵容队列</button>
-              </div>
-            </div>
-            <div class="panel-subhead" id="cadence">轮询未知</div>
-            <div id="health-list" class="health-list"></div>
-            <div class="panel-subhead">阵容与球员统计</div>
-            <div id="roster-health" class="health-list"></div>
-          </div>
-        </section>
-
-        <section class="layout lower">
           <div class="panel">
             <div class="panel-head">
               <h2>球队 Elo 与近期权重</h2>
@@ -106,7 +115,22 @@
           </div>
         </section>
 
-        <section class="panel report-panel">
+        <section id="health" class="panel view-panel" data-view="health">
+          <div class="panel-head">
+            <h2>数据健康</h2>
+            <div class="button-row">
+              <button id="validate-sources-button">校验数据源</button>
+              <button id="process-roster-button">补全阵容队列</button>
+              <button id="public-roster-button">公开源补全</button>
+            </div>
+          </div>
+          <div class="panel-subhead" id="cadence">轮询未知</div>
+          <div id="health-list" class="health-list"></div>
+          <div class="panel-subhead">阵容与球员统计</div>
+          <div id="roster-health" class="health-list"></div>
+        </section>
+
+        <section id="report" class="panel report-panel view-panel" data-view="report">
           <div class="panel-head">
             <h2>中文日报</h2>
             <button id="report-button">生成日报</button>
@@ -115,6 +139,6 @@
         </section>
       </main>
     </div>
-    <script defer src="src/main.js"></script>
+    <script defer src="src/main.js?v=20260625-top-tabs"></script>
   </body>
 </html>

@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 import re
 from datetime import datetime, timezone
+from difflib import SequenceMatcher
 from typing import Any
+from unicodedata import normalize
 
 import httpx
 from dotenv import load_dotenv
@@ -15,6 +17,12 @@ API_FOOTBALL_BASE = "https://v3.football.api-sports.io"
 API_FOOTBALL_LINEUPS_URL = (
     "https://www.api-football.com/news/post/fifa-world-cup-2026-lineups-all-teams-coaches-and-players"
 )
+THESPORTSDB_BASE = "https://www.thesportsdb.com/api/v1/json"
+VERIFIED_PLAYER_ALIASES = {
+    ("england", "o watkins"): "Ollie Watkins",
+    ("uzbekistan", "o orunov"): "Oston Urunov",
+    ("uzbekistan", "a ganiyev"): "Azizjon Ganiev",
+}
 
 
 class ApiFootballRosterProvider:
@@ -227,25 +235,52 @@ class ApiFootballLineupsPageScraper:
         lines = [re.sub(r"\s+", " ", line).strip() for line in plain.splitlines()]
         lines = [line for line in lines if line]
         lower_team = team.lower()
-        start = next((index for index, line in enumerate(lines) if lower_team == line.lower()), -1)
+        start = next(
+            (
+                index
+                for index, line in enumerate(lines)
+                if line.lower() in {lower_team, f"{lower_team} squad list"}
+            ),
+            -1,
+        )
         window = lines[start : start + 90] if start >= 0 else []
         coach_line = next((line for line in window if "coach" in line.lower()), "")
         players: list[dict[str, Any]] = []
-        for index, line in enumerate(window):
-            if re.search(r"\b(goalkeeper|defender|midfielder|forward|attacker)\b", line, re.I):
-                name = window[index - 1] if index > 0 else line
-                if name and len(name) < 60:
-                    players.append(
-                        {
-                            "player_id": f"web-{team}-{len(players) + 1}",
-                            "name": name,
-                            "age": None,
-                            "number": None,
-                            "position": line,
-                            "photo": None,
-                            "source": "api-football-lineups-page",
-                        }
-                    )
+        for line in window:
+            category = self._category_for_line(line)
+            if not category:
+                if line.lower().endswith("squad list") and line != window[0]:
+                    break
+                continue
+            names = line.split(":", 1)[1] if ":" in line else ""
+            for name in self._split_names(names):
+                players.append(
+                    {
+                        "player_id": f"web-{team}-{len(players) + 1}",
+                        "name": name,
+                        "age": None,
+                        "number": None,
+                        "position": category,
+                        "photo": None,
+                        "source": "api-football-lineups-page",
+                    }
+                )
+        if not players:
+            for index, line in enumerate(window):
+                if re.search(r"\b(goalkeeper|defender|midfielder|forward|attacker)\b", line, re.I):
+                    name = window[index - 1] if index > 0 else line
+                    if name and len(name) < 60:
+                        players.append(
+                            {
+                                "player_id": f"web-{team}-{len(players) + 1}",
+                                "name": name,
+                                "age": None,
+                                "number": None,
+                                "position": self._position_from_text(line),
+                                "photo": None,
+                                "source": "api-football-lineups-page",
+                            }
+                        )
         return {
             "team": team,
             "team_id": None,
@@ -255,6 +290,180 @@ class ApiFootballLineupsPageScraper:
             "players": players,
             "fetched_at": datetime.now(timezone.utc).isoformat(),
         }
+
+    def _category_for_line(self, line: str) -> str | None:
+        label = line.split(":", 1)[0].strip().lower()
+        if label == "goalkeepers":
+            return "Goalkeeper"
+        if label == "defenders":
+            return "Defender"
+        if label == "midfielders":
+            return "Midfielder"
+        if label == "forwards":
+            return "Attacker"
+        return None
+
+    def _split_names(self, text: str) -> list[str]:
+        names = re.split(r"\s*[·•]\s*|\s*,\s*", text)
+        return [name.strip() for name in names if name.strip()]
+
+    def _position_from_text(self, text: str) -> str:
+        lower = text.lower()
+        if "goalkeeper" in lower:
+            return "Goalkeeper"
+        if "defender" in lower:
+            return "Defender"
+        if "forward" in lower or "attacker" in lower:
+            return "Attacker"
+        return "Midfielder"
+
+
+class TheSportsDBRosterProvider:
+    name = "TheSportsDB public player search"
+
+    def __init__(
+        self,
+        key: str = "123",
+        lineup_aliases: dict[str, list[dict[str, Any]]] | None = None,
+    ):
+        self.key = key
+        self.lineup_aliases = lineup_aliases or {}
+        self.lineup_scraper = ApiFootballLineupsPageScraper()
+
+    def configured(self) -> bool:
+        return bool(self.key)
+
+    def enrich_player(self, player: dict[str, Any], team: str) -> dict[str, Any]:
+        candidate = self._candidate_name(player, team)
+        payload = self._get("searchplayers.php", {"p": candidate})
+        matches = payload.get("player") or []
+        best = self._best_player_match(matches, candidate, team)
+        if not best:
+            return {
+                "player_id": player["player_id"],
+                "name": candidate,
+                "season": None,
+                "stats_status": "failed",
+                "last_error": "TheSportsDB player search returned no trusted match",
+                "source": "thesportsdb",
+            }
+        team_payload = self._lookup_team(best.get("idTeam"))
+        return {
+            "player_id": player["player_id"],
+            "external_player_id": best.get("idPlayer"),
+            "name": best.get("strPlayer") or candidate,
+            "season": 2026,
+            "club": best.get("strTeam"),
+            "club_id": best.get("idTeam"),
+            "league": team_payload.get("strLeague"),
+            "league_id": team_payload.get("idLeague"),
+            "league_country": team_payload.get("strCountry"),
+            "position": best.get("strPosition") or player.get("position"),
+            "appearances": 0,
+            "starts": 0,
+            "minutes": 0,
+            "rating": None,
+            "goals": 0,
+            "assists": 0,
+            "passes": 0,
+            "key_passes": 0,
+            "tackles": 0,
+            "interceptions": 0,
+            "saves": 0,
+            "photo": best.get("strThumb") or best.get("strCutout"),
+            "stats_status": "enriched",
+            "source": "thesportsdb",
+            "source_confidence": self._confidence(best, candidate, team),
+            "last_error": None,
+        }
+
+    def validate(self) -> dict[str, Any]:
+        try:
+            payload = self._get("searchplayers.php", {"p": "Cristiano Ronaldo"})
+            count = len(payload.get("player") or [])
+            return _validation_result(
+                self.name,
+                configured=True,
+                reachable=True,
+                auth_valid=count > 0,
+                sample_count=count,
+            )
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            return _validation_result(self.name, configured=True, last_error=_safe_error(str(exc)))
+
+    def _candidate_name(self, player: dict[str, Any], team: str) -> str:
+        name = str(player.get("name") or "")
+        if not _looks_abbreviated(name):
+            return name
+        for candidate in self._lineup_players(team):
+            candidate_name = str(candidate.get("name") or "")
+            if not candidate_name:
+                continue
+            if _last_name(candidate_name) == _last_name(name):
+                return candidate_name
+        alias = VERIFIED_PLAYER_ALIASES.get((_normalized(team), _normalized(name)))
+        if alias:
+            return alias
+        return name
+
+    def _lineup_players(self, team: str) -> list[dict[str, Any]]:
+        if team in self.lineup_aliases:
+            return self.lineup_aliases[team]
+        try:
+            squad = self.lineup_scraper.fetch_squad(team)
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            self.lineup_aliases[team] = []
+            return []
+        self.lineup_aliases[team] = squad.get("players", [])
+        return self.lineup_aliases[team]
+
+    def _best_player_match(
+        self,
+        players: list[dict[str, Any]],
+        candidate: str,
+        team: str,
+    ) -> dict[str, Any] | None:
+        soccer_players = [
+            player
+            for player in players
+            if not player.get("strSport") or player.get("strSport") == "Soccer"
+        ]
+        if not soccer_players:
+            return None
+        return max(
+            soccer_players,
+            key=lambda player: (
+                self._team_match(player, team),
+                _name_similarity(player.get("strPlayer"), candidate),
+                float(player.get("relevance") or 0),
+            ),
+        )
+
+    def _team_match(self, player: dict[str, Any], team: str) -> float:
+        nationality = _normalized(player.get("strNationality"))
+        return 1.0 if nationality == _normalized(team) else 0.0
+
+    def _lookup_team(self, team_id: str | None) -> dict[str, Any]:
+        if not team_id:
+            return {}
+        payload = self._get("lookupteam.php", {"id": team_id})
+        teams = payload.get("teams") or []
+        return teams[0] if teams else {}
+
+    def _confidence(self, player: dict[str, Any], candidate: str, team: str) -> float:
+        base = 0.52
+        base += 0.25 * _name_similarity(player.get("strPlayer"), candidate)
+        base += 0.18 * self._team_match(player, team)
+        return round(min(0.95, base), 4)
+
+    def _get(self, endpoint: str, params: dict[str, Any]) -> dict[str, Any]:
+        response = httpx.get(
+            f"{THESPORTSDB_BASE}/{self.key}/{endpoint}",
+            params=params,
+            timeout=20,
+        )
+        response.raise_for_status()
+        return response.json()
 
 
 def _validation_result(
@@ -293,3 +502,23 @@ def _safe_error(message: str) -> str:
         if key:
             message = message.replace(key, "[redacted]")
     return message
+
+
+def _looks_abbreviated(name: str) -> bool:
+    return bool(re.match(r"^[A-Z]\.\s+\S+", name))
+
+
+def _last_name(name: str) -> str:
+    parts = _normalized(name).split()
+    return parts[-1] if parts else ""
+
+
+def _normalized(value: Any) -> str:
+    text = normalize("NFKD", str(value or ""))
+    text = "".join(character for character in text if not re.match(r"[\u0300-\u036f]", character))
+    text = re.sub(r"[^a-z0-9]+", " ", text.lower())
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _name_similarity(left: Any, right: Any) -> float:
+    return SequenceMatcher(None, _normalized(left), _normalized(right)).ratio()
