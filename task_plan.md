@@ -4,7 +4,7 @@
 Improve the World Cup prediction system so decisions ignore matches older than 16 years and current-match roster/player strength coverage is materially improved through verified free/public data sources, with persistent evidence and progress tracked on disk.
 
 ## Current Phase
-Phase 7 complete
+Phase 8 complete
 
 ## Phases
 
@@ -59,6 +59,23 @@ Phase 7 complete
 - [x] Run tests and browser smoke checks.
 - **Status:** complete
 
+### Phase 8: Odds, XGBoost, Adaptive Learning, and Betting Product Layer
+- [x] Add Market bundle output for 1X2, handicap placeholder, and totals availability.
+- [x] Expose `market_probability_no_vig`, overround, and explicit unavailable-market shape for odds output.
+- [x] Add XGBoost-compatible model layer with deterministic local fallback when `xgboost` is not installed.
+- [x] Add rolling World Cup learning adjustment with future-data leakage guard.
+- [x] Add configurable Monte Carlo simulation count in API and UI.
+- [x] Add betting recommendations, Kelly fractions, confidence, and dynamic risk warnings.
+- [x] Add compact UI cards/chips/bars for odds, model-vs-market edge, XGBoost, and Kelly risk.
+- [x] Show `value bet` and `market efficient` labels in daily Market vs Model edge chips.
+- [x] Add tests for XGBoost stability, market fallback, Monte Carlo simulation count, and no future leakage.
+- [x] Run full backend tests and Chrome smoke test after service restart.
+- [x] Add China Sporttery odds parser/provider as an opt-in public-web fallback when The Odds API has no World Cup market.
+- [x] Add optional Betfair Exchange provider with health validation and parser coverage for 1X2, Asian handicap, and Over/Under 2.5.
+- [x] Replace the deterministic-only XGBoost adapter with a trainable model layer: real `xgboost` when optional dependency is installed, trainable softmax fallback otherwise.
+- [x] Add daily persisted model-weight recalibration from completed-match scoring metrics.
+- **Status:** complete
+
 ## Key Questions
 1. Where is the current historical-data date window enforced, if at all?
 2. Which roster/player fields are missing because API-Football free season data is unavailable?
@@ -76,6 +93,10 @@ Phase 7 complete
 | Limit public enrichment batches to 10 players | TheSportsDB free tier is 30 requests/minute and each player can require search + team lookup. |
 | Prefer lyihub fixtures over older fallback fixtures on dates where lyihub data exists | Prevent stale Wikipedia fallback rows from polluting dated match cards, actual scores, and accuracy. |
 | Treat lyihub squad coverage and ability coverage separately | 48 teams have full 26-player squads; some source records lack ability fields, so the health report must show strict ability gaps instead of inventing values. |
+| Use a trainable XGBoost-compatible layer with optional real `xgboost` | The current local venv does not include `xgboost`; the system now trains a local softmax fallback on the same feature rows and will use `xgboost.XGBClassifier` automatically when the optional dependency is installed. |
+| Keep Market as a formal ensemble source and expose unavailable handicap explicitly | The Odds API may not return World Cup handicap markets; UI should show `盘口不可用` instead of hiding the market. |
+| Filter completed-match learning samples strictly before fixture date | Prevents future World Cup results from leaking into earlier predictions. |
+| Keep Betfair optional and secret-driven | Betfair requires an app key and session token; live access is enabled only when `BETFAIR_APP_KEY` and `BETFAIR_SESSION_TOKEN` exist in `.env`. |
 
 ## Errors Encountered
 | Error | Attempt | Resolution |
@@ -84,6 +105,9 @@ Phase 7 complete
 | TheSportsDB 429 Too Many Requests | 1 | Reduced public enrichment batch size to 10 and left failed items retryable. |
 | `data/worldcup.db` did not contain roster tables | 1 | Confirmed FastAPI uses `data/worldcup.sqlite3`; final verification uses the service database. |
 | Two Uzbekistan players could not be matched by TheSportsDB | 1 | Verified API-Football 2024 player statistics for Abdulla Abdullayev and Behruzjon Karimov, reset the exhausted queue item once, and processed both through the API-Football queue. |
+| `xgboost` package missing in local venv | 1 | Added a trainable fallback layer and optional `ml` dependency for real `xgboost`. |
+| Ensemble weights rounded to 0.999999 in tests | 1 | Preserve raw normalized weights instead of rounding them in the API payload. |
+| Betfair official docs entry returned a regional `Restricted` page | 1 | Added the provider from the standard Exchange JSON-RPC shape, marked it optional, and documented that live validation needs valid Betfair credentials. |
 
 ## Notes
 - User requirement: matches older than 16 years must not participate in decisions.

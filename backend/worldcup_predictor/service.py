@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -22,8 +22,20 @@ from .prediction.dixon_coles import (
     top_scorelines,
     totals_probability,
 )
-from .prediction.metrics import evaluate_result
+from .prediction.ensemble import EnsembleConfig, blend_probabilities
+from .prediction.learning import apply_learning_to_lambdas, rolling_worldcup_adjustment
+from .prediction.market import analyze_value, market_bundle, market_from_decimal_odds, unavailable_market
+from .prediction.metrics import actual_outcome, evaluate_result
+from .prediction.monte_carlo import MonteCarloConfig, simulate_match
 from .prediction.odds import devig
+from .prediction.poisson_model import PoissonModelConfig, estimate_poisson_prediction, poisson_score_matrix
+from .prediction.xgboost_model import (
+    build_features,
+    estimate_xgboost_prediction,
+    monte_carlo_feature_proxy,
+    train_xgboost_layer,
+)
+from .prediction.weight_calibration import calibrate_model_weights, default_weight_run
 from .roster_strength import USABLE_STATUSES, aggregate_team_strength, player_strength
 from .team_metadata import display_team, enrich_fixture, enrich_profile
 
@@ -36,6 +48,9 @@ class WorldCupService:
         self.roster_provider = ApiFootballRosterProvider()
         self.public_roster_provider = TheSportsDBRosterProvider()
         self.lyihub_scraper = LyihubWorldCupScraper()
+        self.poisson_config = PoissonModelConfig()
+        self.monte_carlo_config = MonteCarloConfig()
+        self._xgboost_model_cache: dict[str, Any] = {}
 
     def sync_date(self, date: str) -> dict[str, Any]:
         source, fixtures = self.providers.fetch_fixtures(date)
@@ -106,10 +121,17 @@ class WorldCupService:
         past_or_today = [date for date in dates if date <= requested_date]
         return past_or_today[-1] if past_or_today else dates[0]
 
-    def predict_fixture(self, fixture_id: str, roster_weight: float = 0.25) -> dict[str, Any]:
+    def predict_fixture(
+        self,
+        fixture_id: str,
+        roster_weight: float = 0.25,
+        simulations: int | None = None,
+    ) -> dict[str, Any]:
         fixture = self.db.get_fixture(fixture_id)
         if not fixture:
             fixture = self.db.get_web_fixture(fixture_id)
+        if not fixture:
+            fixture = self.db.get_lyihub_match_by_fixture(fixture_id)
         if not fixture:
             raise KeyError(f"Unknown fixture: {fixture_id}")
 
@@ -129,6 +151,8 @@ class WorldCupService:
         )
         baseline_matrix = self._score_matrix_from_inputs(home_xg, away_xg, model_inputs)
         baseline_outcomes = outcome_probabilities(baseline_matrix)
+        market_payload = self._market_payload(fixture)
+        odds_markets = self._odds_markets(fixture, market_payload)
         market = self._market_probabilities(fixture)
         totals_market = self._totals_market(fixture)
         calibrated_matrix = (
@@ -142,11 +166,73 @@ class WorldCupService:
             else baseline_matrix
         )
         calibrated_outcomes = outcome_probabilities(calibrated_matrix)
-        probabilities = {
-            "home": calibrated_outcomes.home,
-            "draw": calibrated_outcomes.draw,
-            "away": calibrated_outcomes.away,
+        recent_matches = self._recent_match_inputs(as_of=fixture.get("date"))
+        poisson = estimate_poisson_prediction(
+            fixture,
+            home_profile,
+            away_profile,
+            recent_matches,
+            config=self.poisson_config,
+        )
+        learning_adjustment = rolling_worldcup_adjustment(fixture=fixture, completed_matches=recent_matches)
+        poisson = self._apply_learning_adjustment_to_poisson(poisson, learning_adjustment)
+        poisson = self._apply_roster_adjustment_to_poisson(poisson, model_inputs)
+        mc_config = MonteCarloConfig(
+            simulations=max(100, min(50_000, int(simulations or self.monte_carlo_config.simulations))),
+            seed=self.monte_carlo_config.seed,
+        )
+        monte_carlo = simulate_match(
+            poisson["lambda_home"],
+            poisson["lambda_away"],
+            config=mc_config,
+        )
+        elo = {
+            "home": baseline_outcomes.home,
+            "draw": baseline_outcomes.draw,
+            "away": baseline_outcomes.away,
+            "calibrated": {
+                "home": calibrated_outcomes.home,
+                "draw": calibrated_outcomes.draw,
+                "away": calibrated_outcomes.away,
+            },
+            "expected_goals": expected_goals(calibrated_matrix),
+            "top_scorelines": top_scorelines(calibrated_matrix, limit=6),
         }
+        xgboost = estimate_xgboost_prediction(
+            fixture=fixture,
+            home_profile=home_profile,
+            away_profile=away_profile,
+            poisson=poisson,
+            monte_carlo=monte_carlo,
+            market=market_payload,
+            roster_strength=roster_strength,
+            learning_adjustment=learning_adjustment,
+            trained_model=self._trained_xgboost_for_date(str(fixture.get("date") or "")),
+        )
+        model_weight_run = self.model_weights_for_date(str(fixture.get("date") or ""))
+        ensemble = blend_probabilities(
+            elo={key: elo[key] for key in ("home", "draw", "away")},
+            poisson=poisson,
+            monte_carlo=monte_carlo,
+            market=market_payload,
+            xgboost=xgboost,
+            config=EnsembleConfig(weights=model_weight_run["weights"]),
+        )
+        probabilities = {
+            "home": ensemble["home"],
+            "draw": ensemble["draw"],
+            "away": ensemble["away"],
+        }
+        risk_warnings = self._dynamic_risk_warnings(
+            market_payload=market_payload,
+            ensemble=ensemble,
+            poisson=poisson,
+            xgboost=xgboost,
+            model_inputs=model_inputs,
+            roster_strength=roster_strength,
+            learning_adjustment=learning_adjustment,
+        )
+        value_analysis = analyze_value(probabilities, market_payload, risk_warnings=risk_warnings)
         evaluation = None
         if fixture["status"] == "final" and fixture["home_score"] is not None:
             evaluation = evaluate_result(probabilities, fixture["home_score"], fixture["away_score"])
@@ -155,9 +241,12 @@ class WorldCupService:
             "fixture": self._fixture_response(fixture),
             "source_status": self.data_source_health(),
             "probabilities": probabilities,
-            "expected_goals": expected_goals(calibrated_matrix),
-            "score_matrix": self._serialize_score_matrix(calibrated_matrix),
-            "top_scorelines": top_scorelines(calibrated_matrix, limit=6),
+            "expected_goals": {
+                "home": poisson["lambda_home"],
+                "away": poisson["lambda_away"],
+            },
+            "score_matrix": poisson["score_matrix"],
+            "top_scorelines": poisson["scorelines"],
             "model_inputs": model_inputs,
             "roster_strength": roster_strength,
             "roster_weight": roster_weight,
@@ -169,18 +258,23 @@ class WorldCupService:
                 "home": roster_strength["home"].get("missing_player_stats", 0),
                 "away": roster_strength["away"].get("missing_player_stats", 0),
             },
-            "btts": btts_probability(calibrated_matrix),
+            "btts": poisson["btts"],
             "totals": {
-                "1.5": totals_probability(calibrated_matrix, 1.5),
-                "2.5": totals_probability(calibrated_matrix, 2.5),
-                "3.5": totals_probability(calibrated_matrix, 3.5),
+                "1.5": totals_probability(self._matrix_from_serialized(poisson["score_matrix"]), 1.5),
+                "2.5": {"over": poisson["over_2_5"], "under": poisson["under_2_5"]},
+                "3.5": totals_probability(self._matrix_from_serialized(poisson["score_matrix"]), 3.5),
             },
             "model_blend_weights": {
-                "dixon_coles_elo": 0.65 if market else 1.0,
+                "dixon_coles_elo": ensemble["weights"].get("elo", 0.0),
+                "poisson": ensemble["weights"].get("poisson", 0.0),
+                "monte_carlo": ensemble["weights"].get("monte_carlo", 0.0),
+                "market": ensemble["weights"].get("market", 0.0),
+                "xgboost": ensemble["weights"].get("xgboost", 0.0),
                 "market_calibration": 0.35 if market else 0.0,
                 "llm_vote": 0.0,
                 "llm_vote_cap": 0.15,
             },
+            "model_weight_run": model_weight_run,
             "market_alignment": {
                 "available": bool(market),
                 "totals_available": bool(totals_market),
@@ -192,13 +286,25 @@ class WorldCupService:
                     "away": baseline_outcomes.away,
                 },
             },
+            "odds_data_status": self._odds_data_status(fixture, market_payload, odds_markets),
+            "elo": elo,
+            "poisson": poisson,
+            "monte_carlo": monte_carlo,
+            "market": market_payload,
+            "market_available": bool(market_payload.get("available")),
+            "odds_markets": odds_markets,
+            "xgboost": xgboost,
+            "ensemble": ensemble,
+            "value_analysis": value_analysis,
+            "betting_recommendations": value_analysis.get("recommended_options", []),
+            "learning": learning_adjustment,
             "llm_vote_audit": {
                 "enabled": False,
                 "weight_cap": 0.15,
                 "votes": [],
                 "note": "多模型投票接口已预留；未配置模型 API 时不影响数值预测。",
             },
-            "chinese_report": self._report_for_fixture(fixture, probabilities, calibrated_matrix),
+            "chinese_report": self._report_for_top_scorelines(fixture, probabilities, poisson["scorelines"], ensemble, value_analysis),
             "post_match_evaluation": evaluation,
         }
         self.db.save_prediction(fixture_id, payload)
@@ -206,7 +312,9 @@ class WorldCupService:
 
     def get_prediction(self, fixture_id: str) -> dict[str, Any]:
         prediction = self.db.get_prediction(fixture_id)
-        return prediction or self.predict_fixture(fixture_id)
+        if prediction and prediction.get("ensemble") and prediction.get("poisson") and prediction.get("xgboost"):
+            return prediction
+        return self.predict_fixture(fixture_id)
 
     def sync_squad(self, team: str) -> dict[str, Any]:
         squad = self.roster_provider.fetch_squad(team)
@@ -303,13 +411,26 @@ class WorldCupService:
             "source": self.public_roster_provider.name,
         }
 
-    def get_team_squad(self, team: str) -> dict[str, Any]:
+    def get_team_squad(self, team: str, allow_empty: bool = False) -> dict[str, Any]:
         squad = self.db.get_team_squad(team)
         if not squad:
+            if allow_empty:
+                display = display_team(team)
+                return {
+                    "team": team,
+                    "team_zh": display["zh"],
+                    "flag": display["flag"],
+                    "available": False,
+                    "coach": None,
+                    "players": [],
+                    "coverage": 0.0,
+                    "source": None,
+                }
             raise KeyError(f"Unknown squad: {team}")
         players = squad.get("players", [])
         completed = len([player for player in players if player.get("stats_status") in USABLE_STATUSES])
         squad["coverage"] = round(completed / len(players), 4) if players else 0.0
+        squad["available"] = True
         return squad
 
     def get_team_strength(self, team: str, allow_empty: bool = False) -> dict[str, Any]:
@@ -354,6 +475,156 @@ class WorldCupService:
             "fields": ["club", "league", "position", "photo", "source_confidence"],
         }
         return health
+
+    def recalibrate_model_weights(self, date: str) -> dict[str, Any]:
+        samples = self.db.completed_prediction_samples_before(date)
+        run = calibrate_model_weights(samples, as_of=date)
+        self.db.save_model_weight_run(date, run)
+        return run
+
+    def model_weights_for_date(self, date: str) -> dict[str, Any]:
+        if not date:
+            return default_weight_run("", reason="fixture date missing")
+        existing = self.db.latest_model_weight_run(date)
+        if existing:
+            return existing
+        return self.recalibrate_model_weights(date)
+
+    def _trained_xgboost_for_date(self, date: str) -> Any | None:
+        if not date:
+            return None
+        if date not in self._xgboost_model_cache:
+            samples = self._xgboost_training_samples(date)
+            self._xgboost_model_cache[date] = train_xgboost_layer(samples)
+        return self._xgboost_model_cache[date]
+
+    def _xgboost_training_samples(self, as_of: str) -> list[dict[str, Any]]:
+        completed_matches = sorted(
+            [
+                match
+                for match in self._recent_match_inputs(as_of=as_of)
+                if match.get("home_score") is not None and match.get("away_score") is not None
+            ],
+            key=lambda item: str(item.get("date") or ""),
+        )
+        if not completed_matches:
+            return []
+        profiles = {profile["team"]: profile for profile in self.team_rankings()}
+        samples = []
+        training_window = completed_matches[-180:]
+        for index, match in enumerate(training_window):
+            match_date = str(match.get("date") or "")[:10]
+            fixture = {
+                "id": f"training-{match_date}-{match.get('home_team')}-{match.get('away_team')}",
+                "date": match_date,
+                "home_team": match["home_team"],
+                "away_team": match["away_team"],
+                "group": match.get("tournament") or match.get("stage") or "training",
+                "home_elo": profiles.get(match["home_team"], {}).get("elo", 1700),
+                "away_elo": profiles.get(match["away_team"], {}).get("elo", 1700),
+            }
+            home_profile = dict(profiles.get(match["home_team"], {}))
+            away_profile = dict(profiles.get(match["away_team"], {}))
+            home_profile.setdefault("team", match["home_team"])
+            away_profile.setdefault("team", match["away_team"])
+            home_profile.setdefault("elo", fixture["home_elo"])
+            away_profile.setdefault("elo", fixture["away_elo"])
+            prior = training_window[:index]
+            poisson = self._fast_training_poisson_proxy(
+                fixture,
+                home_profile,
+                away_profile,
+                prior,
+            )
+            learning_adjustment = rolling_worldcup_adjustment(
+                fixture=fixture,
+                completed_matches=prior,
+            )
+            features = build_features(
+                fixture=fixture,
+                home_profile=home_profile,
+                away_profile=away_profile,
+                poisson=poisson,
+                monte_carlo=monte_carlo_feature_proxy(poisson),
+                market=None,
+                roster_strength={
+                    "home": {"attack_strength": 70, "defense_gk_strength": 70},
+                    "away": {"attack_strength": 70, "defense_gk_strength": 70},
+                },
+                learning_adjustment=learning_adjustment,
+            )
+            samples.append(
+                {
+                    "date": match_date,
+                    "fixture_id": fixture["id"],
+                    "features": features,
+                    "outcome": actual_outcome(int(match["home_score"]), int(match["away_score"])),
+                }
+            )
+        return samples
+
+    def _fast_training_poisson_proxy(
+        self,
+        fixture: dict[str, Any],
+        home_profile: dict[str, Any],
+        away_profile: dict[str, Any],
+        prior_matches: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        home_recent = self._recent_team_goal_rates(fixture["home_team"], prior_matches)
+        away_recent = self._recent_team_goal_rates(fixture["away_team"], prior_matches)
+        avg_goals = self.poisson_config.avg_team_goals
+        home_attack = 0.58 * float(home_profile.get("attack_rating") or avg_goals) + 0.42 * home_recent["for"]
+        away_attack = 0.58 * float(away_profile.get("attack_rating") or avg_goals) + 0.42 * away_recent["for"]
+        home_defense_allowed = 0.58 * float(home_profile.get("defense_rating") or avg_goals) + 0.42 * home_recent["against"]
+        away_defense_allowed = 0.58 * float(away_profile.get("defense_rating") or avg_goals) + 0.42 * away_recent["against"]
+        home_elo = float(home_profile.get("elo") or fixture.get("home_elo") or 1700)
+        away_elo = float(away_profile.get("elo") or fixture.get("away_elo") or 1700)
+        home_elo_factor = self._clamp(math.exp((home_elo - away_elo) / 950), 0.78, 1.28)
+        away_elo_factor = self._clamp(math.exp((away_elo - home_elo) / 950), 0.78, 1.28)
+        home_lambda = self._clamp(
+            avg_goals * (home_attack / avg_goals) * (away_defense_allowed / avg_goals) * home_elo_factor,
+            self.poisson_config.min_lambda,
+            self.poisson_config.max_lambda,
+        )
+        away_lambda = self._clamp(
+            avg_goals * (away_attack / avg_goals) * (home_defense_allowed / avg_goals) * away_elo_factor,
+            self.poisson_config.min_lambda,
+            self.poisson_config.max_lambda,
+        )
+        matrix = poisson_score_matrix(home_lambda, away_lambda, max_goals=5)
+        outcomes = outcome_probabilities(matrix)
+        return {
+            "lambda_home": round(home_lambda, 4),
+            "lambda_away": round(away_lambda, 4),
+            "home_win": outcomes.home,
+            "draw": outcomes.draw,
+            "away_win": outcomes.away,
+        }
+
+    def _recent_team_goal_rates(self, team: str, matches: list[dict[str, Any]], limit: int = 10) -> dict[str, float]:
+        relevant = [
+            match
+            for match in reversed(matches)
+            if team in {match.get("home_team"), match.get("away_team")}
+            and match.get("home_score") is not None
+            and match.get("away_score") is not None
+        ][:limit]
+        if not relevant:
+            return {"for": self.poisson_config.avg_team_goals, "against": self.poisson_config.avg_team_goals}
+        goals_for = goals_against = weight_sum = 0.0
+        for offset, match in enumerate(relevant):
+            weight = 0.82**offset
+            if match.get("home_team") == team:
+                goals_for += float(match["home_score"]) * weight
+                goals_against += float(match["away_score"]) * weight
+            else:
+                goals_for += float(match["away_score"]) * weight
+                goals_against += float(match["home_score"]) * weight
+            weight_sum += weight
+        return {
+            "for": goals_for / weight_sum,
+            "against": goals_against / weight_sum,
+        }
 
     def match_analysis(self, fixture_id: str) -> dict[str, Any]:
         prediction = self.get_prediction(fixture_id)
@@ -605,15 +876,86 @@ class WorldCupService:
         }
 
     def _market_probabilities(self, fixture: dict[str, Any]) -> dict[str, float] | None:
-        if not fixture.get("market_home"):
+        payload = self._market_payload(fixture)
+        if not payload.get("available"):
             return None
-        return devig(
+        return payload.get("market_probability_no_vig") or payload.get("implied_probability_no_vig")
+
+    def _market_payload(self, fixture: dict[str, Any]) -> dict[str, Any]:
+        if not fixture.get("market_home") or not fixture.get("market_draw") or not fixture.get("market_away"):
+            return unavailable_market("盘口未配置，或 The Odds API / Betfair / China Sporttery 当前没有该比赛市场。")
+        return market_from_decimal_odds(
             {
                 "home": fixture["market_home"],
                 "draw": fixture["market_draw"],
                 "away": fixture["market_away"],
-            }
+            },
+            provider=str(fixture.get("market_source") or "the_odds_api"),
+            market_key="h2h",
         )
+
+    def _odds_markets(self, fixture: dict[str, Any], h2h_market: dict[str, Any]) -> dict[str, Any]:
+        totals = None
+        if fixture.get("market_over_2_5") and fixture.get("market_under_2_5"):
+            totals = market_from_decimal_odds(
+                {
+                    "over": fixture["market_over_2_5"],
+                    "under": fixture["market_under_2_5"],
+                },
+                provider=str(fixture.get("market_source") or "the_odds_api"),
+                market_key="totals_2_5",
+            )
+        handicap = unavailable_market("让球胜平负盘口不可用：当前数据源未返回 handicap market。")
+        if fixture.get("market_handicap"):
+            handicap_payload = fixture.get("market_handicap")
+            if isinstance(handicap_payload, str):
+                try:
+                    import json
+
+                    handicap_payload = json.loads(handicap_payload)
+                except (TypeError, ValueError):
+                    handicap_payload = None
+            if isinstance(handicap_payload, dict) and {"home", "draw", "away"} <= set(handicap_payload):
+                handicap = market_from_decimal_odds(
+                    {
+                        "home": handicap_payload["home"],
+                        "draw": handicap_payload["draw"],
+                        "away": handicap_payload["away"],
+                    },
+                    provider=str(fixture.get("market_source") or "the_odds_api"),
+                    market_key="handicap_1x2",
+                )
+                handicap["line"] = fixture.get("market_handicap_line")
+        return market_bundle(
+            h2h=h2h_market,
+            handicap=handicap,
+            totals=totals,
+        )
+
+    def _odds_data_status(
+        self,
+        fixture: dict[str, Any],
+        h2h_market: dict[str, Any],
+        odds_markets: dict[str, Any],
+    ) -> dict[str, Any]:
+        providers = [
+            provider
+            for provider in self.providers.health()
+            if provider.get("role") in {"odds_paid", "odds_optional_exchange", "official_cn_odds_public_web_fallback"}
+        ]
+        available_markets = [
+            key
+            for key in ("h2h", "handicap", "totals")
+            if (odds_markets.get(key) or {}).get("available")
+        ]
+        return {
+            "market_available": bool(h2h_market.get("available")),
+            "source": fixture.get("market_source") or h2h_market.get("provider"),
+            "available_markets": available_markets,
+            "providers": providers,
+            "reason": None if h2h_market.get("available") else h2h_market.get("reason"),
+            "sporttery_priority_note": "China Sporttery overrides other odds if live access is enabled and a match is found.",
+        }
 
     def _totals_market(self, fixture: dict[str, Any]) -> dict[str, float] | None:
         if not fixture.get("market_over_2_5") or not fixture.get("market_under_2_5"):
@@ -815,6 +1157,82 @@ class WorldCupService:
     ) -> dict[tuple[Any, Any], float]:
         return score_matrix(home_xg=home_xg, away_xg=away_xg, rho=model_inputs.get("rho", -0.025), max_goals=7)
 
+    def _apply_learning_adjustment_to_poisson(
+        self,
+        poisson: dict[str, Any],
+        learning_adjustment: dict[str, Any],
+    ) -> dict[str, Any]:
+        if not learning_adjustment.get("available"):
+            return poisson
+        home_lambda, away_lambda = apply_learning_to_lambdas(
+            float(poisson["lambda_home"]),
+            float(poisson["lambda_away"]),
+            learning_adjustment,
+            min_lambda=self.poisson_config.min_lambda,
+            max_lambda=self.poisson_config.max_lambda,
+        )
+        matrix = poisson_score_matrix(home_lambda, away_lambda, max_goals=self.poisson_config.max_goals)
+        outcomes = outcome_probabilities(matrix)
+        totals = totals_probability(matrix, 2.5)
+        adjusted = dict(poisson)
+        adjusted.update(
+            {
+                "lambda_home": round(home_lambda, 4),
+                "lambda_away": round(away_lambda, 4),
+                "home_win": outcomes.home,
+                "draw": outcomes.draw,
+                "away_win": outcomes.away,
+                "over_2_5": totals["over"],
+                "under_2_5": totals["under"],
+                "btts": btts_probability(matrix),
+                "scorelines": top_scorelines(matrix, limit=6),
+                "score_matrix": self._serialize_score_matrix(matrix),
+                "tail_probability": matrix.get((f"{self.poisson_config.max_goals + 1}+", f"{self.poisson_config.max_goals + 1}+"), 0.0),
+            }
+        )
+        adjusted.setdefault("model_explanation", {})["learning_adjustment"] = learning_adjustment
+        return adjusted
+
+    def _apply_roster_adjustment_to_poisson(
+        self,
+        poisson: dict[str, Any],
+        model_inputs: dict[str, Any],
+    ) -> dict[str, Any]:
+        adjustment = model_inputs.get("roster_adjustment") or {}
+        if not adjustment.get("available"):
+            return poisson
+        home_lambda = self._clamp(
+            float(poisson["lambda_home"]) * float(adjustment.get("home_xg_multiplier") or 1.0),
+            self.poisson_config.min_lambda,
+            self.poisson_config.max_lambda,
+        )
+        away_lambda = self._clamp(
+            float(poisson["lambda_away"]) * float(adjustment.get("away_xg_multiplier") or 1.0),
+            self.poisson_config.min_lambda,
+            self.poisson_config.max_lambda,
+        )
+        matrix = poisson_score_matrix(home_lambda, away_lambda, max_goals=self.poisson_config.max_goals)
+        outcomes = outcome_probabilities(matrix)
+        totals = totals_probability(matrix, 2.5)
+        adjusted = dict(poisson)
+        adjusted.update(
+            {
+                "lambda_home": round(home_lambda, 4),
+                "lambda_away": round(away_lambda, 4),
+                "home_win": outcomes.home,
+                "draw": outcomes.draw,
+                "away_win": outcomes.away,
+                "over_2_5": totals["over"],
+                "under_2_5": totals["under"],
+                "btts": btts_probability(matrix),
+                "scorelines": top_scorelines(matrix, limit=6),
+                "score_matrix": self._serialize_score_matrix(matrix),
+                "tail_probability": matrix.get((f"{self.poisson_config.max_goals + 1}+", f"{self.poisson_config.max_goals + 1}+"), 0.0),
+            }
+        )
+        adjusted.setdefault("model_explanation", {})["roster_adjustment"] = adjustment
+        return adjusted
+
     def _regressed_factor(self, value: float, average: float, weighted_matches: float) -> float:
         confidence = min(1.0, max(0.0, weighted_matches / 30))
         return ((confidence * value) + ((1 - confidence) * average)) / average
@@ -836,6 +1254,78 @@ class WorldCupService:
 
     def _clamp(self, value: float, low: float, high: float) -> float:
         return min(high, max(low, value))
+
+    def _recent_match_inputs(self, as_of: str | None = None) -> list[dict[str, Any]]:
+        since = None
+        if as_of:
+            try:
+                since = (datetime.fromisoformat(str(as_of)[:10]) - timedelta(days=400)).date().isoformat()
+            except ValueError:
+                since = None
+        matches = [
+            {
+                "date": row["date"],
+                "home_team": row["home_team"],
+                "away_team": row["away_team"],
+                "home_score": row["home_score"],
+                "away_score": row["away_score"],
+                "tournament": row.get("tournament") or "historical",
+                "source_name": "historical_matches",
+            }
+            for row in self.db.list_historical_matches(since=since)
+        ]
+        matches.extend(
+            {
+                "date": row["date"],
+                "home_team": row["home_team"],
+                "away_team": row["away_team"],
+                "home_score": row.get("home_score"),
+                "away_score": row.get("away_score"),
+                "tournament": row.get("stage") or "World Cup",
+                "source_name": row.get("source_name") or "lyihub_worldcup_static_json",
+            }
+            for row in self.db.list_lyihub_matches()
+            if row.get("status") == "final" and row.get("home_score") is not None and row.get("away_score") is not None
+        )
+        if not as_of:
+            return matches
+        return [match for match in matches if str(match.get("date") or "") < as_of]
+
+    def _dynamic_risk_warnings(
+        self,
+        *,
+        market_payload: dict[str, Any],
+        ensemble: dict[str, Any],
+        poisson: dict[str, Any],
+        xgboost: dict[str, Any],
+        model_inputs: dict[str, Any],
+        roster_strength: dict[str, dict[str, Any]],
+        learning_adjustment: dict[str, Any],
+    ) -> list[str]:
+        warnings = []
+        if not market_payload.get("available"):
+            warnings.append("盘口缺失")
+        source_probs = ensemble.get("source_probabilities") or {}
+        winners = {
+            name: max(probabilities.items(), key=lambda item: item[1])[0]
+            for name, probabilities in source_probs.items()
+            if isinstance(probabilities, dict) and probabilities
+        }
+        if len(set(winners.values())) > 1:
+            warnings.append("模型分歧")
+        if (poisson.get("model_explanation") or {}).get("stage_bucket") == "group_round_1":
+            warnings.append("首轮保守系数影响")
+        home_sample = float((poisson.get("model_explanation") or {}).get("home_recent_sample") or 0)
+        away_sample = float((poisson.get("model_explanation") or {}).get("away_recent_sample") or 0)
+        if min(home_sample, away_sample) < 1.0:
+            warnings.append("近期样本不足")
+        if min(float((roster_strength.get("home") or {}).get("coverage") or 0), float((roster_strength.get("away") or {}).get("coverage") or 0)) < 0.6:
+            warnings.append("roster 不完整")
+        if not learning_adjustment.get("available"):
+            warnings.append("本届世界杯可学习样本不足")
+        if not warnings:
+            warnings.append("主要模型信号一致")
+        return warnings
 
     def _validate_public_sources(self) -> list[dict[str, Any]]:
         return [
@@ -954,6 +1444,9 @@ class WorldCupService:
             "market_away": row.get("market_away"),
             "market_over_2_5": row.get("market_over_2_5"),
             "market_under_2_5": row.get("market_under_2_5"),
+            "market_source": row.get("market_source"),
+            "market_handicap": row.get("market_handicap"),
+            "market_handicap_line": row.get("market_handicap_line"),
         })
 
     def _lyihub_match_response(self, row: dict[str, Any]) -> dict[str, Any]:
@@ -1077,6 +1570,12 @@ class WorldCupService:
             for (home, away), probability in matrix.items()
         ]
 
+    def _matrix_from_serialized(self, rows: list[dict[str, Any]]) -> dict[tuple[Any, Any], float]:
+        return {
+            (row["home_goals"], row["away_goals"]): float(row["probability"])
+            for row in rows
+        }
+
     def _report_for_fixture(
         self,
         fixture: dict[str, Any],
@@ -1091,4 +1590,24 @@ class WorldCupService:
             f"主胜 {probabilities['home']:.1%}，平局 {probabilities['draw']:.1%}，"
             f"客胜 {probabilities['away']:.1%}。最可能比分为 {best['score']}，"
             f"概率 {best['probability']:.1%}。本结论用于参考和赛后复盘，不构成投注建议。"
+        )
+
+    def _report_for_top_scorelines(
+        self,
+        fixture: dict[str, Any],
+        probabilities: dict[str, float],
+        scorelines: list[dict[str, Any]],
+        ensemble: dict[str, Any],
+        value_analysis: dict[str, Any],
+    ) -> str:
+        best = scorelines[0] if scorelines else {"score": "--", "probability": 0.0}
+        home = display_team(fixture["home_team"])
+        away = display_team(fixture["away_team"])
+        value_text = value_analysis.get("summary") or "盘口未配置，当前仅基于模型评估。"
+        return (
+            f"{home['flag']}{home['zh']} vs {away['flag']}{away['zh']} 数据分析："
+            f"融合模型给出主胜 {probabilities['home']:.1%}，平局 {probabilities['draw']:.1%}，"
+            f"客胜 {probabilities['away']:.1%}，信心 {ensemble.get('confidence', '低')}。"
+            f"最可能比分为 {best['score']}，概率 {float(best['probability']):.1%}。"
+            f"{value_text} 本结论用于参考和赛后复盘，不构成投注建议。"
         )

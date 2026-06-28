@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from worldcup_predictor.api import create_app
+from worldcup_predictor.data.providers import BetfairOddsProvider, SportteryOddsProvider
 from worldcup_predictor.service import WorldCupService
 
 
@@ -24,6 +25,14 @@ def test_daily_sync_is_idempotent_and_prediction_contains_required_fields(tmp_pa
     assert set(prediction["probabilities"]) == {"home", "draw", "away"}
     assert "score_matrix" in prediction
     assert len(prediction["top_scorelines"]) == 6
+    assert {"elo", "poisson", "monte_carlo", "market", "xgboost", "ensemble", "value_analysis", "learning"} <= set(prediction)
+    assert prediction["monte_carlo"]["simulations"] >= 10_000
+    assert set(prediction["ensemble"]["weights"]) >= {"elo", "poisson", "monte_carlo", "xgboost"}
+    assert "h2h" in prediction["odds_markets"]
+    assert "model_weight_run" in prediction
+    assert "odds_data_status" in prediction
+    assert prediction["odds_data_status"]["market_available"] is True
+    assert isinstance(prediction["value_analysis"]["risk_warnings"], list)
     assert prediction["llm_vote_audit"]["weight_cap"] == 0.15
     assert "数据分析" in prediction["chinese_report"]
 
@@ -45,6 +54,10 @@ def test_fastapi_endpoints_expose_matches_predictions_reports_and_health(tmp_pat
     assert predict_response.status_code == 200
     assert predict_response.json()["fixture"]["id"] == fixture_id
 
+    resim_response = client.post(f"/api/predict/{fixture_id}", params={"simulations": 5000})
+    assert resim_response.status_code == 200
+    assert resim_response.json()["monte_carlo"]["simulations"] == 5000
+
     get_prediction_response = client.get(f"/api/predictions/{fixture_id}")
     assert get_prediction_response.status_code == 200
     assert get_prediction_response.json()["fixture"]["id"] == fixture_id
@@ -62,6 +75,10 @@ def test_fastapi_endpoints_expose_matches_predictions_reports_and_health(tmp_pat
     assert {"name", "configured", "reachable", "auth_valid", "checked_at"} <= set(
         validate_response.json()["sources"][0]
     )
+
+    weights_response = client.get("/api/models/weights", params={"date": "2026-06-15"})
+    assert weights_response.status_code == 200
+    assert "weights" in weights_response.json()
 
 
 def test_api_allows_file_page_cors_origin(tmp_path: Path):
@@ -108,3 +125,162 @@ def test_match_api_returns_chinese_names_and_flags(tmp_path: Path):
     assert match["away_team_zh"] == "塞内加尔"
     assert match["home_flag"] == "🇫🇷"
     assert match["away_flag"] == "🇸🇳"
+
+
+def test_model_weight_recalibration_uses_only_completed_predictions_before_date(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    completed = [
+        ("cal-1", "2026-06-20", 2, 0, "Team A", "Team B"),
+        ("cal-2", "2026-06-21", 1, 0, "Team C", "Team D"),
+        ("cal-3", "2026-06-22", 0, 2, "Team E", "Team F"),
+        ("future", "2026-06-28", 0, 4, "Team G", "Team H"),
+    ]
+    for fixture_id, date, home_score, away_score, home_team, away_team in completed:
+        service.db.upsert_fixture(
+            {
+                "id": fixture_id,
+                "date": date,
+                "kickoff": f"{date}T12:00:00+08:00",
+                "home_team": home_team,
+                "away_team": away_team,
+                "group": "Group Test",
+                "venue": "Test",
+                "status": "final",
+                "home_score": home_score,
+                "away_score": away_score,
+                "home_elo": 1700,
+                "away_elo": 1700,
+            }
+        )
+        service.db.save_prediction(
+            fixture_id,
+            {
+                "ensemble": {
+                    "source_probabilities": {
+                        "elo": {"home": 0.50, "draw": 0.25, "away": 0.25},
+                        "poisson": {"home": 0.72, "draw": 0.18, "away": 0.10}
+                        if home_score > away_score
+                        else {"home": 0.10, "draw": 0.18, "away": 0.72},
+                        "monte_carlo": {"home": 0.66, "draw": 0.20, "away": 0.14}
+                        if home_score > away_score
+                        else {"home": 0.14, "draw": 0.20, "away": 0.66},
+                        "market": {"home": 0.24, "draw": 0.30, "away": 0.46}
+                        if home_score > away_score
+                        else {"home": 0.46, "draw": 0.30, "away": 0.24},
+                        "xgboost": {"home": 0.68, "draw": 0.19, "away": 0.13}
+                        if home_score > away_score
+                        else {"home": 0.13, "draw": 0.19, "away": 0.68},
+                    }
+                }
+            },
+        )
+
+    run = service.recalibrate_model_weights("2026-06-27")
+
+    assert run["sample_count"] == 3
+    assert run["weights"]["poisson"] > run["weights"]["market"]
+    assert service.db.get_model_weight_run("2026-06-27")["weights"] == run["weights"]
+
+
+def test_sporttery_parser_normalizes_odds_without_live_fetch():
+    provider = SportteryOddsProvider()
+    events = provider.parse_events(
+        {
+            "value": {
+                "matchList": [
+                    {
+                        "matchDate": "2026-06-23",
+                        "homeTeamName": "法国",
+                        "awayTeamName": "塞内加尔",
+                        "had": {"h": "1.65", "d": "3.60", "a": "5.20"},
+                        "hhad": {"h": "3.10", "d": "3.35", "a": "1.92", "goalLine": "-1"},
+                        "ttg": {"over": "1.78", "under": "2.02"},
+                    }
+                ]
+            }
+        }
+    )
+
+    assert events[0]["home_team"] == "法国"
+    assert events[0]["h2h"] == {"home": 1.65, "draw": 3.6, "away": 5.2}
+    assert events[0]["handicap"]["away"] == 1.92
+    assert events[0]["totals"]["over"] == 1.78
+
+
+def test_betfair_parser_normalizes_match_odds_handicap_and_totals():
+    provider = BetfairOddsProvider(app_key="app", session_token="session")
+    catalogue = [
+        {
+            "marketId": "1.100",
+            "marketStartTime": "2026-06-23T12:00:00Z",
+            "event": {"id": "event-1", "name": "France v Senegal"},
+            "description": {"marketType": "MATCH_ODDS"},
+            "runners": [
+                {"selectionId": 11, "runnerName": "France"},
+                {"selectionId": 12, "runnerName": "The Draw"},
+                {"selectionId": 13, "runnerName": "Senegal"},
+            ],
+        },
+        {
+            "marketId": "1.101",
+            "marketStartTime": "2026-06-23T12:00:00Z",
+            "event": {"id": "event-1", "name": "France v Senegal"},
+            "description": {"marketType": "ASIAN_HANDICAP"},
+            "runners": [
+                {"selectionId": 21, "runnerName": "France -1.0"},
+                {"selectionId": 22, "runnerName": "Senegal +1.0"},
+            ],
+        },
+        {
+            "marketId": "1.102",
+            "marketStartTime": "2026-06-23T12:00:00Z",
+            "event": {"id": "event-1", "name": "France v Senegal"},
+            "description": {"marketType": "OVER_UNDER_25"},
+            "runners": [
+                {"selectionId": 31, "runnerName": "Over 2.5 Goals"},
+                {"selectionId": 32, "runnerName": "Under 2.5 Goals"},
+            ],
+        },
+    ]
+    books = [
+        {
+            "marketId": "1.100",
+            "runners": [
+                {"selectionId": 11, "ex": {"availableToBack": [{"price": 1.82}]}},
+                {"selectionId": 12, "ex": {"availableToBack": [{"price": 3.45}]}},
+                {"selectionId": 13, "ex": {"availableToBack": [{"price": 4.6}]}},
+            ],
+        },
+        {
+            "marketId": "1.101",
+            "runners": [
+                {"selectionId": 21, "ex": {"availableToBack": [{"price": 2.18}]}},
+                {"selectionId": 22, "ex": {"availableToBack": [{"price": 1.76}]}},
+            ],
+        },
+        {
+            "marketId": "1.102",
+            "runners": [
+                {"selectionId": 31, "ex": {"availableToBack": [{"price": 1.9}]}},
+                {"selectionId": 32, "ex": {"availableToBack": [{"price": 1.96}]}},
+            ],
+        },
+    ]
+
+    events = provider.parse_markets(catalogue, books)
+    enriched = provider._enrich_fixture(
+        {
+            "home_team": "France",
+            "away_team": "Senegal",
+            "market_home": None,
+            "market_draw": None,
+            "market_away": None,
+        },
+        events,
+    )
+
+    assert events[0]["h2h"] == {"home": 1.82, "draw": 3.45, "away": 4.6}
+    assert events[0]["totals"] == {"over": 1.9, "under": 1.96}
+    assert enriched["market_source"] == "Betfair Exchange"
+    assert enriched["market_home"] == 1.82
+    assert enriched["market_handicap"] == {"home": 2.18, "away": 1.76}

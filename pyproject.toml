@@ -19,6 +19,9 @@ dependencies = [
 dev = [
   "pytest>=8.2",
 ]
+ml = [
+  "xgboost>=2.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

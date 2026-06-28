@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS fixtures (
   market_away REAL,
   market_over_2_5 REAL,
   market_under_2_5 REAL,
+  market_source TEXT,
+  market_handicap TEXT,
+  market_handicap_line TEXT,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -33,6 +36,12 @@ CREATE TABLE IF NOT EXISTS predictions (
   payload_json TEXT NOT NULL,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(fixture_id) REFERENCES fixtures(id)
+);
+
+CREATE TABLE IF NOT EXISTS model_weight_runs (
+  date TEXT PRIMARY KEY,
+  payload_json TEXT NOT NULL,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS raw_provider_payloads (
@@ -216,6 +225,9 @@ class Database:
             connection.executescript(SCHEMA)
             self._ensure_column(connection, "fixtures", "market_over_2_5", "REAL")
             self._ensure_column(connection, "fixtures", "market_under_2_5", "REAL")
+            self._ensure_column(connection, "fixtures", "market_source", "TEXT")
+            self._ensure_column(connection, "fixtures", "market_handicap", "TEXT")
+            self._ensure_column(connection, "fixtures", "market_handicap_line", "TEXT")
 
     def _ensure_column(
         self,
@@ -238,8 +250,8 @@ class Database:
                 INSERT INTO fixtures (
                   id, date, kickoff, home_team, away_team, group_name, venue, status,
                   home_score, away_score, home_elo, away_elo, market_home, market_draw, market_away,
-                  market_over_2_5, market_under_2_5
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  market_over_2_5, market_under_2_5, market_source, market_handicap, market_handicap_line
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                   date=excluded.date,
                   kickoff=excluded.kickoff,
@@ -257,6 +269,9 @@ class Database:
                   market_away=excluded.market_away,
                   market_over_2_5=excluded.market_over_2_5,
                   market_under_2_5=excluded.market_under_2_5,
+                  market_source=excluded.market_source,
+                  market_handicap=excluded.market_handicap,
+                  market_handicap_line=excluded.market_handicap_line,
                   updated_at=CURRENT_TIMESTAMP
                 """,
                 (
@@ -277,6 +292,11 @@ class Database:
                     fixture.get("market_away"),
                     fixture.get("market_over_2_5"),
                     fixture.get("market_under_2_5"),
+                    fixture.get("market_source"),
+                    json.dumps(fixture.get("market_handicap"), ensure_ascii=False)
+                    if fixture.get("market_handicap") is not None
+                    else None,
+                    fixture.get("market_handicap_line"),
                 ),
             )
 
@@ -421,6 +441,17 @@ class Database:
             row = connection.execute("SELECT COUNT(*) AS count FROM historical_matches").fetchone()
         return int(row["count"])
 
+    def list_historical_matches(self, since: str | None = None) -> list[dict[str, Any]]:
+        query = "SELECT * FROM historical_matches"
+        params: list[Any] = []
+        if since:
+            query += " WHERE date >= ?"
+            params.append(since)
+        query += " ORDER BY date"
+        with self.connect() as connection:
+            rows = connection.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
     def save_prediction(self, fixture_id: str, payload: dict[str, Any]) -> None:
         with self.connect() as connection:
             connection.execute(
@@ -441,6 +472,97 @@ class Database:
                 (fixture_id,),
             ).fetchone()
         return json.loads(row["payload_json"]) if row else None
+
+    def save_model_weight_run(self, date: str, payload: dict[str, Any]) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO model_weight_runs (date, payload_json)
+                VALUES (?, ?)
+                ON CONFLICT(date) DO UPDATE SET
+                  payload_json=excluded.payload_json,
+                  updated_at=CURRENT_TIMESTAMP
+                """,
+                (date, json.dumps(payload, ensure_ascii=False)),
+            )
+
+    def get_model_weight_run(self, date: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT payload_json FROM model_weight_runs WHERE date = ?",
+                (date,),
+            ).fetchone()
+        return json.loads(row["payload_json"]) if row else None
+
+    def latest_model_weight_run(self, as_of: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM model_weight_runs
+                WHERE date <= ?
+                ORDER BY date DESC
+                LIMIT 1
+                """,
+                (as_of,),
+            ).fetchone()
+        return json.loads(row["payload_json"]) if row else None
+
+    def completed_prediction_samples_before(self, as_of: str) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT
+                  p.fixture_id,
+                  p.payload_json,
+                  f.date,
+                  f.status,
+                  f.home_score,
+                  f.away_score
+                FROM predictions p
+                JOIN fixtures f ON f.id = p.fixture_id
+                WHERE f.date < ?
+                  AND f.status = 'final'
+                  AND f.home_score IS NOT NULL
+                  AND f.away_score IS NOT NULL
+                UNION ALL
+                SELECT
+                  p.fixture_id,
+                  p.payload_json,
+                  w.date,
+                  w.status,
+                  w.home_score,
+                  w.away_score
+                FROM predictions p
+                JOIN web_fixtures w ON w.id = p.fixture_id
+                WHERE w.date < ?
+                  AND w.status = 'final'
+                  AND w.home_score IS NOT NULL
+                  AND w.away_score IS NOT NULL
+                UNION ALL
+                SELECT
+                  p.fixture_id,
+                  p.payload_json,
+                  l.date,
+                  l.status,
+                  l.home_score,
+                  l.away_score
+                FROM predictions p
+                JOIN lyihub_match_details l ON l.fixture_id = p.fixture_id
+                WHERE l.date < ?
+                  AND l.status = 'final'
+                  AND l.home_score IS NOT NULL
+                  AND l.away_score IS NOT NULL
+                ORDER BY date, fixture_id
+                """,
+                (as_of, as_of, as_of),
+            ).fetchall()
+        samples = []
+        for row in rows:
+            sample = dict(row)
+            sample["prediction"] = json.loads(sample.pop("payload_json"))
+            samples.append(sample)
+        return samples
 
     def upsert_lyihub_match(self, match: dict[str, Any]) -> None:
         with self.connect() as connection:

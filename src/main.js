@@ -5,6 +5,7 @@ const state = {
   availableDates: [],
   sourceValidation: [],
   rosterWeight: 0.25,
+  simulations: 10000,
   rosterHealth: null,
   rounds: [],
   roundMatches: [],
@@ -135,7 +136,7 @@ async function syncReferenceData() {
 async function loadPrediction(fixtureId) {
   setStatus('正在生成单场预测...');
   try {
-    const prediction = await api(`/api/predict/${fixtureId}?roster_weight=${state.rosterWeight}`, { method: 'POST' });
+    const prediction = await api(`/api/predict/${fixtureId}?roster_weight=${state.rosterWeight}&simulations=${state.simulations}`, { method: 'POST' });
     state.matchPredictions[fixtureId] = { status: 'ready', prediction };
     let analysis = null;
     try {
@@ -165,7 +166,7 @@ async function loadMatchCardPredictions() {
   await Promise.all(
     missing.map(async (match) => {
       try {
-        const prediction = await api(`/api/predict/${match.id}?roster_weight=${state.rosterWeight}`, { method: 'POST' });
+        const prediction = await api(`/api/predict/${match.id}?roster_weight=${state.rosterWeight}&simulations=${state.simulations}`, { method: 'POST' });
         state.matchPredictions[match.id] = { status: 'ready', prediction };
       } catch (error) {
         state.matchPredictions[match.id] = { status: 'error', error: error.message };
@@ -337,15 +338,18 @@ function renderMatches() {
     .map(
       (match) => `
       <article class="match-row ${state.selectedPrediction?.fixture?.id === match.id ? 'selected' : ''}">
-        <div class="teams">
-          <strong>
-            ${teamButton(match.home_team, teamDisplay(match, 'home'))}
-            <span class="meta">vs</span>
-            ${teamButton(match.away_team, teamDisplay(match, 'away'))}
-          </strong>
-          <span class="meta">${match.group || 'World Cup'} · ${match.venue || 'venue pending'} · ${match.kickoff}</span>
+        <div class="match-main">
+          <div class="teams">
+            <strong>
+              ${teamButton(match.home_team, teamDisplay(match, 'home'))}
+              <span class="meta">vs</span>
+              ${teamButton(match.away_team, teamDisplay(match, 'away'))}
+            </strong>
+            <span class="meta">${match.group || 'World Cup'} · ${match.venue || 'venue pending'} · ${match.kickoff}</span>
+          </div>
+          ${inlinePrediction(match)}
         </div>
-        ${inlinePrediction(match)}
+        ${matchOddsPanel(match)}
         <div class="match-actions">
           <span class="status-pill" data-status="${match.status}">${statusLabel(match.status)}</span>
           <button data-predict="${match.id}" aria-label="查看预测 ${teamDisplay(match, 'home')} vs ${teamDisplay(match, 'away')}">${
@@ -387,14 +391,79 @@ function inlinePrediction(match) {
   }
   const probs = entry.prediction.probabilities;
   const best = Object.entries(probs).sort((left, right) => right[1] - left[1])[0][0];
+  const value = bestValueItem(entry.prediction.value_analysis);
+  const confidence = entry.prediction.ensemble?.confidence || '低';
   return `
     <div class="inline-forecast" aria-label="胜平负预测概率">
       ${forecastPill(forecastLabel(match, 'home'), probs.home, best === 'home')}
       ${forecastPill('平局', probs.draw, best === 'draw')}
       ${forecastPill(forecastLabel(match, 'away'), probs.away, best === 'away')}
       ${scoreSummary(actualScore, predictedScore, accuracy)}
+      <span class="match-value-line">
+        <b>价值</b>${value ? `${outcomeLabel(value.outcome)} · ${value.label}` : '盘口未配置'}
+        <b>风险</b>${riskLabel(confidence, entry.prediction)}
+      </span>
     </div>
   `;
+}
+
+function matchOddsPanel(match) {
+  const entry = state.matchPredictions[match.id];
+  if (!entry || entry.status === 'loading') {
+    return `
+      <aside class="match-odds-panel loading" aria-label="赔率加载中">
+        <strong>赔率</strong>
+        <span>等待预测生成...</span>
+      </aside>
+    `;
+  }
+  if (entry.status === 'error') {
+    return `
+      <aside class="match-odds-panel muted" aria-label="赔率暂不可用">
+        <strong>赔率</strong>
+        <span>预测失败，盘口暂不可用</span>
+      </aside>
+    `;
+  }
+  const prediction = entry.prediction;
+  const h2h = prediction.odds_markets?.h2h || prediction.market || {};
+  const handicap = prediction.odds_markets?.handicap || {};
+  const valueItems = prediction.value_analysis?.items || [];
+  return `
+    <aside class="match-odds-panel" aria-label="赔率与盘口">
+      <div class="odds-panel-head">
+        <strong>赔率</strong>
+        <span>${sourceLabel(prediction.odds_data_status?.source)}</span>
+      </div>
+      ${oddsMarketRow('胜平负', h2h, null)}
+      ${oddsMarketRow('让球胜平负', handicap, handicap.line)}
+      ${valueItems.length ? `
+        <div class="odds-edge-row">
+          ${valueItems.map((item) => `<i class="${Math.abs(item.edge) < 0.03 ? 'efficient' : item.edge >= 0.05 ? 'value' : ''}">${outcomeLabel(item.outcome)} ${safePercent(item.edge)} · ${edgeLabel(item)}</i>`).join('')}
+        </div>
+      ` : '<div class="odds-edge-row muted">Market vs Model：盘口缺失</div>'}
+    </aside>
+  `;
+}
+
+function oddsMarketRow(label, market, line) {
+  const odds = market?.odds || {};
+  const available = Boolean(market?.available);
+  return `
+    <div class="odds-market-row ${available ? '' : 'muted'}">
+      <span class="odds-market-label">${label}${line ? ` <b>${line}</b>` : ''}</span>
+      <span class="odds-cell"><b>胜</b>${available ? formatOdd(odds.home) : '--'}</span>
+      <span class="odds-cell"><b>平</b>${available ? formatOdd(odds.draw) : '--'}</span>
+      <span class="odds-cell"><b>负</b>${available ? formatOdd(odds.away) : '--'}</span>
+    </div>
+  `;
+}
+
+function sourceLabel(source) {
+  if (!source) return '盘口来源待同步';
+  if (String(source).includes('China Sporttery')) return '中国体育彩票';
+  if (String(source).includes('Odds')) return 'The Odds API';
+  return source;
 }
 
 function teamButton(team, label) {
@@ -457,6 +526,71 @@ function forecastPill(label, value, active) {
   return `<span class="forecast-pill ${active ? 'is-best' : ''}"><b>${label}</b>${formatPercent(value)}</span>`;
 }
 
+function outcomeLabel(outcome) {
+  return { home: '主胜', draw: '平局', away: '客胜' }[outcome] || outcome || '-';
+}
+
+function bestValueItem(valueAnalysis) {
+  const items = valueAnalysis?.items || [];
+  const positive = items.filter((item) => item.label === '有价值').sort((left, right) => right.edge - left.edge);
+  return positive[0] || items.sort((left, right) => Math.abs(right.edge || 0) - Math.abs(left.edge || 0))[0] || null;
+}
+
+function riskLabel(confidence, prediction) {
+  const mc = prediction?.monte_carlo;
+  const poisson = prediction?.poisson;
+  const mcBest = mc ? bestOutcome({ home: mc.home_win, draw: mc.draw, away: mc.away_win }) : null;
+  const poissonBest = poisson ? bestOutcome({ home: poisson.home_win, draw: poisson.draw, away: poisson.away_win }) : null;
+  if (mcBest && poissonBest && mcBest !== poissonBest) return '模型分歧';
+  if (confidence === '高') return '低';
+  if (confidence === '中') return '中';
+  return '高';
+}
+
+function bestOutcome(probabilities) {
+  return Object.entries(probabilities).sort((left, right) => right[1] - left[1])[0]?.[0];
+}
+
+function oddsStrip(prediction) {
+  const h2h = prediction.odds_markets?.h2h || prediction.market;
+  if (!h2h?.available) {
+    return '<span class="odds-strip muted"><b>1X2</b><i>盘口不可用</i></span>';
+  }
+  const odds = h2h.odds || {};
+  return `
+    <span class="odds-strip">
+      <b>1X2</b>
+      <i>主 ${formatOdd(odds.home)}</i>
+      <i>平 ${formatOdd(odds.draw)}</i>
+      <i>客 ${formatOdd(odds.away)}</i>
+    </span>
+  `;
+}
+
+function edgeStrip(prediction) {
+  const items = prediction.value_analysis?.items || [];
+  if (!items.length) return '<span class="edge-strip muted">Market vs Model：盘口缺失</span>';
+  return `
+    <span class="edge-strip">
+      ${items
+        .map((item) => `<i class="${Math.abs(item.edge) < 0.03 ? 'efficient' : item.edge >= 0.05 ? 'value' : ''}">${outcomeLabel(item.outcome)} ${safePercent(item.edge)} · ${edgeLabel(item)}</i>`)
+        .join('')}
+    </span>
+  `;
+}
+
+function edgeLabel(item) {
+  if (item.edge_label) return item.edge_label;
+  if (Number(item.edge || 0) >= 0.05) return 'value bet';
+  if (Math.abs(Number(item.edge || 0)) < 0.03) return 'market efficient';
+  return 'watch';
+}
+
+function formatOdd(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(2) : '--';
+}
+
 function renderRounds() {
   const total = state.rounds.reduce((sum, item) => sum + Number(item.match_count || 0), 0);
   document.querySelector('#round-count').textContent = state.rounds.length ? `${state.rounds.length} 个轮次 · ${total} 场` : '等待同步';
@@ -503,7 +637,7 @@ function renderRoundMatches() {
   target.innerHTML = state.roundMatches
     .map(
       (match) => `
-        <article class="round-card">
+        <article class="round-card" data-round-fixture="${escapeAttr(match.id)}" role="button" tabindex="0" aria-label="查看预测 ${teamDisplay(match, 'home')} vs ${teamDisplay(match, 'away')}">
           <div class="round-card-top">
             <span>${match.stage || match.group || 'World Cup'}</span>
             <span class="status-pill" data-status="${match.status}">${statusLabel(match.status)}</span>
@@ -520,7 +654,19 @@ function renderRoundMatches() {
     )
     .join('');
   target.querySelectorAll('[data-team]').forEach((button) => {
-    button.addEventListener('click', () => loadTeamDetail(button.dataset.team));
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      loadTeamDetail(button.dataset.team);
+    });
+  });
+  target.querySelectorAll('[data-round-fixture]').forEach((card) => {
+    card.addEventListener('click', () => loadPrediction(card.dataset.roundFixture));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        loadPrediction(card.dataset.roundFixture);
+      }
+    });
   });
 }
 
@@ -635,55 +781,126 @@ function renderPrediction(prediction, analysis = null) {
   const probabilities = prediction.probabilities;
   document.querySelector('#prediction-detail').innerHTML = `
     <div class="prediction-body">
-      <h3>胜/平/负</h3>
-      <div class="prob-bars">
-        ${bar('主胜', probabilities.home, 'home-fill')}
-        ${bar('平局', probabilities.draw, 'draw-fill')}
-        ${bar('客胜', probabilities.away, 'away-fill')}
-      </div>
-      <div class="metric-grid">
-        <div class="metric-card"><strong>xG 主队</strong><span>${prediction.expected_goals.home.toFixed(2)}</span></div>
-        <div class="metric-card"><strong>xG 客队</strong><span>${prediction.expected_goals.away.toFixed(2)}</span></div>
-        <div class="metric-card"><strong>BTTS</strong><span>${formatPercent(prediction.btts)}</span></div>
-        <div class="metric-card"><strong>Over 2.5</strong><span>${formatPercent(prediction.totals['2.5'].over)}</span></div>
-      </div>
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>融合结论</h3>
+          <span>${prediction.ensemble?.recommended_result || outcomeLabel(bestOutcome(probabilities))} · 信心 ${prediction.ensemble?.confidence || '低'}</span>
+        </div>
+        <div class="prob-bars">
+          ${bar('主胜', probabilities.home, 'home-fill')}
+          ${bar('平局', probabilities.draw, 'draw-fill')}
+          ${bar('客胜', probabilities.away, 'away-fill')}
+        </div>
+        <div class="metric-grid compact-metrics">
+          <div class="metric-card"><strong>λ 主队</strong><span>${Number(prediction.expected_goals.home).toFixed(2)}</span></div>
+          <div class="metric-card"><strong>λ 客队</strong><span>${Number(prediction.expected_goals.away).toFixed(2)}</span></div>
+          <div class="metric-card"><strong>BTTS</strong><span>${formatPercent(prediction.btts)}</span></div>
+          <div class="metric-card"><strong>Over 2.5</strong><span>${formatPercent(prediction.totals['2.5'].over)}</span></div>
+        </div>
+        ${divergenceNotice(prediction)}
+      </section>
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>模型对照</h3>
+          <span>统计模型、模拟和盘口分层展示</span>
+        </div>
+        <div class="model-grid">${modelComparisonCards(prediction)}</div>
+        ${modelWeightAudit(prediction)}
+      </section>
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>投注价值分析</h3>
+          <span>仅供复盘，不构成投注建议</span>
+        </div>
+        ${valueAnalysisCard(prediction)}
+      </section>
+
       <div class="control-card">
         <label for="roster-weight">阵容权重 <strong id="roster-weight-value">${Math.round(state.rosterWeight * 100)}%</strong></label>
         <input id="roster-weight" type="range" min="0" max="50" value="${Math.round(state.rosterWeight * 100)}" />
         <span>顶级锋线对薄弱后防会提高 xG；强防线会抵消对手进攻端优势。</span>
       </div>
-      <h3>阵容三线强度</h3>
-      <div class="profile-grid">
-        ${strengthCard(teamDisplay(fixture, 'home'), prediction.roster_strength?.home)}
-        ${strengthCard(teamDisplay(fixture, 'away'), prediction.roster_strength?.away)}
+      <div class="control-card compact-control">
+        <label for="simulation-count">Monte Carlo 模拟次数 <strong id="simulation-count-value">${state.simulations.toLocaleString('zh-CN')}</strong></label>
+        <select id="simulation-count">
+          ${[5000, 10000, 50000]
+            .map((value) => `<option value="${value}" ${state.simulations === value ? 'selected' : ''}>${value.toLocaleString('zh-CN')}</option>`)
+            .join('')}
+        </select>
+        <span>修改后会重新计算 Monte Carlo、XGBoost 和最终融合概率。</span>
       </div>
-      <div class="button-row">
-        <button data-sync-squads="${fixture.id}">同步本场阵容</button>
-        <button data-process-roster>补全球员统计</button>
-      </div>
-      <h3>最可能比分 Top 6</h3>
-      <div class="score-grid">
-        ${prediction.top_scorelines
-          .map((item) => `<div class="score-item"><strong>${item.score}</strong><span>${formatPercent(item.probability)}</span></div>`)
-          .join('')}
-      </div>
-      <h3>比分概率热力图</h3>
-      ${scoreHeatmap(prediction.score_matrix)}
-      <h3>球队画像</h3>
-      <div class="profile-grid">
-        ${profileCard(fixture.home_team, profiles.home)}
-        ${profileCard(fixture.away_team, profiles.away)}
-      </div>
-      <h3>历史交锋</h3>
-      <div class="analysis">
-        可用样本 ${h2h.matches ?? 0} 场，加权样本 ${(h2h.weighted_matches ?? 0).toFixed(2)}；
-        ${teamDisplay(fixture, 'home')} 视角 ${h2h.wins ?? 0} 胜 ${h2h.draws ?? 0} 平 ${h2h.losses ?? 0} 负。
-      </div>
-      ${sections.length ? `<h3>AI 解读草稿</h3>${sections.map((section) => `<div class="analysis"><strong>${section.title}</strong><br>${section.text}</div>`).join('')}` : ''}
-      <h3>阵容与教练</h3>
-      <div id="squad-panels" class="squad-grid">
-        <div class="empty-state">正在加载阵容...</div>
-      </div>
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>盘口与模型偏差</h3>
+          <span>value bet ≥5%，market efficient &lt;3%</span>
+        </div>
+        ${marketVsModelCard(prediction)}
+      </section>
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>阵容三线强度</h3>
+          <div class="button-row">
+            <button data-sync-squads="${fixture.id}">同步本场阵容</button>
+            <button data-process-roster>补全球员统计</button>
+          </div>
+        </div>
+        <div class="profile-grid">
+          ${strengthCard(teamDisplay(fixture, 'home'), prediction.roster_strength?.home)}
+          ${strengthCard(teamDisplay(fixture, 'away'), prediction.roster_strength?.away)}
+        </div>
+      </section>
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>比分概率</h3>
+          <span>Top 6 与 0-4 热力图</span>
+        </div>
+        <div class="score-grid">
+          ${prediction.top_scorelines
+            .map((item) => `<div class="score-item"><strong>${item.score}</strong><span>${formatPercent(item.probability)}</span></div>`)
+            .join('')}
+        </div>
+        ${scoreHeatmap(prediction.score_matrix)}
+      </section>
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>Monte Carlo 脚本</h3>
+          <span>${prediction.monte_carlo?.simulations?.toLocaleString('zh-CN') || '-'} 次模拟</span>
+        </div>
+        ${monteCarloCard(prediction)}
+      </section>
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>球队画像与交锋</h3>
+          <span>近期权重与历史样本</span>
+        </div>
+        <div class="profile-grid">
+          ${profileCard(fixture.home_team, profiles.home)}
+          ${profileCard(fixture.away_team, profiles.away)}
+        </div>
+        <div class="analysis">
+          可用样本 ${h2h.matches ?? 0} 场，加权样本 ${(h2h.weighted_matches ?? 0).toFixed(2)}；
+          ${teamDisplay(fixture, 'home')} 视角 ${h2h.wins ?? 0} 胜 ${h2h.draws ?? 0} 平 ${h2h.losses ?? 0} 负。
+        </div>
+      </section>
+
+      ${sections.length ? `<section class="prediction-section"><div class="section-title"><h3>AI 解读草稿</h3><span>结构化中文分析</span></div>${sections.map((section) => `<div class="analysis"><strong>${section.title}</strong><br>${section.text}</div>`).join('')}</section>` : ''}
+
+      <section class="prediction-section">
+        <div class="section-title">
+          <h3>阵容与教练</h3>
+          <span>API-Football / 公开源 fallback</span>
+        </div>
+        <div id="squad-panels" class="squad-grid">
+          <div class="empty-state">正在加载阵容...</div>
+        </div>
+      </section>
       <div class="analysis">${prediction.chinese_report}</div>
     </div>
   `;
@@ -693,19 +910,227 @@ function renderPrediction(prediction, analysis = null) {
     document.querySelector('#roster-weight-value').textContent = `${slider.value}%`;
   });
   slider?.addEventListener('change', () => loadPrediction(fixture.id));
+  const simulationSelect = document.querySelector('#simulation-count');
+  simulationSelect?.addEventListener('change', () => {
+    state.simulations = Number(simulationSelect.value);
+    document.querySelector('#simulation-count-value').textContent = state.simulations.toLocaleString('zh-CN');
+    loadPrediction(fixture.id);
+  });
   document.querySelector('[data-sync-squads]')?.addEventListener('click', () => syncFixtureSquads(fixture));
   document.querySelector('[data-process-roster]')?.addEventListener('click', () => processRosterQueue());
+}
+
+function modelComparisonCards(prediction) {
+  const market = prediction.market?.available ? prediction.market.implied_probability_no_vig : null;
+  const cards = [
+    modelCard('Elo/DC', prediction.elo, prediction.model_blend_weights?.dixon_coles_elo, '基线强弱'),
+    modelCard('Poisson', prediction.poisson, prediction.model_blend_weights?.poisson, 'λ 与比分矩阵'),
+    modelCard('Monte Carlo', prediction.monte_carlo, prediction.model_blend_weights?.monte_carlo, `${prediction.monte_carlo?.simulations?.toLocaleString('zh-CN') || '10,000'} 场景模拟`),
+    modelCard('Market', market, prediction.model_blend_weights?.market, prediction.market?.available ? '去水盘口' : '暂无盘口'),
+    modelCard('XGBoost', prediction.xgboost, prediction.model_blend_weights?.xgboost, 'AI model layer'),
+    modelCard('Ensemble', prediction.ensemble, 1, '最终输出', true)
+  ];
+  return cards.join('');
+}
+
+function modelWeightAudit(prediction) {
+  const run = prediction.model_weight_run || {};
+  const weights = run.weights || {};
+  const cells = [
+    ['Elo/DC', weights.elo],
+    ['Poisson', weights.poisson],
+    ['Monte Carlo', weights.monte_carlo],
+    ['盘口', weights.market],
+    ['XGBoost', weights.xgboost]
+  ]
+    .filter(([, value]) => value !== undefined)
+    .map(([label, value]) => `<div class="metric-card"><strong>${label}</strong><span>${safePercent(value)}</span></div>`)
+    .join('');
+  return `
+    <div class="analysis weight-audit">
+      <strong>融合权重校准</strong>
+      <span>${run.sample_count || 0} 场已完赛样本 · ${run.reason || '默认权重'}</span>
+      <div class="metric-grid compact-metrics">${cells}</div>
+    </div>
+  `;
+}
+
+function modelCard(title, source, weight, helper, prominent = false) {
+  const probs = normalizeModelProbabilities(source);
+  return `
+    <article class="model-card ${prominent ? 'prominent' : ''}">
+      <div class="model-card-head">
+        <strong>${title}</strong>
+        <span>权重 ${safePercent(weight ?? 0)}</span>
+      </div>
+      <div class="mini-probs">
+        ${miniProbability('主胜', probs.home, 'home-fill')}
+        ${miniProbability('平', probs.draw, 'draw-fill')}
+        ${miniProbability('客胜', probs.away, 'away-fill')}
+      </div>
+      <small>${helper}</small>
+      ${title === 'XGBoost' ? `<em class="model-badge">${source?.engine || 'AI model layer'}</em>` : ''}
+    </article>
+  `;
+}
+
+function normalizeModelProbabilities(source = {}) {
+  if (!source) {
+    return { home: 0, draw: 0, away: 0 };
+  }
+  return {
+    home: Number(source.home ?? source.home_win ?? 0),
+    draw: Number(source.draw ?? 0),
+    away: Number(source.away ?? source.away_win ?? 0)
+  };
+}
+
+function miniProbability(label, value, className) {
+  return `
+    <div class="mini-prob">
+      <span>${label}</span>
+      <div class="bar-track"><div class="bar-fill ${className}" style="width:${Math.max(0, Math.min(100, Number(value || 0) * 100))}%"></div></div>
+      <b>${safePercent(value)}</b>
+    </div>
+  `;
+}
+
+function valueAnalysisCard(prediction) {
+  const value = prediction.value_analysis;
+  if (!value?.available) {
+    return `
+      <div class="value-card muted">
+        <strong>盘口未配置，当前仅基于模型评估</strong>
+        <span>${value?.risk_warning || '本系统只做数据分析，不构成投注建议。'}</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="value-card">
+      <div class="value-summary">
+        <strong>投注价值分析</strong>
+        <span>${value.summary} · 信心 ${value.confidence || '低'}</span>
+      </div>
+      <div class="value-grid">
+        ${value.items
+          .map(
+            (item) => `
+              <div class="value-item ${item.label === '有价值' ? 'positive' : item.label === '不建议' ? 'negative' : ''}">
+                <strong>${outcomeLabel(item.outcome)}</strong>
+                <span>${item.label}</span>
+                <small>模型 ${safePercent(item.model_probability)} · 市场 ${safePercent(item.market_probability)} · Edge ${safePercent(item.edge)}</small>
+                <small>Kelly ${safePercent(item.kelly?.full)} / 半Kelly ${safePercent(item.kelly?.half)} / 1/4 Kelly ${safePercent(item.kelly?.quarter)}</small>
+                <small>${riskBar(item)} ${item.recommendation}</small>
+              </div>
+            `
+          )
+          .join('')}
+      </div>
+      <p>${value.risk_warning}</p>
+    </div>
+  `;
+}
+
+function marketVsModelCard(prediction) {
+  const h2h = prediction.odds_markets?.h2h || prediction.market;
+  if (!h2h?.available) {
+    return `
+      <div class="market-panel muted">
+        <div class="odds-strip muted"><b>1X2</b><i>盘口不可用</i></div>
+        <div class="odds-strip muted"><b>让球</b><i>${prediction.odds_markets?.handicap?.reason || '盘口不可用'}</i></div>
+      </div>
+    `;
+  }
+  const odds = h2h.odds || {};
+  return `
+    <div class="market-panel">
+      <div class="odds-strip">
+        <b>1X2赔率</b>
+        <i>主 ${formatOdd(odds.home)}</i>
+        <i>平 ${formatOdd(odds.draw)}</i>
+        <i>客 ${formatOdd(odds.away)}</i>
+      </div>
+      <div class="model-market-bars">
+        ${(prediction.value_analysis?.items || [])
+          .map(
+            (item) => `
+              <div class="model-market-row">
+                <span>${outcomeLabel(item.outcome)}</span>
+                <div class="bar-track"><div class="bar-fill home-fill" style="width:${Math.max(0, Math.min(100, item.model_probability * 100))}%"></div></div>
+                <div class="bar-track"><div class="bar-fill draw-fill" style="width:${Math.max(0, Math.min(100, item.market_probability * 100))}%"></div></div>
+                <strong class="${item.edge >= 0.05 ? 'value' : Math.abs(item.edge) < 0.03 ? 'efficient' : ''}">${safePercent(item.edge)}</strong>
+              </div>
+            `
+          )
+          .join('')}
+      </div>
+      <div class="odds-strip muted"><b>让球</b><i>${prediction.odds_markets?.handicap?.reason || '盘口不可用'}</i></div>
+    </div>
+  `;
+}
+
+function riskBar(item) {
+  const kelly = Number(item.kelly?.full || 0);
+  if (kelly >= 0.08) return '<span class="kelly-risk high">high</span>';
+  if (kelly >= 0.03) return '<span class="kelly-risk medium">medium</span>';
+  return '<span class="kelly-risk low">low</span>';
+}
+
+function monteCarloCard(prediction) {
+  const mc = prediction.monte_carlo || {};
+  const ci = mc.confidence_interval || {};
+  return `
+    <div class="model-card prominent">
+      <div class="model-card-head">
+        <strong>${mc.typical_script || '均衡拉锯'}</strong>
+        <span>均值 ${Number(mc.average_goals?.home ?? 0).toFixed(2)}-${Number(mc.average_goals?.away ?? 0).toFixed(2)}</span>
+      </div>
+      <div class="metric-grid compact-metrics">
+        <div class="metric-card"><strong>主胜区间</strong><span>${intervalLabel(ci.home_win)}</span></div>
+        <div class="metric-card"><strong>平局区间</strong><span>${intervalLabel(ci.draw)}</span></div>
+        <div class="metric-card"><strong>客胜区间</strong><span>${intervalLabel(ci.away_win)}</span></div>
+        <div class="metric-card"><strong>Over 2.5</strong><span>${safePercent(mc.over_2_5)}</span></div>
+      </div>
+      <div class="score-grid">
+        ${(mc.scorelines || [])
+          .slice(0, 6)
+          .map((item) => `<div class="score-item"><strong>${item.score}</strong><span>${safePercent(item.probability)}</span></div>`)
+          .join('')}
+      </div>
+    </div>
+  `;
+}
+
+function divergenceNotice(prediction) {
+  const risk = riskLabel(prediction.ensemble?.confidence, prediction);
+  if (risk !== '模型分歧') return '';
+  return '<div class="analysis warning">Poisson 与 Monte Carlo 的首选赛果不一致，本场应降低结论置信度并重点关注临场阵容和赔率变化。</div>';
+}
+
+function intervalLabel(interval) {
+  if (!interval) return '-';
+  return `${safePercent(interval.low)}-${safePercent(interval.high)}`;
+}
+
+function safePercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '--';
+  return `${(number * 100).toFixed(1)}%`;
 }
 
 function renderSimulation(prediction) {
   const weights = prediction.model_blend_weights;
   document.querySelector('#simulation-summary').innerHTML = `
-    <div class="metric-card"><strong>Dixon-Coles + ELO</strong><span>${formatPercent(weights.dixon_coles_elo)}</span></div>
-    <div class="metric-card"><strong>市场校准</strong><span>${formatPercent(weights.market_calibration)}</span></div>
+    <div class="metric-card"><strong>Dixon-Coles + ELO</strong><span>${safePercent(weights.dixon_coles_elo)}</span></div>
+    <div class="metric-card"><strong>Poisson</strong><span>${safePercent(weights.poisson)}</span></div>
+    <div class="metric-card"><strong>Monte Carlo</strong><span>${safePercent(weights.monte_carlo)}</span></div>
+    <div class="metric-card"><strong>盘口</strong><span>${safePercent(weights.market)}</span></div>
+    <div class="metric-card"><strong>XGBoost</strong><span>${safePercent(weights.xgboost)}</span></div>
+    <div class="metric-card"><strong>市场校准</strong><span>${safePercent(weights.market_calibration)}</span></div>
     <div class="metric-card"><strong>LLM 投票上限</strong><span>${formatPercent(weights.llm_vote_cap)}</span></div>
-    <div class="metric-card"><strong>当前 LLM 权重</strong><span>${formatPercent(weights.llm_vote)}</span></div>
-    <div class="metric-card"><strong>模型 xG</strong><span>${prediction.model_inputs?.home?.xg ?? '-'} / ${prediction.model_inputs?.away?.xg ?? '-'}</span></div>
-    <div class="metric-card"><strong>DC rho</strong><span>${prediction.model_inputs?.rho ?? '-'}</span></div>
+    <div class="metric-card"><strong>当前 LLM 权重</strong><span>${safePercent(weights.llm_vote)}</span></div>
+    <div class="metric-card"><strong>Poisson λ</strong><span>${prediction.poisson?.lambda_home ?? '-'} / ${prediction.poisson?.lambda_away ?? '-'}</span></div>
+    <div class="metric-card"><strong>模拟脚本</strong><span>${prediction.monte_carlo?.typical_script ?? '-'}</span></div>
   `;
 }
 
@@ -823,6 +1248,14 @@ async function loadSquadPanels(fixture) {
 
 function squadPanel(team, squad) {
   const players = squad.players || [];
+  if (squad.available === false) {
+    return `
+      <div class="squad-panel">
+        <h4>${squad.flag ? `${squad.flag} ` : ''}${squad.team_zh || team}</h4>
+        <div class="empty-state">尚未同步阵容。点击“同步本场阵容”获取教练和球员名单。</div>
+      </div>
+    `;
+  }
   return `
     <div class="squad-panel">
       <h4>${team}</h4>

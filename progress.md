@@ -118,3 +118,67 @@
 | Coverage API | `GET /api/lyihub/coverage` | 48-team validation visible | 48 squads complete; 36 strict ability-complete; 27 missing ability values | ✓ |
 | Source-gap team detail | `GET /api/teams/Haiti/world-cup-detail` | No blank displayed ability values; estimates marked | 26/26 displayed ability, 23 source, 3 estimated | ✓ |
 | Browser smoke | `http://127.0.0.1:8000/` | Buttons visibly update panels | Round, team detail, and prediction detail interactions pass | ✓ |
+
+## Session: 2026-06-27
+
+### Phase 8: Odds, XGBoost, Adaptive Learning, and Betting Product Layer
+- **Status:** complete
+- Actions taken:
+  - Read current Market/Poisson/Monte Carlo/Ensemble service and tests.
+  - Confirmed local `.venv` does not have `xgboost`; implemented a deterministic XGBoost-compatible adapter layer.
+  - Added rolling World Cup learning adjustment that uses only completed matches before the fixture date.
+  - Added Monte Carlo goal variance output for model features.
+  - Added `simulations` query parameter to prediction API and wired it into Monte Carlo.
+  - Added `odds_markets` bundle for 1X2, handicap availability, and totals availability.
+  - Added XGBoost into ensemble source probabilities and model weights.
+  - Added dynamic betting risk warnings and recommended options with full/half/quarter Kelly.
+  - Added frontend simulation count control, XGBoost model card, odds chips, model-vs-market edge card, and Kelly risk badges.
+  - Added opt-in China Sporttery public-web odds parser/provider; live gateway is WAF-blocked in this environment, so it remains disabled unless `SPORTTERY_ENABLE_LIVE=1`.
+  - Added persisted daily ensemble weight calibration from completed predictions before the target date.
+  - Added model-weight APIs and returned `model_weight_run` in prediction payloads.
+  - Replaced deterministic-only XGBoost behavior with a trainable layer: `xgboost.XGBClassifier` when installed, otherwise a local trainable softmax fallback using the same features.
+  - Optimized recent-match feature loading so Poisson and XGBoost training use a bounded 400-day historical window plus current World Cup results, avoiding repeated parsing of the full historical table.
+  - Added optional Betfair Exchange provider with 1X2, Asian handicap, and Over/Under 2.5 parser coverage.
+  - Added `odds_data_status` to prediction payloads so market availability, source priority, and unavailable reasons are auditable per match.
+  - Added the explicit `market_probability_no_vig` output alias required by the product spec while preserving `implied_probability_no_vig` for backward compatibility.
+  - Added visible edge labels for daily match chips: `value bet`, `market efficient`, or `watch`.
+  - Updated `task_plan.md`, `findings.md`, and this progress log.
+
+## Test Results: Phase 8
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| Frontend syntax | `node --check src/main.js` | No syntax errors | Passed | ✓ |
+| Full backend test suite | `.venv/bin/python -m pytest -q` | All tests pass | 44 passed, 1 warning | ✓ |
+| Focused model/API suite | `.venv/bin/python -m pytest tests/test_prediction_core.py tests/test_service_api.py -q` | XGBoost, learning, MC, market and API tests pass | 17 passed, 1 warning | ✓ |
+| Chrome smoke | `http://127.0.0.1:8000/` with Chrome stable | Detail cards, XGBoost, odds, market panel, and simulation count control work | 6 matches, 7 model cards, XGBoost visible, 1X2 visible, simulations 10,000 -> 5,000, no console/HTTP errors | ✓ |
+| Focused model/API suite after Sporttery + weights | `.venv/bin/python -m pytest tests/test_prediction_core.py tests/test_service_api.py -q` | Sporttery parser, weight calibration, no future leakage pass | 20 passed, 1 warning | ✓ |
+| Full backend suite after Sporttery + weights | `.venv/bin/python -m pytest -q` | All regression tests pass | 47 passed, 1 warning | ✓ |
+| Frontend syntax after card-click fix | `node --check src/main.js` | No syntax errors | Passed | ✓ |
+| Chrome stable smoke after card-click fix | `http://127.0.0.1:8000/` | Top tabs, clickable round cards, health, detail, XGBoost, weight audit work | 24 cards, 7 tabs, Sporttery visible, XGBoost visible, weight sample count 120 | ✓ |
+| XGBoost trainable layer focused suite | `.venv/bin/python -m pytest tests/test_prediction_core.py tests/test_service_api.py -q` | Trainable fallback, Sporttery parser, model weights pass | 21 passed, 1 warning | ✓ |
+| Full backend suite after trainable XGBoost | `.venv/bin/python -m pytest -q` | All regression tests pass | 48 passed, 1 warning | ✓ |
+| Frontend syntax after trainable XGBoost | `node --check src/main.js` | No syntax errors | Passed | ✓ |
+| Real DB prediction timing | `WorldCupService().predict_fixture('lyihub-54328044', simulations=1000)` | XGBoost training layer active and response under a few seconds | 0.87s first run, 0.63s cached, 180 train samples | ✓ |
+| Chrome stable smoke after trainable XGBoost | `http://127.0.0.1:8000/` | Detail exposes trained XGBoost metadata and existing top-tab UI still works | 24 cards, 7 tabs, `trainable_softmax_fallback`, 180 XGBoost samples, 120 weight samples | ✓ |
+| Focused odds/provider suite after Betfair | `.venv/bin/python -m pytest tests/test_service_api.py tests/test_prediction_core.py -q` | Betfair parser, Sporttery parser, odds status, model tests pass | 22 passed, 1 warning | ✓ |
+| Full backend suite after Betfair | `.venv/bin/python -m pytest -q` | All regression tests pass | 49 passed, 1 warning | ✓ |
+| Frontend syntax after Betfair | `node --check src/main.js` | No syntax errors | Passed | ✓ |
+| FastAPI TestClient smoke after Betfair | `PYTHONPATH=backend .venv/bin/python ... TestClient` | Current code exposes Betfair/Sporttery health and prediction odds status | Betfair true, Sporttery true, XGBoost 180 samples, odds status present | ✓ |
+| Chrome stable smoke after approval reset | `http://127.0.0.1:8000/` with `/Applications/Google Chrome.app` | Top tabs, round cards, Today odds/value strips, health odds sources, and detail model audit work | 7 tabs, 24 round cards, 6 Today prediction cards, 6 odds strips, 6 edge strips, XGBoost `trainable_softmax_fallback`, 180 train samples | ✓ |
+| Full backend suite final Phase 8 | `.venv/bin/python -m pytest -q` | All regression tests pass | 49 passed, 1 warning | ✓ |
+| Frontend syntax final Phase 8 | `node --check src/main.js` | No syntax errors | Passed | ✓ |
+| Focused suite after market probability alias | `.venv/bin/python -m pytest tests/test_prediction_core.py tests/test_service_api.py -q` | No-vig alias, edge labels, odds/provider/model API tests pass | 22 passed, 1 warning | ✓ |
+| Full backend suite after market probability alias | `.venv/bin/python -m pytest -q` | All regression tests pass | 49 passed, 1 warning | ✓ |
+| API market alias smoke | `WorldCupService(...).sync_date('2026-06-15')` then `predict_fixture(...)` | Market prediction exposes `market_probability_no_vig`, overround, Kelly full/half/quarter, normalized weights | no-vig sum 1.0, overround 0.049571, Kelly keys full/half/quarter, weights sum 1.0 | ✓ |
+| Chrome stable smoke after market alias | `http://127.0.0.1:8000/` with `/Applications/Google Chrome.app` | Current UI/API expose top tabs, Today betting chips, health odds sources, detail model audit, and `market_probability_no_vig` | 7 tabs, 24 round cards, 6 Today prediction cards, 6 odds strips, 6 edge strips, XGBoost 180 samples, weights sum 1.0 | ✓ |
+
+## Error Log: Phase 8
+| Timestamp | Error | Attempt | Resolution |
+|-----------|-------|---------|------------|
+| 2026-06-27 | `xgboost` package missing from local `.venv` | 1 | Implemented deterministic XGBoost adapter with `engine` metadata. |
+| 2026-06-27 | Ensemble rounded weights summed to `0.999999` | 1 | Returned raw normalized weights instead of rounded values. |
+| 2026-06-27 | China Sporttery gateway returned `禁止访问` / Tencent WAF block | 2 | Added parser and opt-in provider; default health reports live source disabled unless `SPORTTERY_ENABLE_LIVE=1`. |
+| 2026-06-27 | Smoke test clicked stale `.match-card` selector and then a non-detail button | 2 | Updated smoke selectors to current `.round-card` UI and made round cards themselves open match detail. |
+| 2026-06-27 | Initial trainable XGBoost probe took over 60s | 1 | Profiled the bottleneck to full historical date parsing in Poisson recent rates; bounded `_recent_match_inputs` to the recent window and added a lightweight XGBoost training feature path. |
+| 2026-06-27 | Betfair official docs entry returned a regional `Restricted` page | 1 | Kept Betfair optional and credential-gated, added parser coverage and health reporting without claiming live validation. |
+| 2026-06-27 | Could not restart local 8000 server for Chrome smoke | 1 | Resolved after approval reset: restarted FastAPI on port 8000 and passed Chrome stable smoke with top tabs, round cards, Today odds/value strips, health odds sources, and detail model audit. |

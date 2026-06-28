@@ -5,7 +5,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -89,9 +89,9 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
         return service.lyihub_coverage()
 
     @app.post("/api/predict/{fixture_id}")
-    def predict(fixture_id: str, roster_weight: float = 0.25):
+    def predict(fixture_id: str, roster_weight: float = 0.25, simulations: int | None = None):
         try:
-            return service.predict_fixture(fixture_id, roster_weight=roster_weight)
+            return service.predict_fixture(fixture_id, roster_weight=roster_weight, simulations=simulations)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -107,6 +107,14 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
     @app.post("/api/health/validate-sources")
     def validate_sources():
         return service.validate_data_sources()
+
+    @app.post("/api/models/recalibrate")
+    def recalibrate_models(date: str):
+        return service.recalibrate_model_weights(date)
+
+    @app.get("/api/models/weights")
+    def model_weights(date: str):
+        return service.model_weights_for_date(date)
 
     @app.get("/api/health/roster-data")
     def roster_health():
@@ -133,10 +141,7 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
 
     @app.get("/api/teams/{team}/squad")
     def team_squad(team: str):
-        try:
-            return service.get_team_squad(team)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return service.get_team_squad(team, allow_empty=True)
 
     @app.get("/api/teams/{team}/strength")
     def team_strength(team: str):
@@ -167,6 +172,10 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
     @app.get("/")
     def index():
         return FileResponse(project_root / "index.html")
+
+    @app.get("/favicon.ico")
+    def favicon():
+        return Response(status_code=204)
 
     return app
 

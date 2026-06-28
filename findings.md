@@ -98,5 +98,49 @@
   - Team button click opens `#team-detail` and renders the team's tournament matches and squad.
   - Match detail button click renders probabilities, xG, roster weight slider, three-line strength, and Top 6 scorelines.
 
+## 2026-06-27 Model/Product Enhancement Findings
+- Current local `.venv` does not include the `xgboost` package. `prediction/xgboost_model.py` now supports a real `xgboost.XGBClassifier` when the optional `ml` dependency is installed and otherwise trains a local softmax fallback on the same feature rows.
+- The trainable XGBoost-compatible layer consumes Elo delta, Poisson lambdas, Monte Carlo probability/variance, market implied probability when available, roster attack/defense edge, and rolling World Cup form.
+- Service predictions now train/cache the XGBoost layer per fixture date using completed matches strictly before that date. Real DB smoke for `lyihub-54328044` trained on 180 samples with `engine="trainable_softmax_fallback"` and completed in under 1 second after the recent-match window optimization.
+- `prediction/learning.py` now builds rolling World Cup form adjustments only from completed World Cup/lyihub matches strictly before the target fixture date. This is the current data-leakage guard.
+- `WorldCupService.predict_fixture()` now accepts `simulations`, clamps it to `100..50000`, and sends that count into Monte Carlo simulation.
+- Ensemble now supports `xgboost` as a model source and uses normalized weights from available models. If market is missing, market is excluded and remaining model weights are renormalized.
+- Market output now includes an `odds_markets` bundle:
+  - `h2h`: 1X2 no-vig probabilities when odds exist.
+  - `handicap`: explicit unavailable object when no handicap market is returned.
+  - `totals`: Over/Under no-vig probabilities when odds exist.
+- Market payloads now expose both `market_probability_no_vig` and the older `implied_probability_no_vig` key. Unavailable markets return empty probability objects, `overround=null`, and `available=false`, so the UI can render `盘口不可用` without losing the requested output shape.
+- Betting value output now includes recommended options, full/half/quarter Kelly, confidence, and dynamic risk warnings.
+- Daily match edge chips now visibly label each outcome as `value bet`, `market efficient`, or `watch`, matching the 5% value and 3% efficient thresholds.
+- Dynamic risk warnings currently cover:
+  - 盘口缺失
+  - 模型分歧
+  - 首轮保守系数影响
+  - 近期样本不足
+  - roster 不完整
+  - 本届世界杯可学习样本不足
+- Frontend uses compact chips/mini-cards/probability bars for odds, edge, XGBoost badge, and Kelly risk; it preserves the existing World Cup card-board style.
+- Test evidence added:
+  - XGBoost adapter deterministic output and probability normalization.
+  - Trainable XGBoost-compatible fallback fits fixed samples and returns stable predictions.
+  - Rolling learning excludes future match data.
+  - Monte Carlo simulation count changes sample size and confidence interval width.
+  - Prediction API returns xgboost, learning, odds markets, risk warnings, and supports `simulations=5000`.
+- China Sporttery source investigation:
+  - `https://www.sporttery.cn/` is reachable and advertises the public web API host `//webapi.sporttery.cn`.
+  - Direct gateway probes to `https://webapi.sporttery.cn/gateway/jc/football/getFixedBonusV1.qry?clientCode=3001` returned either `禁止访问` or a Tencent WAF block page in this environment, even with Referer/User-Agent headers.
+  - Implemented a parser/provider for the observed Sporttery fixed-bonus JSON shape, but live fetching is opt-in behind `SPORTTERY_ENABLE_LIVE=1`; default health reports it as configured=false rather than silently scraping a blocked endpoint.
+  - When available, Sporttery odds can enrich 1X2, totals, and handicap fields and are persisted with `market_source="China Sporttery"`.
+- Betfair source investigation:
+  - Official developer docs entry `https://docs.developer.betfair.com/` returned a regional `Restricted` page from the current environment, so live docs/API probing could not be completed here.
+  - Added optional `BetfairOddsProvider` using the standard Exchange JSON-RPC shape, enabled only when `BETFAIR_APP_KEY` and `BETFAIR_SESSION_TOKEN` are present in `.env`.
+  - Betfair parser supports `MATCH_ODDS`, `ASIAN_HANDICAP`, and `OVER_UNDER_25`, and the health API reports the provider as unconfigured when secrets are absent.
+  - Prediction output now includes `odds_data_status` with configured odds providers, available markets, selected source, and unavailable-market reason.
+- Daily ensemble weight calibration is now persisted in SQLite:
+  - New table: `model_weight_runs`.
+  - New APIs: `POST /api/models/recalibrate?date=YYYY-MM-DD` and `GET /api/models/weights?date=YYYY-MM-DD`.
+  - Calibration uses completed prediction samples strictly before the target date and scores model source probabilities with Brier Score plus Log Loss.
+  - Prediction output now includes `model_weight_run` so the dashboard/report can audit which learned weights were used.
+
 ---
 *Update this file after every 2 view/browser/search operations.*
