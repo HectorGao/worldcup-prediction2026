@@ -171,6 +171,15 @@
 | Full backend suite after market probability alias | `.venv/bin/python -m pytest -q` | All regression tests pass | 49 passed, 1 warning | ✓ |
 | API market alias smoke | `WorldCupService(...).sync_date('2026-06-15')` then `predict_fixture(...)` | Market prediction exposes `market_probability_no_vig`, overround, Kelly full/half/quarter, normalized weights | no-vig sum 1.0, overround 0.049571, Kelly keys full/half/quarter, weights sum 1.0 | ✓ |
 | Chrome stable smoke after market alias | `http://127.0.0.1:8000/` with `/Applications/Google Chrome.app` | Current UI/API expose top tabs, Today betting chips, health odds sources, detail model audit, and `market_probability_no_vig` | 7 tabs, 24 round cards, 6 Today prediction cards, 6 odds strips, 6 edge strips, XGBoost 180 samples, weights sum 1.0 | ✓ |
+| Frontend syntax after handicap market | `node --check src/main.js` | No syntax errors | Passed | ✓ |
+| Focused suite after handicap market | `.venv/bin/python -m pytest tests/test_prediction_core.py tests/test_service_api.py -q` | Sporttery mobile parser, handicap -1/+1 regions, prediction payload fields pass | 23 passed, 1 warning | ✓ |
+| Full backend suite after handicap market | `.venv/bin/python -m pytest -q` | All regression tests pass | 50 passed, 1 warning | ✓ |
+| Chrome stable smoke after handicap market | `http://127.0.0.1:8000/` with `/Applications/Google Chrome.app` | Today page shows 6 odds panels and detail heatmap marks handicap regions | 6 odds panels, 12 odds rows, 6 handicap Kelly rows, 25 handicap heatmap cells | ✓ |
+| Frontend syntax after lottery window | `node --check src/main.js` | No syntax errors after match-window UI edits | Passed | ✓ |
+| Focused suite after lottery window | `.venv/bin/python -m pytest tests/test_service_api.py tests/test_prediction_core.py -q` | Date fallback, Sporttery snapshot, prediction core, and market tests pass | 24 passed, 1 warning | ✓ |
+| Full backend suite after lottery window | `.venv/bin/python -m pytest -q` | All regression tests pass | 51 passed, 1 warning | ✓ |
+| API smoke after lottery window restart | `GET /api/matches?date=2026-06-28` | Completed Beijing 28th rows are skipped; next actionable window is shown | date `2026-06-29`, `display_mode=sporttery_lottery_window`, 6 matches, window dates `2026-06-29/30/2026-07-01` | ✓ |
+| Chrome stable smoke after lottery window | `http://127.0.0.1:8000/` with `/Applications/Google Chrome.app` | Today page displays the six current Sporttery World Cup markets with right-side odds | date input `2026-06-29`, 6 rows, tickets `周日073` through `周二078`, SPF/RQSPF odds visible | ✓ |
 
 ## Error Log: Phase 8
 | Timestamp | Error | Attempt | Resolution |
@@ -182,3 +191,7 @@
 | 2026-06-27 | Initial trainable XGBoost probe took over 60s | 1 | Profiled the bottleneck to full historical date parsing in Poisson recent rates; bounded `_recent_match_inputs` to the recent window and added a lightweight XGBoost training feature path. |
 | 2026-06-27 | Betfair official docs entry returned a regional `Restricted` page | 1 | Kept Betfair optional and credential-gated, added parser coverage and health reporting without claiming live validation. |
 | 2026-06-27 | Could not restart local 8000 server for Chrome smoke | 1 | Resolved after approval reset: restarted FastAPI on port 8000 and passed Chrome stable smoke with top tabs, round cards, Today odds/value strips, health odds sources, and detail model audit. |
+| 2026-06-28 | Direct curl to Sporttery mobile calculator JSON endpoint returned Tencent WAF block | 1 | Documented endpoint and fields from page JS/browser rendering; kept live fetch opt-in and used cached/manual odds fallback. |
+| 2026-06-28 | `ui-ux-pro-max` installed script path was a placeholder file instead of runnable review scripts | 1 | Read the skill instructions directly and applied its dashboard, accessibility, spacing, and density rules manually to the Today match/odds layout. |
+| 2026-06-28 | Current Sporttery mobile page odds differed from the earlier image snapshot | 1 | Re-verified the live rendered page in Chrome and updated the local snapshot to the current six-match sales window. |
+| 2026-06-28 | Python localhost probes were blocked by the sandbox network profile | 1 | Used the already-approved escalated `curl` path for local API smoke verification. |

@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from worldcup_predictor.api import create_app
 from worldcup_predictor.data.providers import BetfairOddsProvider, SportteryOddsProvider
+from worldcup_predictor.data.sporttery_snapshot import SPORTTERY_LOTTERY_SNAPSHOT
 from worldcup_predictor.service import WorldCupService
 
 
@@ -29,6 +30,9 @@ def test_daily_sync_is_idempotent_and_prediction_contains_required_fields(tmp_pa
     assert prediction["monte_carlo"]["simulations"] >= 10_000
     assert set(prediction["ensemble"]["weights"]) >= {"elo", "poisson", "monte_carlo", "xgboost"}
     assert "h2h" in prediction["odds_markets"]
+    assert "lottery_market" in prediction
+    assert "handicap_analysis" in prediction
+    assert "score_heatmap" in prediction
     assert "model_weight_run" in prediction
     assert "odds_data_status" in prediction
     assert prediction["odds_data_status"]["market_available"] is True
@@ -79,6 +83,63 @@ def test_fastapi_endpoints_expose_matches_predictions_reports_and_health(tmp_pat
     weights_response = client.get("/api/models/weights", params={"date": "2026-06-15"})
     assert weights_response.status_code == 200
     assert "weights" in weights_response.json()
+
+
+def test_default_match_date_skips_completed_day_and_shows_sporttery_window(tmp_path: Path):
+    db_path = tmp_path / "worldcup.sqlite3"
+    service = WorldCupService(db_path=db_path)
+    service.db.upsert_lyihub_match(
+        {
+            "id": "lyihub-completed-1",
+            "match_id": "completed-1",
+            "date": "2026-06-28",
+            "kickoff": "2026-06-28T02:00:00+00:00",
+            "home_team": "Jordan",
+            "away_team": "Argentina",
+            "home_team_zh_source": "约旦",
+            "away_team_zh_source": "阿根廷",
+            "group": "小组赛 第3轮",
+            "venue": "test",
+            "status": "final",
+            "home_score": 1,
+            "away_score": 3,
+            "has_predict": False,
+            "payload": {},
+        }
+    )
+    for market in SPORTTERY_LOTTERY_SNAPSHOT:
+        service.db.upsert_lyihub_match(
+            {
+                "id": market["fixture_id"],
+                "match_id": market["fixture_id"].replace("lyihub-", ""),
+                "date": market["date"],
+                "kickoff": f"{market['date']}T03:00:00+08:00",
+                "home_team": market["home_team"],
+                "away_team": market["away_team"],
+                "home_team_zh_source": market["home_team"],
+                "away_team_zh_source": market["away_team"],
+                "group": "1/16决赛",
+                "venue": "test",
+                "status": "scheduled",
+                "home_score": None,
+                "away_score": None,
+                "has_predict": False,
+                "payload": {},
+            }
+        )
+
+    assert service.default_match_date("2026-06-28") == "2026-06-29"
+    matches = service.list_matches("2026-06-29")
+
+    assert len(matches) == 6
+    assert {match["id"] for match in matches} == {market["fixture_id"] for market in SPORTTERY_LOTTERY_SNAPSHOT}
+    assert all("China Sporttery snapshot" in str(match.get("market_source")) for match in matches)
+    summaries = service.list_matches_with_prediction_summary("2026-06-29")
+    first_summary = next(match for match in summaries if match["id"] == "lyihub-54327932")
+    assert first_summary["lottery_market"]["match_no"] == "周日073"
+    assert first_summary["odds_markets"]["h2h"]["odds"]["home"] == 5.65
+    prediction = service.predict_fixture("lyihub-54327932")
+    assert prediction["lottery_market"]["match_no"] == "周日073"
 
 
 def test_api_allows_file_page_cors_origin(tmp_path: Path):
@@ -187,14 +248,21 @@ def test_sporttery_parser_normalizes_odds_without_live_fetch():
     events = provider.parse_events(
         {
             "value": {
-                "matchList": [
+                "matchInfoList": [
                     {
-                        "matchDate": "2026-06-23",
-                        "homeTeamName": "法国",
-                        "awayTeamName": "塞内加尔",
-                        "had": {"h": "1.65", "d": "3.60", "a": "5.20"},
-                        "hhad": {"h": "3.10", "d": "3.35", "a": "1.92", "goalLine": "-1"},
-                        "ttg": {"over": "1.78", "under": "2.02"},
+                        "subMatchList": [
+                            {
+                                "matchDate": "2026-06-23",
+                                "businessDate": "2026-06-23",
+                                "matchNumStr": "周二001",
+                                "leagueAllName": "世界杯",
+                                "homeTeamAllName": "法国",
+                                "awayTeamAllName": "塞内加尔",
+                                "had": {"h": "1.65", "d": "3.60", "a": "5.20", "goalLine": "0"},
+                                "hhad": {"h": "3.10", "d": "3.35", "a": "1.92", "goalLine": "-1"},
+                                "ttg": {"over": "1.78", "under": "2.02"},
+                            }
+                        ]
                     }
                 ]
             }
@@ -202,8 +270,11 @@ def test_sporttery_parser_normalizes_odds_without_live_fetch():
     )
 
     assert events[0]["home_team"] == "法国"
+    assert events[0]["match_num"] == "周二001"
+    assert events[0]["league"] == "世界杯"
     assert events[0]["h2h"] == {"home": 1.65, "draw": 3.6, "away": 5.2}
     assert events[0]["handicap"]["away"] == 1.92
+    assert events[0]["handicap_line"] == "-1"
     assert events[0]["totals"]["over"] == 1.78
 
 

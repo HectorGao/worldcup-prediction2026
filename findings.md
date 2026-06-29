@@ -142,5 +142,42 @@
   - Calibration uses completed prediction samples strictly before the target date and scores model source probabilities with Brier Score plus Log Loss.
   - Prediction output now includes `model_weight_run` so the dashboard/report can audit which learned weights were used.
 
+## 2026-06-28 Sporttery Mobile Calculator Findings
+- The requested mobile page `https://m.sporttery.cn/mjc/jsq/zqspf/` returns a lightweight HTML shell and loads the calculator UI through static JS/CSS.
+- In-app browser rendering confirmed the page currently shows World Cup football markets and text for:
+  - SPF rows (`had`): `胜/平/负`
+  - RQSPF rows (`hhad`): `让球胜/让球平/让球负`
+  - match number, business date, kickoff time, league name, home/away Chinese names, and handicap line.
+- Static script `dataTransfer.js` identifies the data endpoint used by the page:
+  - `https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry`
+  - Query params: `channel=<commonV1Fun.comDataChannel>` and `poolCode=hhad,had`
+  - Mobile page uses it for both normal 1X2 (`had`) and handicap 1X2 (`hhad`).
+- Important JSON fields from the formatter:
+  - `value.matchInfoList[].subMatchList[]`
+  - `matchId`, `matchNumStr`, `matchDate`, `matchTime`, `businessDate`, `matchNumDate`, `taxDateNo`
+  - `leagueAllName`, `leagueAbbName`
+  - `homeTeamAllName`, `homeTeamAbbName`, `awayTeamAllName`, `awayTeamAbbName`
+  - `had.h/d/a/goalLine`, `hhad.h/d/a/goalLine`, `poolList[].poolCode`, `poolList[].cbtValue`
+- Direct curl to the JSON endpoint from this environment still returns a Tencent WAF block page even with mobile Referer/User-Agent. Browser rendering can access the page, so live backend fetch remains opt-in and must keep cached/manual fallback.
+- The backend Sporttery provider was updated to the mobile calculator endpoint and parses `matchInfoList/subMatchList`; tests use recorded mock JSON rather than live network.
+- Prediction output now includes:
+  - `lottery_market` for UI-level SPF/RQSPF display.
+  - `handicap_analysis` for model handicap probabilities, market no-vig probabilities, edge, Kelly, and recommendations.
+  - `score_heatmap.handicap_regions` so the frontend can mark each score cell as handicap win/draw/loss.
+- Monte Carlo simulation requests now clamp to `1,000..100,000`, matching the UI custom input range.
+
+## 2026-06-28 Beijing Date And Lottery Window Fix
+- Product/date rule: the default "today" match view should prefer the nearest non-final Beijing match day. On 2026-06-28 Asia/Shanghai, the 2026-06-28 local rows are all completed, so the dashboard now defaults to 2026-06-29.
+- Current Sporttery mobile page verification showed 6 World Cup markets across sales dates 2026-06-28, 2026-06-29, and 2026-06-30:
+  - 周日073 南非 vs 加拿大, kickoff 06-29 03:00 BJT, SPF 5.65 / 3.50 / 1.50, RQSPF +1 2.25 / 3.00 / 2.84.
+  - 周一074 巴西 vs 日本, kickoff 06-30 01:00 BJT, SPF 1.52 / 3.56 / 5.25, RQSPF -1 2.77 / 3.28 / 2.16.
+  - 周一075 德国 vs 巴拉圭, kickoff 06-30 04:30 BJT, SPF 1.24 / 4.90 / 8.40, RQSPF -1 1.82 / 3.65 / 3.28.
+  - 周一076 荷兰 vs 摩洛哥, kickoff 06-30 09:00 BJT, SPF 1.89 / 3.07 / 3.64, RQSPF -1 3.82 / 3.58 / 1.70.
+  - 周二077 科特迪瓦 vs 挪威, kickoff 07-01 01:00 BJT, SPF 3.70 / 3.33 / 1.79, RQSPF +1 1.79 / 3.70 / 3.33.
+  - 周二078 法国 vs 瑞典, kickoff 07-01 05:00 BJT, SPF 1.18 / 5.50 / 10.00, RQSPF -1 1.67 / 3.85 / 3.70.
+- Because direct backend curl to the Sporttery JSON API is still WAF-blocked, these 6 current markets are stored as a Sporttery snapshot fallback and overwrite older snapshot values for those fixture ids when the service starts/lists matches.
+- `/api/matches?date=2026-06-28` now returns `date=2026-06-29`, `display_mode=sporttery_lottery_window`, `window_dates=[2026-06-29, 2026-06-30, 2026-07-01]`, and 6 matches.
+- Frontend "今日比赛" now labels the panel as a Beijing-time Sporttery sales window and shows per-card BJT date/time badges, match number chips, SPF/RQSPF odds, Edge, and Kelly.
+
 ---
 *Update this file after every 2 view/browser/search operations.*

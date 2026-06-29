@@ -308,6 +308,26 @@ class Database:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def list_market_fixtures(
+        self,
+        start_date: str,
+        *,
+        source_keyword: str = "China Sporttery",
+        limit: int = 6,
+    ) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT * FROM fixtures
+                WHERE date >= ?
+                  AND market_source LIKE ?
+                ORDER BY kickoff, id
+                LIMIT ?
+                """,
+                (start_date, f"%{source_keyword}%", int(limit)),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def get_fixture(self, fixture_id: str) -> dict[str, Any] | None:
         with self.connect() as connection:
             row = connection.execute("SELECT * FROM fixtures WHERE id = ?", (fixture_id,)).fetchone()

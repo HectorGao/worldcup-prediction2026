@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Cup Prediction System</title>
-    <link rel="stylesheet" href="src/styles.css?v=20260628-odds-panel" />
+    <link rel="stylesheet" href="src/styles.css?v=20260628-lottery-window" />
   </head>
   <body>
     <div class="app-shell">
@@ -26,7 +26,7 @@
             </div>
             <div class="date-control">
               <label for="match-date">比赛日</label>
-              <input id="match-date" type="date" value="2026-06-15" />
+              <input id="match-date" type="date" value="2026-06-29" />
               <button id="sync-button" class="icon-button" title="同步数据">↻</button>
             </div>
           </div>
@@ -66,7 +66,10 @@
         <section id="today" class="layout view-panel" data-view="today">
           <div class="panel wide">
             <div class="panel-head">
-              <h2>今日比赛</h2>
+              <div>
+                <h2>今日比赛</h2>
+                <span id="match-window-note" class="panel-subhead inline-subhead">北京时间比赛日</span>
+              </div>
               <span id="match-count">等待同步</span>
             </div>
             <div id="matches" class="match-list"></div>
@@ -139,6 +142,6 @@
         </section>
       </main>
     </div>
-    <script defer src="src/main.js?v=20260628-odds-panel"></script>
+    <script defer src="src/main.js?v=20260628-lottery-window"></script>
   </body>
 </html>

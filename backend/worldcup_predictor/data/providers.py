@@ -521,7 +521,7 @@ class OddsApiProvider:
 class SportteryOddsProvider:
     name = "China Sporttery"
     role = "official_cn_odds_public_web_fallback"
-    endpoint = "https://webapi.sporttery.cn/gateway/jc/football/getFixedBonusV1.qry"
+    endpoint = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry"
 
     def configured(self) -> bool:
         return os.getenv("SPORTTERY_ENABLE_LIVE", "0") == "1"
@@ -548,9 +548,9 @@ class SportteryOddsProvider:
     def fetch_odds(self) -> list[dict[str, Any]]:
         response = httpx.get(
             self.endpoint,
-            params={"clientCode": "3001"},
+            params={"channel": "m", "poolCode": "hhad,had"},
             headers={
-                "Referer": "https://www.sporttery.cn/",
+                "Referer": "https://m.sporttery.cn/mjc/jsq/zqspf/",
                 "User-Agent": "Mozilla/5.0",
                 "Accept": "application/json,text/plain,*/*",
             },
@@ -587,8 +587,8 @@ class SportteryOddsProvider:
         return [self._enrich_fixture(fixture, odds_events) for fixture in fixtures]
 
     def _normalize_event(self, item: dict[str, Any]) -> dict[str, Any] | None:
-        home = first_present(item, ["homeTeamAbbName", "homeTeamName", "homeName", "home_team"])
-        away = first_present(item, ["awayTeamAbbName", "awayTeamName", "awayName", "away_team"])
+        home = first_present(item, ["homeTeamAllName", "homeTeamAbbName", "homeTeamName", "homeName", "home_team"])
+        away = first_present(item, ["awayTeamAllName", "awayTeamAbbName", "awayTeamName", "awayName", "away_team"])
         if not home or not away:
             return None
         h2h = item.get("had") or item.get("spf") or {}
@@ -598,11 +598,13 @@ class SportteryOddsProvider:
             "source": self.name,
             "date": first_present(item, ["matchDate", "businessDate", "date"]),
             "match_num": first_present(item, ["matchNumStr", "matchNum", "matchId"]),
+            "match_num_date": first_present(item, ["matchNumDate"]),
+            "league": first_present(item, ["leagueAllName", "leagueAbbName", "l_cn"]),
             "home_team": home,
             "away_team": away,
             "h2h": normalize_three_way_odds(h2h, home_key="h", draw_key="d", away_key="a"),
             "handicap": normalize_three_way_odds(handicap, home_key="h", draw_key="d", away_key="a"),
-            "handicap_line": first_present(handicap, ["fixedodds", "goalLine", "line"]),
+            "handicap_line": first_present(handicap, ["fixedodds", "goalLine", "line"]) or first_present(item, ["goalLine"]),
             "totals": normalize_two_way_odds(totals),
         }
 
@@ -645,6 +647,9 @@ class SportteryOddsProvider:
         if isinstance(node, list) and node and all(isinstance(item, dict) for item in node):
             if any("home" in " ".join(item.keys()).lower() or "team" in " ".join(item.keys()).lower() for item in node[:3]):
                 lists.append(node)
+            else:
+                for item in node:
+                    lists.extend(self._find_event_lists(item))
         elif isinstance(node, dict):
             for value in node.values():
                 lists.extend(self._find_event_lists(value))

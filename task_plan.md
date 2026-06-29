@@ -74,6 +74,16 @@ Phase 8 complete
 - [x] Add optional Betfair Exchange provider with health validation and parser coverage for 1X2, Asian handicap, and Over/Under 2.5.
 - [x] Replace the deterministic-only XGBoost adapter with a trainable model layer: real `xgboost` when optional dependency is installed, trainable softmax fallback otherwise.
 - [x] Add daily persisted model-weight recalibration from completed-match scoring metrics.
+- [x] Switch Sporttery investigation to the mobile football calculator endpoint and document WAF fallback limits.
+- [x] Add lottery market output for SPF/RQSPF, handicap no-vig probabilities, Edge, Kelly, and recommendations.
+- [x] Add handicap regions to the score heatmap and detail page model-vs-market comparison.
+- [x] Clamp Monte Carlo simulation count to `1,000..100,000` and add custom UI input.
+- [x] Use `ui-ux-pro-max` review rules to tighten the Today match layout, odds panels, date badges, and sales-window status copy.
+- [x] Change the Beijing default match day from completed `2026-06-28` rows to the next actionable match day, `2026-06-29`.
+- [x] Add the current China Sporttery six-match World Cup sales-window snapshot from `2026-06-28/29/30` sales dates.
+- [x] Show the six Sporttery-window matches in the Today page with Beijing match-date chips and right-side SPF/RQSPF odds cards.
+- [x] Recompute predictions using the updated lottery markets and expose `display_mode=sporttery_lottery_window`.
+- [x] Verify API, Chrome UI, frontend syntax, focused backend tests, and full backend tests after service restart.
 - **Status:** complete
 
 ## Key Questions

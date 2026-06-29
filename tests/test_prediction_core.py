@@ -9,6 +9,7 @@ from worldcup_predictor.prediction.dixon_coles import (
 from worldcup_predictor.prediction.elo import update_elo
 from worldcup_predictor.prediction.metrics import evaluate_result
 from worldcup_predictor.prediction.ensemble import blend_probabilities
+from worldcup_predictor.prediction.handicap import handicap_outcome, handicap_probabilities
 from worldcup_predictor.prediction.market import analyze_value, market_from_decimal_odds
 from worldcup_predictor.prediction.monte_carlo import MonteCarloConfig, simulate_match
 from worldcup_predictor.prediction.odds import convert_odds, devig
@@ -143,6 +144,27 @@ def test_market_value_analysis_uses_no_vig_and_kelly():
     assert home["label"] == "有价值"
     assert home["edge_label"] == "value bet"
     assert home["kelly"]["full"] > 0
+
+
+def test_handicap_probability_regions_for_minus_one_and_plus_one():
+    matrix = {
+        (1, 0): 0.20,
+        (2, 1): 0.15,
+        (2, 0): 0.10,
+        (0, 1): 0.25,
+        (1, 1): 0.20,
+        ("8+", "8+"): 0.10,
+    }
+
+    minus_one = handicap_probabilities(matrix, -1)
+    plus_one = handicap_probabilities(matrix, 1)
+
+    assert handicap_outcome(1, 0, -1) == "draw"
+    assert handicap_outcome(2, 1, -1) == "draw"
+    assert minus_one["probabilities"]["draw"] > minus_one["probabilities"]["home"]
+    assert plus_one["probabilities"]["home"] > plus_one["probabilities"]["draw"]
+    assert minus_one["tail_probability"] == 0.1
+    assert abs(sum(minus_one["probabilities"].values()) - 1.0) < 1e-9
 
 
 def test_ensemble_renormalizes_when_market_is_unavailable():

@@ -11,7 +11,8 @@ const state = {
   roundMatches: [],
   selectedStage: null,
   activeView: 'rounds',
-  selectedTeamDetail: null
+  selectedTeamDetail: null,
+  currentMatchMeta: null
 };
 
 const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
@@ -34,7 +35,7 @@ async function api(path, options = {}) {
 }
 
 function selectedDate() {
-  return document.querySelector('#match-date').value || state.availableDates.at(-1) || '2026-06-16';
+  return document.querySelector('#match-date').value || state.availableDates.at(-1) || '2026-06-29';
 }
 
 function teamDisplay(entity, side = '') {
@@ -78,9 +79,10 @@ async function loadMatches() {
   setStatus(`正在加载 ${date} 的比赛...`);
   const payload = await api(`/api/matches?date=${date}`);
   state.matches = payload.matches;
+  state.currentMatchMeta = payload;
   document.querySelector('#match-date').value = payload.date || date;
   renderMatches();
-  setStatus(`已显示 ${payload.date || date} 的 ${state.matches.length} 场比赛。`, 'success');
+  setStatus(matchStatusMessage(payload), 'success');
   loadMatchCardPredictions();
 }
 
@@ -333,19 +335,29 @@ async function loadKnockout() {
 
 function renderMatches() {
   const list = document.querySelector('#matches');
+  const meta = state.currentMatchMeta || {};
+  const windowDates = meta.window_dates || [...new Set(state.matches.map((match) => match.date))];
   document.querySelector('#match-count').textContent = `${state.matches.length} 场比赛`;
+  document.querySelector('#match-window-note').textContent =
+    meta.display_mode === 'sporttery_lottery_window'
+      ? `北京时间 ${meta.date} 起 · 竞彩销售窗 ${windowDates.join(' / ')} · 当前可售世界杯 ${state.matches.length} 场`
+      : `北京时间 ${meta.date || selectedDate()} · 单日赛程`;
   list.innerHTML = state.matches
     .map(
       (match) => `
       <article class="match-row ${state.selectedPrediction?.fixture?.id === match.id ? 'selected' : ''}">
         <div class="match-main">
+          <div class="match-topline">
+            ${matchDateBadge(match)}
+            <span>${match.group || 'World Cup'}</span>
+          </div>
           <div class="teams">
             <strong>
               ${teamButton(match.home_team, teamDisplay(match, 'home'))}
               <span class="meta">vs</span>
               ${teamButton(match.away_team, teamDisplay(match, 'away'))}
             </strong>
-            <span class="meta">${match.group || 'World Cup'} · ${match.venue || 'venue pending'} · ${match.kickoff}</span>
+            <span class="meta">${match.venue || 'venue pending'}</span>
           </div>
           ${inlinePrediction(match)}
         </div>
@@ -409,7 +421,21 @@ function inlinePrediction(match) {
 
 function matchOddsPanel(match) {
   const entry = state.matchPredictions[match.id];
+  const summaryPrediction =
+    match.odds_markets || match.lottery_market
+      ? {
+          odds_markets: match.odds_markets,
+          market: match.market,
+          lottery_market: match.lottery_market,
+          odds_data_status: match.odds_data_status,
+          value_analysis: match.value_analysis,
+          handicap_analysis: match.handicap_analysis,
+        }
+      : null;
   if (!entry || entry.status === 'loading') {
+    if (summaryPrediction) {
+      return oddsPanelMarkup(summaryPrediction);
+    }
     return `
       <aside class="match-odds-panel loading" aria-label="赔率加载中">
         <strong>赔率</strong>
@@ -425,16 +451,22 @@ function matchOddsPanel(match) {
       </aside>
     `;
   }
-  const prediction = entry.prediction;
+  return oddsPanelMarkup(entry.prediction);
+}
+
+function oddsPanelMarkup(prediction) {
   const h2h = prediction.odds_markets?.h2h || prediction.market || {};
   const handicap = prediction.odds_markets?.handicap || {};
+  const lottery = prediction.lottery_market || {};
   const valueItems = prediction.value_analysis?.items || [];
+  const handicapItems = prediction.handicap_analysis?.value_analysis?.items || [];
   return `
     <aside class="match-odds-panel" aria-label="赔率与盘口">
       <div class="odds-panel-head">
         <strong>赔率</strong>
-        <span>${sourceLabel(prediction.odds_data_status?.source)}</span>
+        <span>${sourceLabel(lottery.source || prediction.odds_data_status?.source)}</span>
       </div>
+      ${lottery.match_no ? `<div class="odds-ticket-line">${lottery.match_no} · ${lottery.league || '世界杯'} · ${lottery.sale_status || 'selling'}</div>` : ''}
       ${oddsMarketRow('胜平负', h2h, null)}
       ${oddsMarketRow('让球胜平负', handicap, handicap.line)}
       ${valueItems.length ? `
@@ -442,6 +474,11 @@ function matchOddsPanel(match) {
           ${valueItems.map((item) => `<i class="${Math.abs(item.edge) < 0.03 ? 'efficient' : item.edge >= 0.05 ? 'value' : ''}">${outcomeLabel(item.outcome)} ${safePercent(item.edge)} · ${edgeLabel(item)}</i>`).join('')}
         </div>
       ` : '<div class="odds-edge-row muted">Market vs Model：盘口缺失</div>'}
+      ${handicapItems.length ? `
+        <div class="odds-edge-row handicap-row">
+          ${handicapItems.map((item) => `<i class="${item.edge >= 0.05 ? 'value' : Math.abs(item.edge) < 0.03 ? 'efficient' : ''}">让${handicapOutcomeLabel(item.outcome)} ${safePercent(item.edge)} · Kelly ${safePercent(item.kelly?.full)}</i>`).join('')}
+        </div>
+      ` : ''}
     </aside>
   `;
 }
@@ -464,6 +501,34 @@ function sourceLabel(source) {
   if (String(source).includes('China Sporttery')) return '中国体育彩票';
   if (String(source).includes('Odds')) return 'The Odds API';
   return source;
+}
+
+function matchStatusMessage(payload) {
+  const dates = payload.window_dates || [];
+  if (payload.display_mode === 'sporttery_lottery_window') {
+    return `已显示北京时间 ${payload.date} 起的竞彩可售世界杯窗口：${dates.join(' / ')}，共 ${payload.matches.length} 场。`;
+  }
+  return `已显示北京时间 ${payload.date || selectedDate()} 的 ${payload.matches.length} 场比赛。`;
+}
+
+function matchDateBadge(match) {
+  return `
+    <span class="match-date-badge">
+      <b>${formatBeijingDate(match.kickoff)}</b>
+      <i>${matchTime(match.kickoff)} BJT</i>
+    </span>
+  `;
+}
+
+function formatBeijingDate(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return date.toLocaleDateString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Shanghai'
+  });
 }
 
 function teamButton(team, label) {
@@ -589,6 +654,16 @@ function edgeLabel(item) {
 function formatOdd(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number.toFixed(2) : '--';
+}
+
+function handicapOutcomeLabel(outcome) {
+  return { home: '胜', draw: '平', away: '负' }[outcome] || outcome || '-';
+}
+
+function formatHandicapLine(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return value ?? '--';
+  return number > 0 ? `主队 +${number}` : `主队 ${number}`;
 }
 
 function renderRounds() {
@@ -825,10 +900,11 @@ function renderPrediction(prediction, analysis = null) {
       <div class="control-card compact-control">
         <label for="simulation-count">Monte Carlo 模拟次数 <strong id="simulation-count-value">${state.simulations.toLocaleString('zh-CN')}</strong></label>
         <select id="simulation-count">
-          ${[5000, 10000, 50000]
+          ${[5000, 10000, 20000, 50000]
             .map((value) => `<option value="${value}" ${state.simulations === value ? 'selected' : ''}>${value.toLocaleString('zh-CN')}</option>`)
             .join('')}
         </select>
+        <input id="simulation-custom" type="number" min="1000" max="100000" step="1000" value="${state.simulations}" aria-label="自定义模拟次数" />
         <span>修改后会重新计算 Monte Carlo、XGBoost 和最终融合概率。</span>
       </div>
 
@@ -864,7 +940,7 @@ function renderPrediction(prediction, analysis = null) {
             .map((item) => `<div class="score-item"><strong>${item.score}</strong><span>${formatPercent(item.probability)}</span></div>`)
             .join('')}
         </div>
-        ${scoreHeatmap(prediction.score_matrix)}
+        ${scoreHeatmap(prediction.score_heatmap || { matrix: prediction.score_matrix }, prediction.handicap_analysis)}
       </section>
 
       <section class="prediction-section">
@@ -914,6 +990,16 @@ function renderPrediction(prediction, analysis = null) {
   simulationSelect?.addEventListener('change', () => {
     state.simulations = Number(simulationSelect.value);
     document.querySelector('#simulation-count-value').textContent = state.simulations.toLocaleString('zh-CN');
+    const custom = document.querySelector('#simulation-custom');
+    if (custom) custom.value = state.simulations;
+    loadPrediction(fixture.id);
+  });
+  const simulationCustom = document.querySelector('#simulation-custom');
+  simulationCustom?.addEventListener('change', () => {
+    const value = Math.max(1000, Math.min(100000, Number(simulationCustom.value || 10000)));
+    state.simulations = value;
+    simulationCustom.value = value;
+    document.querySelector('#simulation-count-value').textContent = value.toLocaleString('zh-CN');
     loadPrediction(fixture.id);
   });
   document.querySelector('[data-sync-squads]')?.addEventListener('click', () => syncFixtureSquads(fixture));
@@ -1033,11 +1119,12 @@ function valueAnalysisCard(prediction) {
 
 function marketVsModelCard(prediction) {
   const h2h = prediction.odds_markets?.h2h || prediction.market;
+  const handicap = prediction.handicap_analysis || {};
   if (!h2h?.available) {
     return `
       <div class="market-panel muted">
         <div class="odds-strip muted"><b>1X2</b><i>盘口不可用</i></div>
-        <div class="odds-strip muted"><b>让球</b><i>${prediction.odds_markets?.handicap?.reason || '盘口不可用'}</i></div>
+        ${handicapComparisonCard(handicap)}
       </div>
     `;
   }
@@ -1064,7 +1151,38 @@ function marketVsModelCard(prediction) {
           )
           .join('')}
       </div>
-      <div class="odds-strip muted"><b>让球</b><i>${prediction.odds_markets?.handicap?.reason || '盘口不可用'}</i></div>
+      ${handicapComparisonCard(handicap)}
+    </div>
+  `;
+}
+
+function handicapComparisonCard(handicap) {
+  if (!handicap?.available) {
+    return `<div class="odds-strip muted"><b>让球</b><i>${handicap?.reason || '盘口不可用'}</i></div>`;
+  }
+  const items = handicap.value_analysis?.items || [];
+  return `
+    <div class="handicap-market-card">
+      <div class="odds-strip">
+        <b>让球胜平负</b>
+        <i>盘口 ${formatHandicapLine(handicap.line)}</i>
+        <i>${handicap.tail_note || 'tail 已计入概率'}</i>
+      </div>
+      <div class="model-market-bars">
+        ${items
+          .map(
+            (item) => `
+              <div class="model-market-row">
+                <span>让${handicapOutcomeLabel(item.outcome)}</span>
+                <div class="bar-track"><div class="bar-fill home-fill" style="width:${Math.max(0, Math.min(100, item.model_probability * 100))}%"></div></div>
+                <div class="bar-track"><div class="bar-fill draw-fill" style="width:${Math.max(0, Math.min(100, item.market_probability * 100))}%"></div></div>
+                <strong class="${item.edge >= 0.05 ? 'value' : Math.abs(item.edge) < 0.03 ? 'efficient' : ''}">${safePercent(item.edge)}</strong>
+                <small>Kelly ${safePercent(item.kelly?.full)} · ${item.label}</small>
+              </div>
+            `
+          )
+          .join('')}
+      </div>
     </div>
   `;
 }
@@ -1144,13 +1262,24 @@ function bar(label, value, className) {
   `;
 }
 
-function scoreHeatmap(matrix) {
+function scoreHeatmap(heatmap, handicapAnalysis = {}) {
+  const matrix = Array.isArray(heatmap) ? heatmap : heatmap?.matrix || [];
+  const handicapRegions = heatmap?.handicap_regions || {};
   const cells = new Map(matrix.map((item) => [`${item.home_goals}-${item.away_goals}`, item.probability]));
   const goals = [0, 1, 2, 3, 4];
   const visibleProbabilities = goals.flatMap((home) => goals.map((away) => cells.get(`${home}-${away}`) || 0));
   const maxProbability = Math.max(...visibleProbabilities, 0.01);
+  const handicapLine = heatmap?.handicap ?? handicapAnalysis?.line;
   return `
     <div class="heatmap-wrap" aria-label="比分概率热力图，颜色越暖代表概率越高">
+      ${handicapLine !== undefined && handicapLine !== null ? `
+        <div class="heatmap-handicap-note">
+          <b>让球区域 ${formatHandicapLine(handicapLine)}</b>
+          <span class="region-pill region-home">让胜</span>
+          <span class="region-pill region-draw">让平</span>
+          <span class="region-pill region-away">让负</span>
+        </div>
+      ` : ''}
       <div class="heatmap">
         <div class="heatmap-head"></div>
         ${goals.map((goal) => `<div class="heatmap-head">客 ${goal}</div>`).join('')}
@@ -1160,8 +1289,12 @@ function scoreHeatmap(matrix) {
             goals.forEach((away) => {
               const probability = cells.get(`${home}-${away}`) || 0;
               const level = heatLevel(probability, maxProbability);
+              const regularOutcome = home > away ? '主胜' : home === away ? '平局' : '客胜';
+              const handicapOutcome = handicapRegions[`${home}-${away}`];
+              const regionClass = handicapOutcome ? ` handicap-region-${handicapOutcome}` : '';
+              const title = `${home}-${away} ${formatPercent(probability)} · 普通${regularOutcome}${handicapOutcome ? ` · 让球${handicapOutcomeLabel(handicapOutcome)}` : ''}`;
               row.push(
-                `<div class="heat-cell heat-level-${level}" title="${home}-${away} ${formatPercent(probability)}"><strong>${home}-${away}</strong><span>${formatPercent(probability)}</span></div>`
+                `<div class="heat-cell heat-level-${level}${regionClass}" title="${escapeAttr(title)}"><strong>${home}-${away}</strong><span>${formatPercent(probability)}</span>${handicapOutcome ? `<em>让${handicapOutcomeLabel(handicapOutcome)}</em>` : ''}</div>`
               );
             });
             return row.join('');
@@ -1178,6 +1311,7 @@ function scoreHeatmap(matrix) {
         <i class="heat-level-6"></i>
         <span>高</span>
       </div>
+      ${heatmap?.tail_probability ? `<div class="heat-tail-note">7+ tail：${formatPercent(heatmap.tail_probability)}，${heatmap.tail_note || '未画入 0-4 热力图。'}</div>` : ''}
     </div>
   `;
 }

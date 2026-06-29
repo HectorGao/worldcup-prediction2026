@@ -450,27 +450,65 @@ input[type="date"] {
   font-weight: 800;
 }
 
+.inline-subhead {
+  display: block;
+  padding: 4px 0 0;
+}
+
 .match-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 12px;
 }
 
 .match-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(390px, 0.95fr) auto;
   align-items: center;
   gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--line);
+  padding: 13px 14px;
+  border: 1px solid rgba(228, 184, 79, 0.18);
   border-radius: 9px;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.075), transparent 72%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.09), transparent 72%),
     var(--field);
+  box-shadow: 0 10px 24px rgba(3, 14, 10, 0.12);
   transition:
     border-color 0.16s ease,
     transform 0.16s ease,
     background 0.16s ease;
+}
+
+.match-topline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.match-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid rgba(228, 184, 79, 0.34);
+  border-radius: 999px;
+  background: rgba(228, 184, 79, 0.12);
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+
+.match-date-badge b,
+.match-date-badge i {
+  font-style: normal;
+}
+
+.match-date-badge i {
+  color: var(--gold);
 }
 
 .team-link {
@@ -608,9 +646,12 @@ input[type="date"] {
   gap: 8px;
   min-width: 0;
   padding: 10px;
-  border: 1px solid rgba(24, 118, 77, 0.16);
+  border: 1px solid rgba(24, 118, 77, 0.2);
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.58);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(245, 250, 242, 0.68)),
+    rgba(255, 255, 255, 0.58);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.52);
 }
 
 .match-odds-panel.loading,
@@ -631,6 +672,12 @@ input[type="date"] {
 .odds-panel-head strong {
   color: var(--green-deep);
   font-size: 0.78rem;
+}
+
+.odds-ticket-line {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .odds-market-row {
@@ -981,7 +1028,7 @@ input[type="date"] {
 
 .model-market-row {
   display: grid;
-  grid-template-columns: 44px 1fr 1fr 68px;
+  grid-template-columns: 44px 1fr 1fr 68px minmax(96px, auto);
   gap: 8px;
   align-items: center;
   color: var(--muted);
@@ -1284,7 +1331,7 @@ input[type="date"] {
 }
 
 .compact-control {
-  grid-template-columns: minmax(0, 1fr) 180px;
+  grid-template-columns: minmax(0, 1fr) 150px 150px;
   align-items: center;
 }
 
@@ -1292,7 +1339,8 @@ input[type="date"] {
   grid-column: 1 / -1;
 }
 
-.compact-control select {
+.compact-control select,
+.compact-control input[type="number"] {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -1388,6 +1436,45 @@ input[type="date"] {
   background: rgba(0, 0, 0, 0.16);
 }
 
+.heatmap-handicap-note,
+.heat-tail-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: rgba(243, 245, 234, 0.82);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.region-pill,
+.heat-cell em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #07110e;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.region-home,
+.handicap-region-home em {
+  background: #cbeed8;
+}
+
+.region-draw,
+.handicap-region-draw em {
+  background: #f1d48a;
+}
+
+.region-away,
+.handicap-region-away em {
+  background: #c9d9f6;
+}
+
 .heatmap-head {
   min-height: 34px;
   display: grid;
@@ -1422,6 +1509,22 @@ input[type="date"] {
   color: rgba(243, 245, 234, 0.82);
   font-size: 0.74rem;
   font-variant-numeric: tabular-nums;
+}
+
+.heat-cell em {
+  margin-top: 2px;
+}
+
+.handicap-region-home {
+  border-color: rgba(203, 238, 216, 0.58);
+}
+
+.handicap-region-draw {
+  border-color: rgba(241, 212, 138, 0.68);
+}
+
+.handicap-region-away {
+  border-color: rgba(201, 217, 246, 0.58);
 }
 
 .heat-level-1 {

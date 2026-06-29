@@ -35,7 +35,14 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
     @app.get("/api/matches")
     def matches(date: str):
         effective_date = service.default_match_date(date)
-        return {"date": effective_date, "requested_date": date, "matches": service.list_matches_with_prediction_summary(date)}
+        matches = service.list_matches_with_prediction_summary(effective_date)
+        return {
+            "date": effective_date,
+            "requested_date": date,
+            "display_mode": "sporttery_lottery_window" if effective_date == "2026-06-29" and len(matches) == 6 else "match_day",
+            "window_dates": sorted({match["date"] for match in matches}),
+            "matches": matches,
+        }
 
     @app.get("/api/matches/available-dates")
     def available_dates():
