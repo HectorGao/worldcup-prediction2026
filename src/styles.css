@@ -457,14 +457,17 @@ input[type="date"] {
 
 .match-list {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
   padding: 12px;
+  align-items: stretch;
 }
 
 .match-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(390px, 0.95fr) auto;
-  align-items: center;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  align-content: start;
   gap: 12px;
   padding: 13px 14px;
   border: 1px solid rgba(228, 184, 79, 0.18);
@@ -535,9 +538,9 @@ input[type="date"] {
 .match-row:hover {
   border-color: rgba(228, 184, 79, 0.46);
   background:
-    linear-gradient(90deg, rgba(228, 184, 79, 0.12), transparent 72%),
+    linear-gradient(180deg, rgba(228, 184, 79, 0.12), transparent 72%),
     var(--field);
-  transform: translateX(2px);
+  transform: translateY(-2px);
 }
 
 .teams {
@@ -549,6 +552,13 @@ input[type="date"] {
   display: grid;
   gap: 10px;
   min-width: 0;
+}
+
+.match-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
 }
 
 .teams strong {
@@ -815,6 +825,21 @@ input[type="date"] {
   min-width: 0;
 }
 
+.collapsible-section {
+  padding: 12px;
+  border: 1px solid rgba(24, 118, 77, 0.12);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.collapsible-section.is-collapsed {
+  gap: 0;
+}
+
+.collapsible-section.is-collapsed > :not(.section-title) {
+  display: none !important;
+}
+
 .section-title {
   display: flex;
   align-items: center;
@@ -822,11 +847,44 @@ input[type="date"] {
   gap: 12px;
 }
 
-.section-title > span {
+.section-title > span,
+.section-title-actions > span {
   color: var(--muted);
   font-size: 0.8rem;
   font-weight: 800;
   text-align: right;
+}
+
+.section-title-actions,
+.detail-section-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.detail-section-toolbar {
+  justify-content: flex-start;
+}
+
+.section-collapse-button,
+.detail-section-toolbar button {
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 7px;
+  box-shadow: none;
+  font-size: 0.76rem;
+}
+
+.section-collapse-button::before {
+  content: "-";
+  margin-right: 5px;
+  font-weight: 900;
+}
+
+.collapsible-section.is-collapsed .section-collapse-button::before {
+  content: "+";
 }
 
 .prob-bars {
@@ -1422,9 +1480,10 @@ input[type="date"] {
 
 .heatmap {
   display: grid;
-  grid-template-columns: 42px repeat(5, minmax(58px, 1fr));
+  grid-template-columns: minmax(48px, 0.58fr) repeat(var(--heatmap-goals, 8), minmax(62px, 1fr));
   gap: 6px;
   overflow-x: auto;
+  padding-bottom: 2px;
 }
 
 .heatmap-wrap {
@@ -1451,6 +1510,7 @@ input[type="date"] {
 .heat-cell em {
   display: inline-flex;
   align-items: center;
+  gap: 5px;
   min-height: 18px;
   padding: 0 6px;
   border-radius: 999px;
@@ -1458,6 +1518,17 @@ input[type="date"] {
   font-size: 0.66rem;
   font-style: normal;
   font-weight: 900;
+}
+
+.region-pill {
+  min-height: 28px;
+  padding: 0 9px;
+  color: #07110e;
+  font-variant-numeric: tabular-nums;
+}
+
+.region-pill b {
+  font-size: 0.68rem;
 }
 
 .region-home,
@@ -1497,6 +1568,7 @@ input[type="date"] {
     border-color 0.16s ease,
     transform 0.16s ease,
     filter 0.16s ease;
+  font-variant-numeric: tabular-nums;
 }
 
 .heat-cell:hover {
@@ -1886,26 +1958,27 @@ h3::before {
 }
 
 .detail-panel {
-  position: sticky;
-  top: 14px;
-  max-height: calc(100dvh - 28px);
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
+  position: static;
+  max-height: none;
+  min-height: 560px;
+  display: block;
+  overflow: visible !important;
 }
 
 #prediction-detail {
   min-height: 0;
-  overflow: auto;
+  overflow: visible !important;
 }
 
 .match-list {
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
 }
 
 .match-row {
-  grid-template-columns: minmax(0, 1.02fr) minmax(370px, 0.98fr) auto;
+  grid-template-columns: 1fr;
   align-items: stretch;
+  min-height: 100%;
   background: rgba(255, 255, 255, 0.76);
 }
 
@@ -1921,8 +1994,10 @@ h3::before {
 
 .match-actions {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   min-width: 116px;
   align-content: center;
+  align-items: center;
   gap: 8px;
 }
 

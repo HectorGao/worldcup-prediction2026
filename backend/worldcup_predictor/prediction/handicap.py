@@ -64,7 +64,7 @@ def handicap_probabilities(
         "line": handicap,
         "probabilities": {key: round(value, 6) for key, value in probabilities.items()},
         "tail_probability": round(tail_probability, 6),
-        "tail_note": "7+ tail 按可见比分让球分布比例分摊。" if tail_probability else None,
+        "tail_note": "8+ tail 按可见比分让球分布比例分摊。" if tail_probability else None,
         "regions": regions,
     }
 

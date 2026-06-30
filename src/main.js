@@ -12,7 +12,14 @@ const state = {
   selectedStage: null,
   activeView: 'rounds',
   selectedTeamDetail: null,
-  currentMatchMeta: null
+  currentMatchMeta: null,
+  detailAutoloading: false,
+  collapsedPredictionSections: {
+    'monte-carlo': true,
+    profiles: true,
+    'ai-analysis': true,
+    squads: true
+  }
 };
 
 const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
@@ -57,7 +64,11 @@ async function bootstrap() {
     await loadReport();
     await loadRankings();
     await loadKnockout();
-    setStatus('数据已加载。公开网页赛程与历史 CSV/Elo fallback 可用。', 'success');
+    if (state.activeView === 'detail') {
+      await ensureDetailPrediction();
+    } else {
+      setStatus('数据已加载。公开网页赛程与历史 CSV/Elo fallback 可用。', 'success');
+    }
   } catch (error) {
     setStatus(`加载失败：${error.message}。请确认后端服务已启动并可访问 /api。`, 'error');
   }
@@ -91,11 +102,11 @@ async function syncMatches() {
   const button = document.querySelector('#sync-button');
   button.disabled = true;
   button.textContent = '...';
-  setStatus('正在同步公开网页赛程与历史比赛数据...');
+  setStatus('正在同步完赛比分，并从竞彩网刷新可购买比赛与赔率...');
   try {
-    await api(`/api/sync?date=${date}`, { method: 'POST' });
-    await api('/api/scrape/public-web', { method: 'POST' });
-    await api('/api/scrape/lyihub?include_details=true&detail_limit=120', { method: 'POST' });
+    const payload = await api(`/api/refresh/current?date=${date}`, { method: 'POST' });
+    state.matchPredictions = {};
+    state.selectedPrediction = null;
     await loadAvailableDates();
     await loadMatches();
     await loadRounds();
@@ -103,7 +114,11 @@ async function syncMatches() {
     await loadRankings();
     await loadKnockout();
     await loadRosterHealth();
-    setStatus('同步完成：赛程、历史结果和 Elo 画像已刷新。', 'success');
+    const sportteryMode = payload.sporttery?.mode === 'live' ? '竞彩网实时赔率' : '竞彩网快照赔率';
+    setStatus(
+      `同步完成：完赛比分已更新，${sportteryMode} ${payload.sporttery?.updated ?? 0} 场，今日页 ${payload.match_count ?? 0} 场。`,
+      'success'
+    );
   } catch (error) {
     setStatus(`同步失败：${error.message}`, 'error');
   } finally {
@@ -146,7 +161,10 @@ async function loadPrediction(fixtureId) {
     } catch (error) {
       setStatus(`核心预测已生成，详情分析加载失败：${error.message}`, 'error');
     }
-    state.selectedPrediction = analysis?.prediction || prediction;
+    if (analysis?.prediction) {
+      analysis = { ...analysis, prediction };
+    }
+    state.selectedPrediction = prediction;
     renderPrediction(state.selectedPrediction, analysis);
     await loadSquadPanels(state.selectedPrediction.fixture);
     renderSimulation(state.selectedPrediction);
@@ -155,6 +173,22 @@ async function loadPrediction(fixtureId) {
     setStatus('单场预测已生成。', 'success');
   } catch (error) {
     setStatus(`生成预测失败：${error.message}`, 'error');
+  }
+}
+
+async function ensureDetailPrediction() {
+  if (state.selectedPrediction || state.detailAutoloading) return;
+  const fixture = state.matches.find((match) => match.status !== 'final') || state.matches[0];
+  if (!fixture) {
+    document.querySelector('#prediction-detail').innerHTML = '<div class="empty-state">暂无可用比赛。请先进入“今日比赛”同步数据。</div>';
+    return;
+  }
+  state.detailAutoloading = true;
+  setStatus('正在为单场预测载入当前比赛...');
+  try {
+    await loadPrediction(fixture.id);
+  } finally {
+    state.detailAutoloading = false;
   }
 }
 
@@ -847,6 +881,16 @@ function statusLabel(status) {
   return '未开赛';
 }
 
+function predictionSectionAttrs(id, defaultCollapsed = false) {
+  const collapsed = state.collapsedPredictionSections[id] ?? defaultCollapsed;
+  return `class="prediction-section collapsible-section ${collapsed ? 'is-collapsed' : ''}" data-section-id="${escapeAttr(id)}"`;
+}
+
+function predictionSectionToggle(id, defaultCollapsed = false) {
+  const collapsed = state.collapsedPredictionSections[id] ?? defaultCollapsed;
+  return `<button type="button" class="section-collapse-button" data-section-toggle="${escapeAttr(id)}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? '展开' : '折叠'}</button>`;
+}
+
 function renderPrediction(prediction, analysis = null) {
   const fixture = prediction.fixture;
   const h2h = analysis?.head_to_head || {};
@@ -875,19 +919,24 @@ function renderPrediction(prediction, analysis = null) {
         ${divergenceNotice(prediction)}
       </section>
 
-      <section class="prediction-section">
+      <div class="detail-section-toolbar">
+        <button type="button" data-expand-sections>展开全部卡片</button>
+        <button type="button" data-collapse-sections>折叠长卡片</button>
+      </div>
+
+      <section ${predictionSectionAttrs('models')}>
         <div class="section-title">
           <h3>模型对照</h3>
-          <span>统计模型、模拟和盘口分层展示</span>
+          <div class="section-title-actions"><span>统计模型、模拟和盘口分层展示</span>${predictionSectionToggle('models')}</div>
         </div>
         <div class="model-grid">${modelComparisonCards(prediction)}</div>
         ${modelWeightAudit(prediction)}
       </section>
 
-      <section class="prediction-section">
+      <section ${predictionSectionAttrs('value')}>
         <div class="section-title">
           <h3>投注价值分析</h3>
-          <span>仅供复盘，不构成投注建议</span>
+          <div class="section-title-actions"><span>仅供复盘，不构成投注建议</span>${predictionSectionToggle('value')}</div>
         </div>
         ${valueAnalysisCard(prediction)}
       </section>
@@ -908,20 +957,21 @@ function renderPrediction(prediction, analysis = null) {
         <span>修改后会重新计算 Monte Carlo、XGBoost 和最终融合概率。</span>
       </div>
 
-      <section class="prediction-section">
+      <section ${predictionSectionAttrs('market')}>
         <div class="section-title">
           <h3>盘口与模型偏差</h3>
-          <span>value bet ≥5%，market efficient &lt;3%</span>
+          <div class="section-title-actions"><span>value bet ≥5%，market efficient &lt;3%</span>${predictionSectionToggle('market')}</div>
         </div>
         ${marketVsModelCard(prediction)}
       </section>
 
-      <section class="prediction-section">
+      <section ${predictionSectionAttrs('roster-strength')}>
         <div class="section-title">
           <h3>阵容三线强度</h3>
           <div class="button-row">
             <button data-sync-squads="${fixture.id}">同步本场阵容</button>
             <button data-process-roster>补全球员统计</button>
+            ${predictionSectionToggle('roster-strength')}
           </div>
         </div>
         <div class="profile-grid">
@@ -930,10 +980,10 @@ function renderPrediction(prediction, analysis = null) {
         </div>
       </section>
 
-      <section class="prediction-section">
+      <section ${predictionSectionAttrs('score')}>
         <div class="section-title">
           <h3>比分概率</h3>
-          <span>Top 6 与 0-4 热力图</span>
+          <div class="section-title-actions"><span>Top 6 与 0-7 热力图</span>${predictionSectionToggle('score')}</div>
         </div>
         <div class="score-grid">
           ${prediction.top_scorelines
@@ -943,18 +993,18 @@ function renderPrediction(prediction, analysis = null) {
         ${scoreHeatmap(prediction.score_heatmap || { matrix: prediction.score_matrix }, prediction.handicap_analysis)}
       </section>
 
-      <section class="prediction-section">
+      <section ${predictionSectionAttrs('monte-carlo', true)}>
         <div class="section-title">
           <h3>Monte Carlo 脚本</h3>
-          <span>${prediction.monte_carlo?.simulations?.toLocaleString('zh-CN') || '-'} 次模拟</span>
+          <div class="section-title-actions"><span>${prediction.monte_carlo?.simulations?.toLocaleString('zh-CN') || '-'} 次模拟</span>${predictionSectionToggle('monte-carlo', true)}</div>
         </div>
         ${monteCarloCard(prediction)}
       </section>
 
-      <section class="prediction-section">
+      <section ${predictionSectionAttrs('profiles', true)}>
         <div class="section-title">
           <h3>球队画像与交锋</h3>
-          <span>近期权重与历史样本</span>
+          <div class="section-title-actions"><span>近期权重与历史样本</span>${predictionSectionToggle('profiles', true)}</div>
         </div>
         <div class="profile-grid">
           ${profileCard(fixture.home_team, profiles.home)}
@@ -966,12 +1016,12 @@ function renderPrediction(prediction, analysis = null) {
         </div>
       </section>
 
-      ${sections.length ? `<section class="prediction-section"><div class="section-title"><h3>AI 解读草稿</h3><span>结构化中文分析</span></div>${sections.map((section) => `<div class="analysis"><strong>${section.title}</strong><br>${section.text}</div>`).join('')}</section>` : ''}
+      ${sections.length ? `<section ${predictionSectionAttrs('ai-analysis', true)}><div class="section-title"><h3>AI 解读草稿</h3><div class="section-title-actions"><span>结构化中文分析</span>${predictionSectionToggle('ai-analysis', true)}</div></div>${sections.map((section) => `<div class="analysis"><strong>${section.title}</strong><br>${section.text}</div>`).join('')}</section>` : ''}
 
-      <section class="prediction-section">
+      <section ${predictionSectionAttrs('squads', true)}>
         <div class="section-title">
           <h3>阵容与教练</h3>
-          <span>API-Football / 公开源 fallback</span>
+          <div class="section-title-actions"><span>API-Football / 公开源 fallback</span>${predictionSectionToggle('squads', true)}</div>
         </div>
         <div id="squad-panels" class="squad-grid">
           <div class="empty-state">正在加载阵容...</div>
@@ -1266,21 +1316,30 @@ function scoreHeatmap(heatmap, handicapAnalysis = {}) {
   const matrix = Array.isArray(heatmap) ? heatmap : heatmap?.matrix || [];
   const handicapRegions = heatmap?.handicap_regions || {};
   const cells = new Map(matrix.map((item) => [`${item.home_goals}-${item.away_goals}`, item.probability]));
-  const goals = [0, 1, 2, 3, 4];
+  const goals = scoreHeatmapGoals(matrix);
   const visibleProbabilities = goals.flatMap((home) => goals.map((away) => cells.get(`${home}-${away}`) || 0));
   const maxProbability = Math.max(...visibleProbabilities, 0.01);
   const handicapLine = heatmap?.handicap ?? handicapAnalysis?.line;
+  const handicapTotals =
+    heatmap?.handicap_probabilities ||
+    handicapAnalysis?.model_probabilities ||
+    handicapAnalysis?.probabilities ||
+    {};
+  const handicapMarketTotals =
+    heatmap?.handicap_market_probabilities ||
+    handicapAnalysis?.market_probabilities ||
+    {};
   return `
     <div class="heatmap-wrap" aria-label="比分概率热力图，颜色越暖代表概率越高">
       ${handicapLine !== undefined && handicapLine !== null ? `
         <div class="heatmap-handicap-note">
           <b>让球区域 ${formatHandicapLine(handicapLine)}</b>
-          <span class="region-pill region-home">让胜</span>
-          <span class="region-pill region-draw">让平</span>
-          <span class="region-pill region-away">让负</span>
+          ${handicapRegionSummary('home', handicapTotals, handicapMarketTotals)}
+          ${handicapRegionSummary('draw', handicapTotals, handicapMarketTotals)}
+          ${handicapRegionSummary('away', handicapTotals, handicapMarketTotals)}
         </div>
       ` : ''}
-      <div class="heatmap">
+      <div class="heatmap" style="--heatmap-goals: ${goals.length}">
         <div class="heatmap-head"></div>
         ${goals.map((goal) => `<div class="heatmap-head">客 ${goal}</div>`).join('')}
         ${goals
@@ -1311,9 +1370,27 @@ function scoreHeatmap(heatmap, handicapAnalysis = {}) {
         <i class="heat-level-6"></i>
         <span>高</span>
       </div>
-      ${heatmap?.tail_probability ? `<div class="heat-tail-note">7+ tail：${formatPercent(heatmap.tail_probability)}，${heatmap.tail_note || '未画入 0-4 热力图。'}</div>` : ''}
+      ${heatmap?.tail_probability ? `<div class="heat-tail-note">8+ tail：${formatPercent(heatmap.tail_probability)}，${heatmap.tail_note || '未画入 0-7 热力图。'}</div>` : ''}
     </div>
   `;
+}
+
+function scoreHeatmapGoals(matrix) {
+  const maxGoal = matrix.reduce((max, item) => {
+    const home = Number.isInteger(item.home_goals) ? item.home_goals : -1;
+    const away = Number.isInteger(item.away_goals) ? item.away_goals : -1;
+    return Math.max(max, home, away);
+  }, 4);
+  const upper = Math.min(Math.max(maxGoal, 7), 9);
+  return Array.from({ length: upper + 1 }, (_, index) => index);
+}
+
+function handicapRegionSummary(outcome, modelTotals = {}, marketTotals = {}) {
+  const className = `region-${outcome}`;
+  const model = modelTotals?.[outcome];
+  const market = marketTotals?.[outcome];
+  const marketText = market !== undefined && market !== null ? ` · 市场 ${formatPercent(market)}` : '';
+  return `<span class="region-pill ${className}"><b>让${handicapOutcomeLabel(outcome)}</b>${formatPercent(model || 0)}${marketText}</span>`;
 }
 
 function heatLevel(probability, maxProbability) {
@@ -1472,12 +1549,47 @@ async function enrichPublicRosterQueue() {
   }
 }
 
+function setPredictionSectionCollapsed(section, collapsed) {
+  if (!section?.dataset?.sectionId) return;
+  const id = section.dataset.sectionId;
+  state.collapsedPredictionSections[id] = collapsed;
+  section.classList.toggle('is-collapsed', collapsed);
+  const button = section.querySelector('[data-section-toggle]');
+  if (button) {
+    button.textContent = collapsed ? '展开' : '折叠';
+    button.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  }
+}
+
+function setAllPredictionSectionsCollapsed(collapsed, onlyLong = false) {
+  const longSections = new Set(['score', 'monte-carlo', 'profiles', 'ai-analysis', 'squads']);
+  document.querySelectorAll('#prediction-detail .collapsible-section').forEach((section) => {
+    if (onlyLong && !longSections.has(section.dataset.sectionId)) return;
+    setPredictionSectionCollapsed(section, collapsed);
+  });
+}
+
 document.querySelector('#sync-button').addEventListener('click', syncMatches);
 document.querySelector('#sync-reference-button').addEventListener('click', syncReferenceData);
 document.querySelector('#validate-sources-button').addEventListener('click', validateSources);
 document.querySelector('#process-roster-button').addEventListener('click', processRosterQueue);
 document.querySelector('#public-roster-button').addEventListener('click', enrichPublicRosterQueue);
 document.querySelector('#match-date').addEventListener('change', loadMatches);
+document.querySelector('#prediction-detail').addEventListener('click', (event) => {
+  const toggle = event.target.closest('[data-section-toggle]');
+  if (toggle) {
+    const section = toggle.closest('.collapsible-section');
+    setPredictionSectionCollapsed(section, !section.classList.contains('is-collapsed'));
+    return;
+  }
+  if (event.target.closest('[data-collapse-sections]')) {
+    setAllPredictionSectionsCollapsed(true, true);
+    return;
+  }
+  if (event.target.closest('[data-expand-sections]')) {
+    setAllPredictionSectionsCollapsed(false);
+  }
+});
 document.querySelector('#report-button').addEventListener('click', async () => {
   setStatus('正在生成中文日报...');
   try {
@@ -1531,6 +1643,9 @@ function showView(view, options = {}) {
   });
   if (options.updateHash !== false && window.location.hash !== `#${nextView}`) {
     window.location.hash = nextView;
+  }
+  if (nextView === 'detail') {
+    void ensureDetailPrediction();
   }
 }
 

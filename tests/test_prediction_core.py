@@ -164,6 +164,7 @@ def test_handicap_probability_regions_for_minus_one_and_plus_one():
     assert minus_one["probabilities"]["draw"] > minus_one["probabilities"]["home"]
     assert plus_one["probabilities"]["home"] > plus_one["probabilities"]["draw"]
     assert minus_one["tail_probability"] == 0.1
+    assert minus_one["tail_note"].startswith("8+ tail")
     assert abs(sum(minus_one["probabilities"].values()) - 1.0) < 1e-9
 
 

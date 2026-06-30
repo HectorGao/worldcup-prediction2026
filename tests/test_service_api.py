@@ -131,15 +131,19 @@ def test_default_match_date_skips_completed_day_and_shows_sporttery_window(tmp_p
     assert service.default_match_date("2026-06-28") == "2026-06-29"
     matches = service.list_matches("2026-06-29")
 
-    assert len(matches) == 6
+    assert len(matches) == len(SPORTTERY_LOTTERY_SNAPSHOT)
     assert {match["id"] for match in matches} == {market["fixture_id"] for market in SPORTTERY_LOTTERY_SNAPSHOT}
     assert all("China Sporttery snapshot" in str(match.get("market_source")) for match in matches)
     summaries = service.list_matches_with_prediction_summary("2026-06-29")
-    first_summary = next(match for match in summaries if match["id"] == "lyihub-54327932")
-    assert first_summary["lottery_market"]["match_no"] == "周日073"
-    assert first_summary["odds_markets"]["h2h"]["odds"]["home"] == 5.65
-    prediction = service.predict_fixture("lyihub-54327932")
-    assert prediction["lottery_market"]["match_no"] == "周日073"
+    first_summary = next(match for match in summaries if match["id"] == "lyihub-54327935")
+    assert first_summary["lottery_market"]["match_no"] == "周一074"
+    assert first_summary["odds_markets"]["h2h"]["odds"]["home"] == 1.49
+    assert first_summary["odds_markets"]["handicap"]["odds"]["away"] == 2.26
+    prediction = service.predict_fixture("lyihub-54327935")
+    assert prediction["lottery_market"]["match_no"] == "周一074"
+    assert prediction["score_heatmap"]["handicap"] == -1.0
+    assert set(prediction["score_heatmap"]["handicap_probabilities"]) == {"home", "draw", "away"}
+    assert "7-7" in prediction["score_heatmap"]["handicap_regions"]
 
 
 def test_api_allows_file_page_cors_origin(tmp_path: Path):

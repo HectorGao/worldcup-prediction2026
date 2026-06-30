@@ -11,7 +11,12 @@ from .data.providers import ProviderRegistry
 from .data.lyihub import LyihubWorldCupScraper, canonical_team
 from .data.public_sources import HISTORICAL_RESULTS_URL, WIKIPEDIA_PARSE_URL, PublicWorldCupScraper
 from .data.rosters import ApiFootballRosterProvider, TheSportsDBRosterProvider
-from .data.sporttery_snapshot import SPORTTERY_LOTTERY_SNAPSHOT, sporttery_snapshot_ids
+from .data.sporttery_snapshot import (
+    SPORTTERY_LOTTERY_SNAPSHOT,
+    sporttery_snapshot_ids,
+    sporttery_window_anchor_date,
+    sporttery_window_match_start_date,
+)
 from .data.training import HistoricalMatch, build_team_profiles
 from .database import Database
 from .prediction.calibration import calibrate_score_matrix_to_market
@@ -80,7 +85,7 @@ class WorldCupService:
         effective_date = date
         if self.db.count_fixtures(effective_date) == 0:
             effective_date = self.default_match_date(date)
-        lottery_rows = self.db.list_market_fixtures(effective_date, limit=6)
+        lottery_rows = self._current_sporttery_market_rows(effective_date)
         if self._is_sporttery_window_date(effective_date, lottery_rows):
             return [self._fixture_response(row) for row in lottery_rows]
         lyihub_rows = self.db.list_lyihub_matches(date=effective_date)
@@ -98,7 +103,10 @@ class WorldCupService:
 
     def available_dates(self) -> list[str]:
         self.ensure_sporttery_lottery_snapshot()
-        return self.db.available_dates()
+        dates = set(self.db.available_dates())
+        if self._current_sporttery_market_rows(sporttery_window_anchor_date()):
+            dates.add(sporttery_window_anchor_date())
+        return sorted(dates)
 
     def _dedupe_match_rows(self, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         deduped: dict[tuple[str, str, str], dict[str, Any]] = {}
@@ -123,6 +131,12 @@ class WorldCupService:
 
     def default_match_date(self, requested_date: str) -> str:
         self.ensure_sporttery_lottery_snapshot()
+        anchor = sporttery_window_anchor_date()
+        match_start = sporttery_window_match_start_date()
+        if requested_date <= anchor and self._current_sporttery_market_rows(anchor):
+            return anchor
+        if requested_date == match_start and self._current_sporttery_market_rows(match_start):
+            return match_start
         dates = self.db.available_dates()
         if not dates:
             return requested_date
@@ -168,11 +182,100 @@ class WorldCupService:
             }
             self.db.upsert_fixture(fixture)
 
+    def _current_sporttery_market_rows(self, start_date: str) -> list[dict[str, Any]]:
+        current_ids = sporttery_snapshot_ids()
+        order = {str(market["fixture_id"]): index for index, market in enumerate(SPORTTERY_LOTTERY_SNAPSHOT)}
+        rows = self.db.list_market_fixtures(start_date, limit=max(20, len(current_ids) + 4))
+        rows = [row for row in rows if str(row.get("id")) in current_ids]
+        return sorted(rows, key=lambda row: order.get(str(row.get("id")), 999))
+
     def _is_sporttery_window_date(self, date: str, rows: list[dict[str, Any]]) -> bool:
         if not rows:
             return False
         ids = {str(row.get("id")) for row in rows}
-        return date == "2026-06-29" and sporttery_snapshot_ids().issubset(ids)
+        return date in {sporttery_window_anchor_date(), sporttery_window_match_start_date()} and sporttery_snapshot_ids().issubset(ids)
+
+    def refresh_current_data(self, date: str, detail_limit: int = 120) -> dict[str, Any]:
+        lyihub_result = self.scrape_lyihub(include_details=True, detail_limit=detail_limit)
+        live_status = self.refresh_sporttery_odds()
+        effective_date = self.default_match_date(date)
+        matches = self.list_matches(effective_date)
+        return {
+            "requested_date": date,
+            "date": effective_date,
+            "lyihub": lyihub_result,
+            "sporttery": live_status,
+            "match_count": len(matches),
+            "window_dates": sorted({match["date"] for match in matches}),
+            "matches": matches,
+        }
+
+    def refresh_sporttery_odds(self) -> dict[str, Any]:
+        self.ensure_sporttery_lottery_snapshot()
+        try:
+            events = self.providers.sporttery_odds_provider.fetch_odds()
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            return {
+                "source": "https://m.sporttery.cn/mjc/jsq/zqspf/",
+                "mode": "snapshot_fallback",
+                "updated": len(SPORTTERY_LOTTERY_SNAPSHOT),
+                "match_numbers": [market["match_no"] for market in SPORTTERY_LOTTERY_SNAPSHOT],
+                "last_error": str(exc),
+            }
+        updated = self._upsert_sporttery_events(events)
+        return {
+            "source": "https://m.sporttery.cn/mjc/jsq/zqspf/",
+            "mode": "live",
+            "updated": updated,
+            "sample_count": len(events),
+        }
+
+    def _upsert_sporttery_events(self, events: list[dict[str, Any]]) -> int:
+        updated = 0
+        for event in events:
+            home_team = canonical_team(str(event.get("home_team") or ""))
+            away_team = canonical_team(str(event.get("away_team") or ""))
+            fixture = self._find_lyihub_fixture_for_market(home_team, away_team, str(event.get("date") or ""))
+            if not fixture:
+                continue
+            h2h = event.get("h2h") or {}
+            handicap = event.get("handicap") or {}
+            if not {"home", "draw", "away"} <= set(h2h):
+                continue
+            home_elo, away_elo = self._fixture_elos(fixture)
+            self.db.upsert_fixture(
+                {
+                    "id": fixture["id"],
+                    "date": fixture["date"],
+                    "kickoff": fixture["kickoff"],
+                    "home_team": fixture["home_team"],
+                    "away_team": fixture["away_team"],
+                    "group": fixture.get("stage") or fixture.get("group"),
+                    "venue": fixture.get("venue"),
+                    "status": fixture.get("status", "scheduled"),
+                    "home_score": fixture.get("home_score"),
+                    "away_score": fixture.get("away_score"),
+                    "home_elo": home_elo,
+                    "away_elo": away_elo,
+                    "market_home": h2h.get("home"),
+                    "market_draw": h2h.get("draw"),
+                    "market_away": h2h.get("away"),
+                    "market_source": f"China Sporttery live {event.get('match_num') or ''}".strip(),
+                    "market_handicap": handicap if {"home", "draw", "away"} <= set(handicap) else None,
+                    "market_handicap_line": event.get("handicap_line"),
+                }
+            )
+            updated += 1
+        return updated
+
+    def _find_lyihub_fixture_for_market(self, home_team: str, away_team: str, date: str) -> dict[str, Any] | None:
+        for row in self.db.list_lyihub_matches():
+            if date and row.get("date") != date:
+                continue
+            if row.get("home_team") == home_team and row.get("away_team") == away_team:
+                return row
+        return None
+
 
     def _date_has_upcoming_matches(self, date: str) -> bool:
         lyihub_rows = self.db.list_lyihub_matches(date=date)
@@ -290,6 +393,9 @@ class WorldCupService:
             "draw": ensemble["draw"],
             "away": ensemble["away"],
         }
+        final_score_matrix = self._serialize_score_matrix(calibrated_matrix)
+        final_top_scorelines = top_scorelines(calibrated_matrix, limit=6)
+        final_expected_goals = expected_goals(calibrated_matrix)
         risk_warnings = self._dynamic_risk_warnings(
             market_payload=market_payload,
             ensemble=ensemble,
@@ -300,9 +406,9 @@ class WorldCupService:
             learning_adjustment=learning_adjustment,
         )
         value_analysis = analyze_value(probabilities, market_payload, risk_warnings=risk_warnings)
-        handicap_analysis = self._handicap_analysis(poisson["score_matrix"], odds_markets)
+        handicap_analysis = self._handicap_analysis(final_score_matrix, odds_markets)
         lottery_market = self._lottery_market(fixture, odds_markets)
-        score_heatmap = self._score_heatmap(poisson["score_matrix"], handicap_analysis)
+        score_heatmap = self._score_heatmap(final_score_matrix, handicap_analysis)
         combined_recommendations = list(value_analysis.get("recommended_options", []))
         combined_recommendations.extend(
             {
@@ -321,11 +427,11 @@ class WorldCupService:
             "source_status": self.data_source_health(),
             "probabilities": probabilities,
             "expected_goals": {
-                "home": poisson["lambda_home"],
-                "away": poisson["lambda_away"],
+                "home": final_expected_goals["home"],
+                "away": final_expected_goals["away"],
             },
-            "score_matrix": poisson["score_matrix"],
-            "top_scorelines": poisson["scorelines"],
+            "score_matrix": final_score_matrix,
+            "top_scorelines": final_top_scorelines,
             "model_inputs": model_inputs,
             "roster_strength": roster_strength,
             "roster_weight": roster_weight,
@@ -1093,6 +1199,8 @@ class WorldCupService:
         return {
             "matrix": serialized_matrix,
             "handicap": handicap_analysis.get("line"),
+            "handicap_probabilities": handicap_analysis.get("model_probabilities"),
+            "handicap_market_probabilities": handicap_analysis.get("market_probabilities"),
             "handicap_regions": regions,
             "tail_probability": handicap_analysis.get("tail_probability"),
             "tail_note": handicap_analysis.get("tail_note"),
@@ -1647,13 +1755,18 @@ class WorldCupService:
         enriched = dict(match)
         actual_score = self._actual_score(match)
         enriched["actual_score"] = actual_score
+        fixture_odds_markets = self._odds_markets(match, self._market_payload(match))
+        if (fixture_odds_markets.get("h2h") or {}).get("available") or (fixture_odds_markets.get("handicap") or {}).get("available"):
+            enriched["odds_markets"] = fixture_odds_markets
+            enriched["lottery_market"] = self._lottery_market(match, fixture_odds_markets)
+            enriched["odds_data_status"] = self._odds_data_status(match, self._market_payload(match), fixture_odds_markets)
         try:
             prediction = self.get_prediction(match["id"])
             top = prediction.get("top_scorelines", [{}])[0]
             predicted_score = top.get("score")
-            enriched["odds_markets"] = prediction.get("odds_markets")
-            enriched["lottery_market"] = prediction.get("lottery_market")
-            enriched["odds_data_status"] = prediction.get("odds_data_status")
+            enriched.setdefault("odds_markets", prediction.get("odds_markets"))
+            enriched.setdefault("lottery_market", prediction.get("lottery_market"))
+            enriched.setdefault("odds_data_status", prediction.get("odds_data_status"))
             enriched["value_analysis"] = prediction.get("value_analysis")
             enriched["handicap_analysis"] = prediction.get("handicap_analysis")
         except (KeyError, ValueError, TypeError, RuntimeError):

@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
+from .data.sporttery_snapshot import sporttery_snapshot_ids, sporttery_window_anchor_date, sporttery_window_match_start_date
 from .service import WorldCupService
 
 
@@ -32,14 +33,27 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.middleware("http")
+    async def no_cache_local_assets(request, call_next):
+        response = await call_next(request)
+        if request.url.path == "/" or request.url.path.startswith("/src/"):
+            response.headers["Cache-Control"] = "no-store, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+            response.headers["Expires"] = "0"
+        return response
+
     @app.get("/api/matches")
     def matches(date: str):
         effective_date = service.default_match_date(date)
         matches = service.list_matches_with_prediction_summary(effective_date)
+        is_lottery_window = (
+            effective_date in {sporttery_window_anchor_date(), sporttery_window_match_start_date()}
+            and len(matches) == len(sporttery_snapshot_ids())
+        )
         return {
             "date": effective_date,
             "requested_date": date,
-            "display_mode": "sporttery_lottery_window" if effective_date == "2026-06-29" and len(matches) == 6 else "match_day",
+            "display_mode": "sporttery_lottery_window" if is_lottery_window else "match_day",
             "window_dates": sorted({match["date"] for match in matches}),
             "matches": matches,
         }
@@ -70,6 +84,10 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
             public_result = service.scrape_public_sources()
             result["public_scrape"] = public_result
         return result
+
+    @app.post("/api/refresh/current")
+    def refresh_current(date: str):
+        return service.refresh_current_data(date)
 
     @app.post("/api/scrape/public-web")
     def scrape_public_web():

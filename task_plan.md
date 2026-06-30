@@ -86,6 +86,30 @@ Phase 8 complete
 - [x] Verify API, Chrome UI, frontend syntax, focused backend tests, and full backend tests after service restart.
 - **Status:** complete
 
+### Phase 9: Today Card Grid and Handicap Heatmap UI
+- [x] Read `ui-ux-pro-max` and apply dashboard layout, chart labeling, touch target, and accessibility rules.
+- [x] Convert the desktop Today match list from long horizontal rows into a responsive card grid that uses available width.
+- [x] Keep each match card self-contained with teams, date badge, right-side odds content, status, and detail action.
+- [x] Use the final market-calibrated score matrix for `score_matrix`, `top_scorelines`, `score_heatmap`, and handicap region calculations.
+- [x] Add handicap model and market probabilities to `score_heatmap`.
+- [x] Render a full 0-7 score-probability heatmap in match detail.
+- [x] Label every visible heatmap cell with its score, probability, and handicap outcome region.
+- [x] Show aggregate handicap win/draw/loss probabilities above the heatmap.
+- [x] Verify frontend syntax, focused backend tests, full backend tests, and browser DOM behavior.
+- **Status:** complete
+
+### Phase 10: Live Refresh Button and Current Sporttery Window
+- [x] Re-check `https://m.sporttery.cn/mjc/jsq/zqspf/` in the browser and extract the current purchasable World Cup odds window.
+- [x] Update the Sporttery fallback snapshot from the older 6-match window to the current 9-match window.
+- [x] Add the newly purchasable matches: Mexico vs Ecuador, England vs DR Congo, Belgium vs Senegal, United States vs Bosnia and Herzegovina.
+- [x] Remove the delisted South Africa vs Canada market from the current Today window.
+- [x] Add `POST /api/refresh/current?date=YYYY-MM-DD` to sync completed lyihub scores and refresh Sporttery odds in one call.
+- [x] Wire the top refresh button to the new refresh endpoint and clear stale frontend prediction cache after refresh.
+- [x] Ensure Today match odds come from current fixture market fields even if stored prediction payloads are stale.
+- [x] Restart FastAPI on `127.0.0.1:8000`.
+- [x] Verify the API and browser refresh button show 9 current purchasable matches and updated SPF/RQSPF odds.
+- **Status:** complete
+
 ## Key Questions
 1. Where is the current historical-data date window enforced, if at all?
 2. Which roster/player fields are missing because API-Football free season data is unavailable?

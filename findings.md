@@ -179,5 +179,124 @@
 - `/api/matches?date=2026-06-28` now returns `date=2026-06-29`, `display_mode=sporttery_lottery_window`, `window_dates=[2026-06-29, 2026-06-30, 2026-07-01]`, and 6 matches.
 - Frontend "今日比赛" now labels the panel as a Beijing-time Sporttery sales window and shows per-card BJT date/time badges, match number chips, SPF/RQSPF odds, Edge, and Kelly.
 
+## 2026-06-29 Today Card Grid And Handicap Heatmap Findings
+- `ui-ux-pro-max` review points applied:
+  - Desktop data views should use available width instead of forcing a single long vertical strip.
+  - Chart data should include visible labels and legends, not rely on color alone.
+  - Touch/click targets should remain explicit, with each match card acting as a self-contained decision unit.
+- Today match layout changed from row-like strips to a responsive CSS grid:
+  - `#today` no longer uses the two-column `.layout` container, so it occupies the full dashboard width.
+  - `.match-list` now uses `repeat(auto-fit, minmax(300px, 1fr))`.
+  - Each `.match-row` is a one-column card containing teams, date badge, odds panel, and actions.
+  - Browser verification on `http://127.0.0.1:8000/` showed 6 match cards in a full-width Today view with 4 desktop columns at the tested viewport.
+- Root cause for the missing/incomplete score heatmap:
+  - The detail page rendered `analysis.prediction` when available, which could be a stale stored prediction.
+  - The backend heatmap used the Poisson submodel matrix instead of the final market-calibrated score matrix.
+- Backend prediction output now uses the final calibrated score distribution for:
+  - `score_matrix`
+  - `top_scorelines`
+  - `score_heatmap`
+  - `handicap_analysis`
+- `score_heatmap` now also includes:
+  - `handicap_probabilities`
+  - `handicap_market_probabilities`
+  - per-score `handicap_regions`
+- Frontend heatmap now:
+  - renders a full 0-7 score grid, 64 visible cells.
+  - labels each cell with score, probability, and handicap region.
+  - shows aggregate let-win/let-draw/let-loss model probability and market probability above the grid.
+  - labels the section as `0-7 热力图` and the overflow bucket as `8+ tail`, matching the actual calibrated matrix.
+- Browser verification for South Africa vs Canada showed:
+  - 64 heat cells.
+  - `7-7` visible.
+  - region totals: let-win/draw/loss visible with market probabilities.
+  - region cell classes split into let-win, let-draw, and let-loss areas.
+- Browser verification for Brazil vs Japan after the 2026-06-29 heatmap copy fix showed:
+  - 64 heat cells.
+  - first/last cells `0-0` and `7-7` visible.
+  - region totals: let-win 21.4%, let-draw 23.9%, let-loss 54.8%, plus market probabilities.
+  - section copy: `Top 6 与 0-7 热力图`.
+  - tail copy: `8+ tail`.
+- Chrome extension was unavailable in this session; the available Codex in-app browser was used for localhost UI verification after following plugin troubleshooting.
+
+## 2026-06-29 Current Sporttery Refresh Window
+- Browser-rendered re-check of `https://m.sporttery.cn/mjc/jsq/zqspf/` showed the current purchasable World Cup SPF/RQSPF window has 9 matches, not the older 6-match snapshot.
+- Current purchasable markets:
+  - 周一074 巴西 vs 日本, kickoff 06-30 01:00 BJT, SPF 1.49 / 3.72 / 5.28, RQSPF -1 2.71 / 3.15 / 2.26.
+  - 周一075 德国 vs 巴拉圭, kickoff 06-30 04:30 BJT, SPF 1.22 / 5.00 / 9.10, RQSPF -1 1.69 / 4.05 / 3.44.
+  - 周一076 荷兰 vs 摩洛哥, kickoff 06-30 09:00 BJT, SPF 1.97 / 3.00 / 3.47, RQSPF -1 4.18 / 3.48 / 1.66.
+  - 周二077 科特迪瓦 vs 挪威, kickoff 07-01 01:00 BJT, SPF 3.77 / 3.35 / 1.77, RQSPF +1 1.83 / 3.63 / 3.25.
+  - 周二078 法国 vs 瑞典, kickoff 07-01 05:00 BJT, SPF 1.16 / 5.80 / 10.50, RQSPF -1 1.60 / 3.95 / 3.98.
+  - 周二079 墨西哥 vs 厄瓜多尔, kickoff 07-01 09:00 BJT, SPF 2.00 / 2.70 / 3.86, RQSPF -1 4.50 / 3.40 / 1.63.
+  - 周三080 英格兰 vs 刚果民主共和国, kickoff 07-02 00:00 BJT, SPF 1.17 / 5.25 / 12.00, RQSPF -1 1.71 / 3.50 / 3.86.
+  - 周三081 比利时 vs 塞内加尔, kickoff 07-02 04:00 BJT, SPF 1.99 / 3.00 / 3.42, RQSPF -1 4.15 / 3.60 / 1.64.
+  - 周三082 美国 vs 波黑, kickoff 07-02 08:00 BJT, SPF 1.27 / 4.50 / 8.40, RQSPF -1 1.93 / 3.50 / 3.08.
+- South Africa vs Canada is no longer in the current Sporttery purchasable window and is filtered out of Today.
+- New refresh API:
+  - `POST /api/refresh/current?date=YYYY-MM-DD`
+  - First syncs `worldcup.lyihub.com` scores/details, then attempts Sporttery live odds, then falls back to the current browser-verified snapshot if the gateway returns 403/WAF.
+- The top refresh button now calls `/api/refresh/current`, clears frontend prediction cache, reloads available dates, Today matches, rounds, report, rankings, knockout simulation, and roster health.
+- API verification after restart:
+  - `/api/matches?date=2026-06-29` returns `display_mode=sporttery_lottery_window`, 9 matches, window dates `2026-06-30/2026-07-01/2026-07-02`.
+  - `/api/refresh/current?date=2026-06-29` synced 104 lyihub matches and returned Sporttery `mode=snapshot_fallback`, `updated=9` because backend live JSON returned HTTP 403.
+- Browser verification after restart:
+  - Page loaded `src/main.js?v=20260629-live-refresh`.
+  - Today page showed all 9 match numbers from 周一074 through 周三082.
+  - Clicking the top refresh button completed with status: `同步完成：完赛比分已更新，竞彩网快照赔率 9 场，今日页 9 场。`
+
+## 2026-06-29 Detail Scroll Fix
+- Root cause:
+  - The single-match detail panel was still using a desktop `position: sticky` container with `max-height: calc(100dvh - 28px)`.
+  - `#prediction-detail` then created its own internal scroll area, so long match detail content could be trapped and appear cut off.
+- Fix:
+  - `.detail-panel` now participates in normal document flow with `position: static`, `max-height: none`, and `display: block`.
+  - `#prediction-detail` now uses visible overflow so the browser page itself owns vertical scrolling.
+  - Static assets were bumped to `20260629-detail-scroll` to avoid stale CSS/JS.
+- Browser verification:
+  - Single-match detail opened at `#detail`.
+  - `#detail` computed style: `position=static`, `max-height=none`.
+  - `#prediction-detail` computed overflow: `visible`.
+  - Document height was 4523px at the tested viewport and scrolling reached the bottom.
+  - The score heatmap still rendered 64 cells and the roster section remained present.
+
+## 2026-06-29 Detail Scroll V2 Cache And Wide Layout Fix
+- Additional root cause from the user's widened-browser repro:
+  - The active browser tab was still loading old `20260629-live-refresh` assets, so it never received the first scroll fix.
+  - The generic `.panel { overflow: hidden; }` rule still applied to `#detail`, which made the wide detail layout fragile even after removing sticky/max-height behavior.
+- Fix:
+  - `.detail-panel` now explicitly sets `overflow: visible !important`.
+  - `#prediction-detail` now explicitly sets `overflow: visible !important`.
+  - Static asset query strings were bumped to `20260629-detail-scroll-v2`.
+  - The FastAPI dev server now sends `Cache-Control: no-store, max-age=0`, `Pragma: no-cache`, and `Expires: 0` for `/` and `/src/*`.
+- Verification:
+  - Browser loaded `src/styles.css?v=20260629-detail-scroll-v2` and `src/main.js?v=20260629-detail-scroll-v2`.
+  - Wide/detail viewport test showed `#detail` overflow visible and `#prediction-detail` overflow visible.
+  - The page scrolled from the detail view to the 5046px document bottom.
+  - Shell HTTP smoke confirmed the no-store headers and latest asset version.
+
+## 2026-06-29 Wide Detail Collapse Fix
+- Chrome debugging status:
+  - Stable Chrome is installed at `/Applications/Google Chrome.app`, and the Codex Chrome Extension plus native host are present for the Default profile.
+  - The Chrome extension backend was still unavailable.
+  - Opening stable Chrome through the plugin failed with `kLSNoExecutableErr`, so the requested Chrome path could not be used for page interaction in this run.
+- Root cause from wide-viewport repro:
+  - Opening `/` directly with `#detail` activated the detail tab before any fixture was selected.
+  - The page then showed an empty 560px detail panel while hidden buttons from Today/Rounds remained in the DOM, which made the wide page appear folded or incomplete.
+  - The single-match page also had too many always-expanded long sections, especially the score heatmap and roster panels.
+- Fix:
+  - `#detail` now auto-loads the first current match prediction when no selected prediction exists.
+  - Single-match sections now support collapse controls.
+  - Default long sections collapsed: Monte Carlo, team profiles, AI analysis, and squads.
+  - User can also collapse Score Probability and Roster Three-Line Strength from their card headers.
+  - Added "expand all" and "collapse long cards" controls at the top of the detail body.
+  - Static assets were bumped to `20260629-detail-collapse-v3`.
+- Verification:
+  - Wide viewport 1680x900 loaded `detail-collapse-v3` CSS/JS.
+  - Direct `#detail` load auto-selected Brazil vs Japan instead of showing the empty prompt.
+  - 9 section toggles rendered.
+  - Score card collapsed from 1052px to 56px.
+  - Roster strength card collapsed from 253px to 70px.
+  - Document height dropped from 3971px to 2792px and scrolling still reached the bottom.
+
 ---
 *Update this file after every 2 view/browser/search operations.*
