@@ -206,6 +206,34 @@ CREATE TABLE IF NOT EXISTS lyihub_players (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY(team, player_id)
 );
+
+CREATE TABLE IF NOT EXISTS finished_match_results (
+  match_id TEXT PRIMARY KEY,
+  date TEXT NOT NULL,
+  stage TEXT,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  home_goals_90 INTEGER,
+  away_goals_90 INTEGER,
+  home_goals_extra_time INTEGER,
+  away_goals_extra_time INTEGER,
+  home_penalties INTEGER,
+  away_penalties INTEGER,
+  winner TEXT,
+  loser TEXT,
+  decided_by_extra_time INTEGER NOT NULL DEFAULT 0,
+  decided_by_penalties INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL,
+  source_url TEXT,
+  fetched_at TEXT,
+  payload_json TEXT NOT NULL,
+  synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS rating_update_log (
+  match_id TEXT PRIMARY KEY,
+  processed_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 
@@ -228,6 +256,169 @@ class Database:
             self._ensure_column(connection, "fixtures", "market_source", "TEXT")
             self._ensure_column(connection, "fixtures", "market_handicap", "TEXT")
             self._ensure_column(connection, "fixtures", "market_handicap_line", "TEXT")
+
+    def upsert_finished_match_result(self, match: dict[str, Any]) -> dict[str, Any]:
+        existing = self.get_finished_match(str(match["match_id"]))
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO finished_match_results (
+                  match_id, date, stage, home_team, away_team, home_goals_90, away_goals_90,
+                  home_goals_extra_time, away_goals_extra_time, home_penalties, away_penalties,
+                  winner, loser, decided_by_extra_time, decided_by_penalties,
+                  source, source_url, fetched_at, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(match_id) DO UPDATE SET
+                  date=excluded.date,
+                  stage=excluded.stage,
+                  home_team=excluded.home_team,
+                  away_team=excluded.away_team,
+                  home_goals_90=excluded.home_goals_90,
+                  away_goals_90=excluded.away_goals_90,
+                  home_goals_extra_time=excluded.home_goals_extra_time,
+                  away_goals_extra_time=excluded.away_goals_extra_time,
+                  home_penalties=excluded.home_penalties,
+                  away_penalties=excluded.away_penalties,
+                  winner=excluded.winner,
+                  loser=excluded.loser,
+                  decided_by_extra_time=excluded.decided_by_extra_time,
+                  decided_by_penalties=excluded.decided_by_penalties,
+                  source=excluded.source,
+                  source_url=excluded.source_url,
+                  fetched_at=excluded.fetched_at,
+                  payload_json=excluded.payload_json,
+                  synced_at=CURRENT_TIMESTAMP
+                """,
+                (
+                    match["match_id"],
+                    match["date"],
+                    match.get("stage"),
+                    match["home_team"],
+                    match["away_team"],
+                    match.get("home_goals_90"),
+                    match.get("away_goals_90"),
+                    match.get("home_goals_extra_time"),
+                    match.get("away_goals_extra_time"),
+                    match.get("home_penalties"),
+                    match.get("away_penalties"),
+                    match.get("winner"),
+                    match.get("loser"),
+                    1 if match.get("decided_by_extra_time") else 0,
+                    1 if match.get("decided_by_penalties") else 0,
+                    match.get("source") or "unknown",
+                    match.get("source_url"),
+                    match.get("fetched_at"),
+                    json.dumps(match, ensure_ascii=False),
+                ),
+            )
+        return {"inserted": existing is None, "previous": existing}
+
+    def get_finished_match(self, match_id: str) -> dict[str, Any] | None:
+        with self.connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM finished_match_results WHERE match_id = ?",
+                (match_id,),
+            ).fetchone()
+        return self._finished_match_row(row) if row else None
+
+    def list_finished_matches(self) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM finished_match_results ORDER BY date, match_id"
+            ).fetchall()
+        return [self._finished_match_row(row) for row in rows]
+
+    def rating_update_processed_ids(self) -> set[str]:
+        with self.connect() as connection:
+            rows = connection.execute("SELECT match_id FROM rating_update_log").fetchall()
+        return {str(row["match_id"]) for row in rows}
+
+    def mark_rating_update_processed(self, match_id: str) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                "INSERT OR IGNORE INTO rating_update_log (match_id) VALUES (?)",
+                (match_id,),
+            )
+
+    def find_fixture_for_match_result(self, match: dict[str, Any]) -> dict[str, Any] | None:
+        params = (match.get("date"), match.get("home_team"), match.get("away_team"))
+        with self.connect() as connection:
+            for table in ("fixtures", "web_fixtures"):
+                row = connection.execute(
+                    f"""
+                    SELECT *, '{table}' AS table_name FROM {table}
+                    WHERE date = ? AND home_team = ? AND away_team = ?
+                    LIMIT 1
+                    """,
+                    params,
+                ).fetchone()
+                if row:
+                    return dict(row)
+            row = connection.execute(
+                """
+                SELECT *, 'lyihub_match_details' AS table_name FROM lyihub_match_details
+                WHERE date = ? AND home_team = ? AND away_team = ?
+                LIMIT 1
+                """,
+                params,
+            ).fetchone()
+            return dict(row) if row else None
+
+    def mark_fixture_final_from_result(self, match: dict[str, Any]) -> str:
+        row = self.find_fixture_for_match_result(match)
+        fixture_id = str(row["id"] if row and row.get("table_name") != "lyihub_match_details" else row["fixture_id"]) if row else f"web-{match['match_id']}"
+        score = (match.get("home_goals_90"), match.get("away_goals_90"))
+        if row and row.get("table_name") == "fixtures":
+            with self.connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE fixtures
+                    SET status = 'final', home_score = ?, away_score = ?, updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (score[0], score[1], row["id"]),
+                )
+        elif row and row.get("table_name") == "lyihub_match_details":
+            with self.connect() as connection:
+                connection.execute(
+                    """
+                    UPDATE lyihub_match_details
+                    SET status = 'final', home_score = ?, away_score = ?, source_url = COALESCE(?, source_url),
+                        synced_at = CURRENT_TIMESTAMP
+                    WHERE fixture_id = ?
+                    """,
+                    (score[0], score[1], match.get("source_url"), row["fixture_id"]),
+                )
+        else:
+            self.upsert_web_fixture(
+                {
+                    "id": fixture_id,
+                    "date": match["date"],
+                    "kickoff": match.get("kickoff") or match["date"],
+                    "home_team": match["home_team"],
+                    "away_team": match["away_team"],
+                    "group": match.get("stage"),
+                    "venue": None if not row else row.get("venue"),
+                    "status": "final",
+                    "home_score": score[0],
+                    "away_score": score[1],
+                    "source_url": match.get("source_url"),
+                    "result_sync": match,
+                },
+                source_name=str(match.get("source") or "online_result_sync"),
+            )
+        self.delete_prediction(fixture_id)
+        return fixture_id
+
+    def delete_prediction(self, fixture_id: str) -> None:
+        with self.connect() as connection:
+            connection.execute("DELETE FROM predictions WHERE fixture_id = ?", (fixture_id,))
+
+    def clear_predictions(self) -> int:
+        with self.connect() as connection:
+            row = connection.execute("SELECT COUNT(*) AS count FROM predictions").fetchone()
+            connection.execute("DELETE FROM predictions")
+        return int(row["count"] or 0)
 
     def _ensure_column(
         self,
@@ -1093,6 +1284,34 @@ class Database:
                 "away_score": row["away_score"],
                 "source_name": row["source_name"],
                 "source_url": row["source_url"],
+            }
+        )
+        return payload
+
+    def _finished_match_row(self, row: sqlite3.Row) -> dict[str, Any]:
+        payload = json.loads(row["payload_json"] or "{}")
+        payload.update(
+            {
+                "match_id": row["match_id"],
+                "date": row["date"],
+                "stage": row["stage"],
+                "home_team": row["home_team"],
+                "away_team": row["away_team"],
+                "home_goals_90": row["home_goals_90"],
+                "away_goals_90": row["away_goals_90"],
+                "home_goals_extra_time": row["home_goals_extra_time"],
+                "away_goals_extra_time": row["away_goals_extra_time"],
+                "home_penalties": row["home_penalties"],
+                "away_penalties": row["away_penalties"],
+                "winner": row["winner"],
+                "loser": row["loser"],
+                "is_finished": True,
+                "decided_by_extra_time": bool(row["decided_by_extra_time"]),
+                "decided_by_penalties": bool(row["decided_by_penalties"]),
+                "source": row["source"],
+                "source_url": row["source_url"],
+                "fetched_at": row["fetched_at"],
+                "synced_at": row["synced_at"],
             }
         )
         return payload

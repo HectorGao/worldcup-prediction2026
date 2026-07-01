@@ -4,6 +4,7 @@ import math
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -43,6 +44,16 @@ from .prediction.xgboost_model import (
     train_xgboost_layer,
 )
 from .prediction.weight_calibration import calibrate_model_weights, default_weight_run
+from .result_sync import (
+    collect_world_cup_finished_matches,
+    evaluate_world_cup_regression,
+    fetch_latest_finished_matches,
+    retrain_team_ratings_from_world_cup,
+    sync_finished_matches_to_local_store,
+    update_knockout_bracket_with_result,
+    validate_bracket_after_result_sync,
+    write_prediction_outputs,
+)
 from .roster_strength import USABLE_STATUSES, aggregate_team_strength, player_strength
 from .team_metadata import display_team, enrich_fixture, enrich_profile
 
@@ -208,6 +219,623 @@ class WorldCupService:
             "match_count": len(matches),
             "window_dates": sorted({match["date"] for match in matches}),
             "matches": matches,
+        }
+
+    def update_after_results(
+        self,
+        *,
+        fetch_online_results: bool = True,
+        use_xgboost: bool = True,
+        recalculate: bool = True,
+        output_dir: str | Path = "outputs",
+        date: str | None = None,
+    ) -> dict[str, Any]:
+        print("[INFO] Fetching latest finished World Cup matches from online sources...")
+        target_date = date or datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
+        today_finished_matches = (
+            fetch_latest_finished_matches(target_date=target_date, timezone="Asia/Shanghai")
+            if fetch_online_results
+            else [match for match in self.db.list_finished_matches() if match.get("date") == target_date]
+        )
+        if fetch_online_results and not today_finished_matches:
+            today_finished_matches = self._fetch_reference_finished_matches(target_date)
+        print("[INFO] Using result source: ESPN" if today_finished_matches else "[WARNING] No finished online matches returned.")
+        sync_result = sync_finished_matches_to_local_store(today_finished_matches, self.db)
+        print("[INFO] Finished matches synced.")
+        all_world_cup_matches = collect_world_cup_finished_matches(self.db)
+        print("[INFO] Retraining team ratings from all finished World Cup matches.")
+        retraining = self._retrain_ratings_from_world_cup(all_world_cup_matches)
+        self._xgboost_model_cache.clear()
+        print("[INFO] Updating knockout bracket from real winners.")
+        bracket = self._bracket_from_local_matches()
+        teams = {profile["team"]: profile for profile in self.db.list_team_profiles()}
+        for match in all_world_cup_matches:
+            update_knockout_bracket_with_result(bracket, match, teams)
+        for team, profile in teams.items():
+            self.db.save_team_profile(team, profile)
+        bracket_validation = validate_bracket_after_result_sync(bracket, teams)
+        if bracket_validation["eliminated_future_teams"]:
+            print("[WARNING] Eliminated teams remain in future bracket slots and will be excluded from predictions.")
+        print("[INFO] Eliminated teams removed from future predictions.")
+        if use_xgboost:
+            print("[INFO] Checking xgboost installation...")
+            xgb_status = self._xgboost_status()
+            print(f"[INFO] XGBoost {xgb_status['engine']}.")
+        else:
+            xgb_status = {"available": False, "engine": "disabled"}
+        xgb_status["training_sample_summary"] = self._xgboost_sample_summary(target_date)
+        print("[INFO] Recalculating all remaining knockout matches.")
+        predictions = self._updated_prediction_rows(recalculate=recalculate, teams=teams)
+        regression_evaluation = self._evaluate_world_cup_regression(all_world_cup_matches)
+        advanced_teams = sorted(
+            {
+                str(match.get("winner"))
+                for match in today_finished_matches
+                if match.get("winner") and self._is_knockout_stage(match.get("stage"))
+            }
+        )
+        eliminated_teams = sorted(
+            {
+                str(match.get("loser"))
+                for match in today_finished_matches
+                if match.get("loser") and self._is_knockout_stage(match.get("stage"))
+            }
+        )
+        result_sync_log = {
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "target_date": target_date,
+            "fetch_online_results": fetch_online_results,
+            "sources": ["ESPN"],
+            "today_finished_match_count": len(today_finished_matches),
+            "today_finished_matches": today_finished_matches,
+            "finished_match_count": len(all_world_cup_matches),
+            "world_cup_finished_match_count": len(all_world_cup_matches),
+            "advanced_teams": advanced_teams,
+            "eliminated_teams": eliminated_teams,
+            "sync": sync_result,
+            "ratings": retraining,
+            "bracket_validation": bracket_validation,
+            "xgboost": xgb_status,
+            "regression_evaluation": {
+                key: value
+                for key, value in regression_evaluation.items()
+                if key != "per_match_errors"
+            },
+        }
+        outputs = write_prediction_outputs(
+            output_dir=Path(output_dir),
+            predictions=predictions,
+            bracket=bracket,
+            team_ratings=sorted(teams.values(), key=lambda item: item.get("elo", 0), reverse=True),
+            result_sync_log=result_sync_log,
+            regression_evaluation=regression_evaluation,
+            model_retraining_report=retraining,
+        )
+        print("[INFO] Saved updated predictions.")
+        print("[INFO] Validation completed.")
+        return {
+            "finished_matches": all_world_cup_matches,
+            "today_finished_matches": today_finished_matches,
+            "advanced_teams": advanced_teams,
+            "eliminated_teams": eliminated_teams,
+            "world_cup_finished_match_count": len(all_world_cup_matches),
+            "sync": sync_result,
+            "ratings": retraining,
+            "retraining": retraining,
+            "regression_evaluation": regression_evaluation,
+            "bracket": bracket,
+            "bracket_validation": bracket_validation,
+            "xgboost": xgb_status,
+            "prediction_count": len(predictions),
+            "outputs": outputs,
+        }
+
+    def _fetch_reference_finished_matches(self, target_date: str) -> list[dict[str, Any]]:
+        try:
+            index = self.lyihub_scraper.fetch_index()
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            print(f"[WARNING] lyihub fallback unavailable: {exc}")
+            return []
+        normalized = [
+            self.lyihub_scraper.normalize_index_match(match)
+            for match in index.get("matches") or []
+        ]
+        normalized = self._normalize_lyihub_group_rounds(normalized)
+        finished = [
+            match
+            for match in normalized
+            if match.get("date") == target_date
+            and self._is_final_row(match)
+            and match.get("home_score") is not None
+            and match.get("away_score") is not None
+        ]
+        for match in normalized:
+            if match.get("date") == target_date or self.db.get_lyihub_match_by_fixture(match["id"]):
+                self.db.upsert_lyihub_match(match)
+                self.db.upsert_web_fixture(match, source_name="lyihub_worldcup_static_json")
+        return [self._lyihub_finished_match_payload(match) for match in finished]
+
+    def _lyihub_finished_match_payload(self, match: dict[str, Any]) -> dict[str, Any]:
+        home_score = match.get("home_score")
+        away_score = match.get("away_score")
+        winner = loser = None
+        if home_score is not None and away_score is not None and home_score != away_score:
+            winner = match["home_team"] if home_score > away_score else match["away_team"]
+            loser = match["away_team"] if winner == match["home_team"] else match["home_team"]
+        return {
+            "match_id": f"lyihub-{match['match_id']}",
+            "date": match["date"],
+            "stage": match.get("stage") or match.get("group"),
+            "home_team": match["home_team"],
+            "away_team": match["away_team"],
+            "home_goals_90": home_score,
+            "away_goals_90": away_score,
+            "home_goals_extra_time": None,
+            "away_goals_extra_time": None,
+            "home_penalties": None,
+            "away_penalties": None,
+            "winner": winner,
+            "loser": loser,
+            "is_finished": True,
+            "decided_by_extra_time": False,
+            "decided_by_penalties": False,
+            "source": "lyihub_worldcup_static_json",
+            "source_url": match.get("source_url"),
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    def sync_round_overview(self, date: str | None = None) -> dict[str, Any]:
+        requested_date = date or datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
+        started_at = datetime.now(timezone.utc).isoformat()
+        result_sync = self.update_after_results(
+            fetch_online_results=True,
+            use_xgboost=True,
+            recalculate=True,
+            date=requested_date,
+        )
+        sporttery = self.refresh_sporttery_odds()
+        effective_date = self.default_match_date(requested_date)
+        predictions = self._sporttery_prediction_briefs(effective_date, before={})
+        matches = self.list_matches_with_prediction_summary(effective_date)
+        completed_at = datetime.now(timezone.utc).isoformat()
+        return {
+            "requested_date": requested_date,
+            "date": effective_date,
+            "started_at": started_at,
+            "completed_at": completed_at,
+            "last_sync_time": completed_at,
+            "result_sync": result_sync,
+            "sporttery": {
+                **sporttery,
+                "checked_at": completed_at,
+            },
+            "predictions": predictions,
+            "matches": matches,
+            "summary": {
+                "finished_today": len(result_sync.get("today_finished_matches") or []),
+                "finished_total": result_sync.get("world_cup_finished_match_count", 0),
+                "sporttery_updated": sporttery.get("updated", 0),
+                "prediction_count": len(predictions),
+            },
+        }
+
+    def regress_round_overview(self, date: str | None = None, *, auto_sync: bool = True) -> dict[str, Any]:
+        requested_date = date or datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
+        sync_payload = None
+        finished_matches = collect_world_cup_finished_matches(self.db)
+        if not finished_matches and auto_sync:
+            sync_payload = self.sync_round_overview(requested_date)
+            finished_matches = collect_world_cup_finished_matches(self.db)
+        if not finished_matches:
+            return {
+                "requested_date": requested_date,
+                "date": self.default_match_date(requested_date),
+                "needs_sync": True,
+                "message": "还没有可用于回归的本届世界杯完赛样本，请先点击同步。",
+                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "unfinished_predictions": [],
+                "current_sporttery_predictions": [],
+            }
+
+        effective_date = self.default_match_date(requested_date)
+        before = self._unfinished_prediction_snapshot()
+        retraining = self._retrain_ratings_from_world_cup(finished_matches)
+        self._xgboost_model_cache.clear()
+        weight_run = self.recalibrate_model_weights(effective_date)
+        regression_evaluation = self._evaluate_world_cup_regression(finished_matches)
+        unfinished_predictions = self._unfinished_prediction_briefs(before=before)
+        current_sporttery_predictions = [
+            item
+            for item in unfinished_predictions
+            if item["fixture_id"] in {row["id"] for row in self._sporttery_prediction_rows(effective_date)}
+        ]
+        completed_at = datetime.now(timezone.utc).isoformat()
+        return {
+            "requested_date": requested_date,
+            "date": effective_date,
+            "needs_sync": False,
+            "auto_sync": sync_payload is not None,
+            "sync": sync_payload,
+            "completed_at": completed_at,
+            "finished_match_count": len(finished_matches),
+            "world_cup_data_weight": retraining.get("world_cup_data_weight"),
+            "retraining": retraining,
+            "model_weight_run": weight_run,
+            "regression_evaluation": regression_evaluation,
+            "unfinished_predictions": unfinished_predictions,
+            "current_sporttery_predictions": current_sporttery_predictions,
+        }
+
+    def _sporttery_prediction_rows(self, date: str) -> list[dict[str, Any]]:
+        rows = self._current_sporttery_market_rows(date)
+        if rows:
+            return rows
+        for fallback_date in (sporttery_window_anchor_date(), sporttery_window_match_start_date()):
+            rows = self._current_sporttery_market_rows(fallback_date)
+            if rows:
+                return rows
+        return []
+
+    def _sporttery_prediction_briefs(
+        self,
+        date: str,
+        *,
+        before: dict[str, dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        output = []
+        for row in self._sporttery_prediction_rows(date):
+            if self._is_final_row(row):
+                output.append(self._finished_brief(row))
+                continue
+            prediction = self.predict_fixture(str(row["id"]))
+            output.append(self._prediction_brief(prediction, before_prediction=before.get(str(row["id"]))))
+        return output
+
+    def _unfinished_prediction_snapshot(self) -> dict[str, dict[str, Any]]:
+        snapshot = {}
+        for row in self._unfinished_rows():
+            try:
+                snapshot[str(row["id"])] = self.get_prediction(str(row["id"]))
+            except (KeyError, ValueError, TypeError, RuntimeError):
+                continue
+        return snapshot
+
+    def _unfinished_prediction_briefs(self, *, before: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+        output = []
+        for row in self._unfinished_rows():
+            prediction = self.predict_fixture(str(row["id"]))
+            output.append(self._prediction_brief(prediction, before_prediction=before.get(str(row["id"]))))
+        return output
+
+    def _unfinished_rows(self) -> list[dict[str, Any]]:
+        rows = self.db.list_lyihub_matches()
+        if not rows:
+            rows = [row for date in self.available_dates() for row in self.db.list_web_fixtures(date)]
+        seen = set()
+        unfinished = []
+        for row in rows:
+            fixture_id = str(row.get("id") or "")
+            if not fixture_id or fixture_id in seen or self._is_final_row(row):
+                continue
+            seen.add(fixture_id)
+            unfinished.append(row)
+        return sorted(unfinished, key=lambda item: (str(item.get("kickoff") or ""), str(item.get("id") or "")))
+
+    def _prediction_brief(
+        self,
+        prediction: dict[str, Any],
+        *,
+        before_prediction: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        fixture = prediction["fixture"]
+        probabilities = prediction.get("probabilities") or {}
+        handicap = prediction.get("handicap_analysis") or {}
+        ensemble = prediction.get("ensemble") or {}
+        monte_carlo = prediction.get("monte_carlo") or {}
+        xgboost = prediction.get("xgboost") or {}
+        before_probabilities = (before_prediction or {}).get("probabilities") or {}
+        probability_delta = {
+            key: round(float(probabilities.get(key) or 0) - float(before_probabilities.get(key) or 0), 6)
+            for key in ("home", "draw", "away")
+            if key in probabilities
+        } if before_probabilities else {}
+        return {
+            "fixture_id": fixture["id"],
+            "date": fixture.get("date"),
+            "kickoff": fixture.get("kickoff"),
+            "stage": fixture.get("stage") or fixture.get("group"),
+            "home_team": fixture["home_team"],
+            "away_team": fixture["away_team"],
+            "home_team_zh": fixture.get("home_team_zh"),
+            "away_team_zh": fixture.get("away_team_zh"),
+            "home_flag": fixture.get("home_flag"),
+            "away_flag": fixture.get("away_flag"),
+            "status": fixture.get("status"),
+            "probabilities_90": probabilities,
+            "handicap_probabilities": handicap.get("model_probabilities") or {},
+            "handicap_market_probabilities": handicap.get("market_probabilities") or {},
+            "handicap_line": handicap.get("line"),
+            "score_heatmap": prediction.get("score_heatmap"),
+            "top_scorelines": prediction.get("top_scorelines") or [],
+            "advancement_probabilities": self._advancement_probabilities(fixture, probabilities),
+            "xgboost": {
+                "home": xgboost.get("home_win"),
+                "draw": xgboost.get("draw"),
+                "away": xgboost.get("away_win"),
+            },
+            "monte_carlo": {
+                "home": monte_carlo.get("home_win"),
+                "draw": monte_carlo.get("draw"),
+                "away": monte_carlo.get("away_win"),
+                "simulations": monte_carlo.get("simulations"),
+            },
+            "ensemble": {
+                "home": ensemble.get("home"),
+                "draw": ensemble.get("draw"),
+                "away": ensemble.get("away"),
+                "recommended_result": ensemble.get("recommended_result"),
+                "confidence": ensemble.get("confidence"),
+            },
+            "recommendation": ensemble.get("recommended_result"),
+            "betting_recommendations": prediction.get("betting_recommendations") or [],
+            "lottery_market": prediction.get("lottery_market"),
+            "odds_markets": prediction.get("odds_markets"),
+            "world_cup_data_weight": (prediction.get("model_weight_run") or {}).get("world_cup_data_weight"),
+            "probability_delta": probability_delta,
+            "calculated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    def _finished_brief(self, row: dict[str, Any]) -> dict[str, Any]:
+        result = next(
+            (
+                match
+                for match in self.db.list_finished_matches()
+                if match.get("date") == row.get("date")
+                and match.get("home_team") == row.get("home_team")
+                and match.get("away_team") == row.get("away_team")
+            ),
+            {},
+        )
+        return {
+            "fixture_id": row.get("id"),
+            "date": row.get("date"),
+            "kickoff": row.get("kickoff"),
+            "stage": row.get("stage") or row.get("group"),
+            "home_team": row.get("home_team"),
+            "away_team": row.get("away_team"),
+            "status": "final",
+            "result": self._finished_output_row(row, result if result.get("match_id") else None),
+        }
+
+    def _advancement_probabilities(self, fixture: dict[str, Any], probabilities: dict[str, Any]) -> dict[str, float] | None:
+        if not self._is_knockout_stage(fixture.get("stage") or fixture.get("group")):
+            return None
+        home = float(probabilities.get("home") or 0.0)
+        draw = float(probabilities.get("draw") or 0.0)
+        away = float(probabilities.get("away") or 0.0)
+        return {
+            "home": round(home + draw * 0.5, 6),
+            "away": round(away + draw * 0.5, 6),
+        }
+
+    def _retrain_ratings_from_world_cup(self, finished_matches: list[dict[str, Any]]) -> dict[str, Any]:
+        teams = {profile["team"]: profile for profile in self.db.list_team_profiles()}
+        result = retrain_team_ratings_from_world_cup(finished_matches, teams)
+        for team, profile in result["teams"].items():
+            self.db.save_team_profile(team, profile)
+        report = dict(result)
+        report["team_count"] = len(result["teams"])
+        report["teams"] = sorted(result["teams"].values(), key=lambda item: item.get("elo", 0), reverse=True)
+        return report
+
+    def _is_knockout_stage(self, stage: Any) -> bool:
+        value = str(stage or "").lower()
+        return any(
+            token in value
+            for token in (
+                "round of",
+                "knockout",
+                "quarter",
+                "semi",
+                "final",
+                "third place",
+                "1/16",
+                "1/8",
+                "1/4",
+                "半决赛",
+                "决赛",
+                "淘汰",
+            )
+        ) and "group" not in value and "小组" not in value
+
+    def _xgboost_status(self) -> dict[str, Any]:
+        try:
+            from xgboost import XGBClassifier, XGBRegressor  # type: ignore  # noqa: F401
+
+            return {"available": True, "engine": "imported successfully", "classes": ["XGBClassifier", "XGBRegressor"]}
+        except Exception as exc:
+            return {
+                "available": False,
+                "engine": "fallback deterministic/softmax layer active",
+                "last_error": str(exc),
+            }
+
+    def _bracket_from_local_matches(self) -> dict[str, Any]:
+        matches = [
+            {
+                "match_id": row.get("match_id") or row.get("id"),
+                "fixture_id": row.get("id"),
+                "date": row.get("date"),
+                "stage": row.get("stage") or row.get("group"),
+                "home_team": row.get("home_team"),
+                "away_team": row.get("away_team"),
+                "status": row.get("status"),
+                "is_finished": self._is_final_row(row),
+                "home_score": row.get("home_score"),
+                "away_score": row.get("away_score"),
+            }
+            for row in self.db.list_lyihub_matches()
+        ]
+        if not matches:
+            for date in self.available_dates():
+                matches.extend(
+                    {
+                        "match_id": row.get("id"),
+                        "fixture_id": row.get("id"),
+                        "date": row.get("date"),
+                        "stage": row.get("group_name") or row.get("group"),
+                        "home_team": row.get("home_team"),
+                        "away_team": row.get("away_team"),
+                        "status": row.get("status"),
+                        "is_finished": self._is_final_row(row),
+                        "home_score": row.get("home_score"),
+                        "away_score": row.get("away_score"),
+                    }
+                    for row in self.db.list_web_fixtures(date)
+                )
+        return {"matches": matches, "generated_at": datetime.now(timezone.utc).isoformat()}
+
+    def _updated_prediction_rows(self, *, recalculate: bool, teams: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+        result_by_key = {
+            (row["date"], row["home_team"], row["away_team"]): row
+            for row in self.db.list_finished_matches()
+        }
+        rows = self.db.list_lyihub_matches()
+        if not rows:
+            rows = [row for date in self.available_dates() for row in self.db.list_web_fixtures(date)]
+        output = []
+        for row in rows:
+            result = result_by_key.get((row["date"], row["home_team"], row["away_team"]))
+            if result or self._is_final_row(row):
+                output.append(self._finished_output_row(row, result))
+                continue
+            if teams.get(row["home_team"], {}).get("eliminated") or teams.get(row["away_team"], {}).get("eliminated"):
+                continue
+            prediction = self.predict_fixture(row["id"]) if recalculate else self.get_prediction(row["id"])
+            output.append(self._prediction_output_row(prediction))
+        return output
+
+    def _evaluate_world_cup_regression(self, matches: list[dict[str, Any]]) -> dict[str, Any]:
+        predictions: dict[str, dict[str, Any]] = {}
+        for match in matches:
+            match_id = str(match.get("match_id") or "")
+            prediction = self._prediction_for_finished_match(match)
+            if prediction:
+                predictions[match_id] = prediction
+        return evaluate_world_cup_regression(matches, predictions)
+
+    def _prediction_for_finished_match(self, match: dict[str, Any]) -> dict[str, Any] | None:
+        return self._fallback_regression_prediction(match)
+
+    def _fallback_regression_prediction(self, match: dict[str, Any]) -> dict[str, Any]:
+        profiles = {profile["team"]: profile for profile in self.db.list_team_profiles()}
+        home = profiles.get(str(match.get("home_team"))) or {}
+        away = profiles.get(str(match.get("away_team"))) or {}
+        home_strength = float(home.get("strength_rating") or home.get("elo") or 1700)
+        away_strength = float(away.get("strength_rating") or away.get("elo") or 1700)
+        home_attack = float(home.get("attack_rating") or 1.32)
+        away_attack = float(away.get("attack_rating") or 1.32)
+        home_defense = float(home.get("defense_rating") or 1.32)
+        away_defense = float(away.get("defense_rating") or 1.32)
+        home_xg = self._clamp(0.62 * home_attack + 0.38 * away_defense, 0.35, 3.4)
+        away_xg = self._clamp(0.62 * away_attack + 0.38 * home_defense, 0.35, 3.4)
+        home_logit = (home_strength - away_strength) / 420 + (home_xg - away_xg) * 0.45
+        away_logit = -home_logit
+        draw_logit = -abs(home_xg - away_xg) * 0.35
+        max_logit = max(home_logit, draw_logit, away_logit)
+        exps = {
+            "home": math.exp(home_logit - max_logit),
+            "draw": math.exp(draw_logit - max_logit),
+            "away": math.exp(away_logit - max_logit),
+        }
+        total = sum(exps.values())
+        return {
+            "fixture": {
+                "home_team": match.get("home_team"),
+                "away_team": match.get("away_team"),
+            },
+            "probabilities": {key: value / total for key, value in exps.items()},
+            "expected_goals": {"home": home_xg, "away": away_xg},
+        }
+
+    def _xgboost_sample_summary(self, date: str) -> dict[str, Any]:
+        samples = self._xgboost_training_samples(date)
+        if not samples:
+            return {"sample_count": 0, "world_cup_samples": 0, "historical_samples": 0}
+        world_cup = [sample for sample in samples if sample.get("source_name") != "historical_matches"]
+        historical = [sample for sample in samples if sample.get("source_name") == "historical_matches"]
+        weights = [float(sample.get("sample_weight", 1.0)) for sample in samples]
+        return {
+            "sample_count": len(samples),
+            "world_cup_samples": len(world_cup),
+            "historical_samples": len(historical),
+            "min_weight": round(min(weights), 6),
+            "max_weight": round(max(weights), 6),
+            "mean_weight": round(sum(weights) / len(weights), 6),
+            "world_cup_weight_policy": "group=4.0 knockout=5.0 historical=0.75",
+        }
+
+    def _finished_output_row(self, row: dict[str, Any], result: dict[str, Any] | None) -> dict[str, Any]:
+        result = result or {}
+        return {
+            "match_id": result.get("match_id") or row.get("match_id") or row.get("id"),
+            "stage": result.get("stage") or row.get("stage") or row.get("group"),
+            "home_team": row.get("home_team"),
+            "away_team": row.get("away_team"),
+            "is_finished": True,
+            "home_goals_90": result.get("home_goals_90", row.get("home_score")),
+            "away_goals_90": result.get("away_goals_90", row.get("away_score")),
+            "home_goals_extra_time": result.get("home_goals_extra_time"),
+            "away_goals_extra_time": result.get("away_goals_extra_time"),
+            "home_penalties": result.get("home_penalties"),
+            "away_penalties": result.get("away_penalties"),
+            "winner": result.get("winner"),
+            "loser": result.get("loser"),
+            "decided_by_extra_time": result.get("decided_by_extra_time", False),
+            "decided_by_penalties": result.get("decided_by_penalties", False),
+            "source": result.get("source") or row.get("source_name"),
+            "source_url": result.get("source_url") or row.get("source_url"),
+            "fetched_at": result.get("fetched_at"),
+        }
+
+    def _prediction_output_row(self, prediction: dict[str, Any]) -> dict[str, Any]:
+        fixture = prediction["fixture"]
+        top_score = (prediction.get("top_scorelines") or [{}])[0].get("score")
+        poisson = prediction.get("poisson") or {}
+        mc = prediction.get("monte_carlo") or {}
+        xgb = prediction.get("xgboost") or {}
+        probs = prediction.get("probabilities") or {}
+        return {
+            "match_id": fixture["id"],
+            "stage": fixture.get("stage") or fixture.get("group"),
+            "home_team": fixture["home_team"],
+            "away_team": fixture["away_team"],
+            "is_finished": False,
+            "home_win_90_prob": probs.get("home"),
+            "draw_90_prob": probs.get("draw"),
+            "away_win_90_prob": probs.get("away"),
+            "home_advance_prob": probs.get("home"),
+            "away_advance_prob": probs.get("away"),
+            "most_likely_score": top_score,
+            "score_heatmap": prediction.get("score_heatmap"),
+            "poisson_home_win_prob": poisson.get("home_win"),
+            "poisson_draw_prob": poisson.get("draw"),
+            "poisson_away_win_prob": poisson.get("away_win"),
+            "monte_carlo_home_win_prob": mc.get("home_win"),
+            "monte_carlo_draw_prob": mc.get("draw"),
+            "monte_carlo_away_win_prob": mc.get("away_win"),
+            "xgboost_home_win_prob": xgb.get("home_win"),
+            "xgboost_draw_prob": xgb.get("draw"),
+            "xgboost_away_win_prob": xgb.get("away_win"),
+            "xgboost_predicted_result_90": (prediction.get("ensemble") or {}).get("recommended_result"),
+            "xgboost_confidence": (prediction.get("ensemble") or {}).get("confidence"),
+            "final_home_win_prob": probs.get("home"),
+            "final_draw_prob": probs.get("draw"),
+            "final_away_win_prob": probs.get("away"),
+            "final_recommendation": (prediction.get("ensemble") or {}).get("recommended_result"),
+            "world_cup_data_weight": (prediction.get("model_weight_run") or {}).get("world_cup_data_weight"),
+            "last_result_sync_time": datetime.now(timezone.utc).isoformat(),
+            "result_data_source": "ESPN",
         }
 
     def refresh_sporttery_odds(self) -> dict[str, Any]:
@@ -380,6 +1008,14 @@ class WorldCupService:
             trained_model=self._trained_xgboost_for_date(str(fixture.get("date") or "")),
         )
         model_weight_run = self.model_weights_for_date(str(fixture.get("date") or ""))
+        model_weight_run = {
+            **model_weight_run,
+            "world_cup_data_weight": max(
+                float(home_profile.get("world_cup_data_weight") or 0.0),
+                float(away_profile.get("world_cup_data_weight") or 0.0),
+            ),
+            "xgboost_sample_summary": self._xgboost_sample_summary(str(fixture.get("date") or "")),
+        }
         ensemble = blend_probabilities(
             elo={key: elo[key] for key in ("home", "draw", "away")},
             poisson=poisson,
@@ -754,9 +1390,23 @@ class WorldCupService:
                     "fixture_id": fixture["id"],
                     "features": features,
                     "outcome": actual_outcome(int(match["home_score"]), int(match["away_score"])),
+                    "sample_weight": self._training_sample_weight(match),
+                    "source_name": match.get("source_name"),
+                    "stage": match.get("stage") or match.get("tournament"),
                 }
             )
         return samples
+
+    def _training_sample_weight(self, match: dict[str, Any]) -> float:
+        source = str(match.get("source_name") or "")
+        stage = str(match.get("stage") or match.get("tournament") or "")
+        if source == "historical_matches":
+            return 0.75
+        if self._is_knockout_stage(stage):
+            return 5.0
+        if "World Cup" in stage or "小组赛" in stage or "group" in stage.lower() or source:
+            return 4.0
+        return 1.0
 
     def _fast_training_poisson_proxy(
         self,
@@ -1556,10 +2206,25 @@ class WorldCupService:
                 "home_score": row.get("home_score"),
                 "away_score": row.get("away_score"),
                 "tournament": row.get("stage") or "World Cup",
+                "stage": row.get("stage"),
                 "source_name": row.get("source_name") or "lyihub_worldcup_static_json",
             }
             for row in self.db.list_lyihub_matches()
             if row.get("status") == "final" and row.get("home_score") is not None and row.get("away_score") is not None
+        )
+        matches.extend(
+            {
+                "date": row["date"],
+                "home_team": row["home_team"],
+                "away_team": row["away_team"],
+                "home_score": row.get("home_goals_90"),
+                "away_score": row.get("away_goals_90"),
+                "tournament": row.get("stage") or "World Cup",
+                "stage": row.get("stage"),
+                "source_name": row.get("source") or "finished_match_results",
+            }
+            for row in self.db.list_finished_matches()
+            if row.get("home_goals_90") is not None and row.get("away_goals_90") is not None
         )
         if not as_of:
             return matches
@@ -1755,6 +2420,9 @@ class WorldCupService:
         enriched = dict(match)
         actual_score = self._actual_score(match)
         enriched["actual_score"] = actual_score
+        finished_result = self._finished_result_for_row(match)
+        if finished_result:
+            enriched["finished_result"] = self._finished_output_row(match, finished_result)
         fixture_odds_markets = self._odds_markets(match, self._market_payload(match))
         if (fixture_odds_markets.get("h2h") or {}).get("available") or (fixture_odds_markets.get("handicap") or {}).get("available"):
             enriched["odds_markets"] = fixture_odds_markets
@@ -1774,6 +2442,16 @@ class WorldCupService:
         enriched["predicted_score"] = predicted_score
         enriched["prediction_accuracy"] = self._prediction_accuracy(predicted_score, actual_score)
         return enriched
+
+    def _finished_result_for_row(self, row: dict[str, Any]) -> dict[str, Any] | None:
+        for match in self.db.list_finished_matches():
+            if (
+                match.get("date") == row.get("date")
+                and match.get("home_team") == row.get("home_team")
+                and match.get("away_team") == row.get("away_team")
+            ):
+                return match
+        return None
 
     def _actual_score(self, match: dict[str, Any]) -> str | None:
         if match.get("home_score") is None or match.get("away_score") is None:

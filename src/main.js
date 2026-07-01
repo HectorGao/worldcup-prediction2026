@@ -13,6 +13,12 @@ const state = {
   activeView: 'rounds',
   selectedTeamDetail: null,
   currentMatchMeta: null,
+  lastUpdateSummary: null,
+  roundSyncSummary: null,
+  roundRegressionSummary: null,
+  lastPredictionParams: null,
+  predictionParamsDirty: false,
+  lastCalculationTime: null,
   detailAutoloading: false,
   collapsedPredictionSections: {
     'monte-carlo': true,
@@ -102,21 +108,23 @@ async function syncMatches() {
   const button = document.querySelector('#sync-button');
   button.disabled = true;
   button.textContent = '...';
-  setStatus('正在同步完赛比分，并从竞彩网刷新可购买比赛与赔率...');
+  setStatus('正在获取线上真实赛果、更新球队参数并重新预测未完赛比赛...');
   try {
-    const payload = await api(`/api/refresh/current?date=${date}`, { method: 'POST' });
+    const payload = await api(`/api/results/update?fetch_online_results=true&use_xgboost=true&recalculate=true&date=${encodeURIComponent(date)}`, { method: 'POST' });
+    state.lastUpdateSummary = payload;
     state.matchPredictions = {};
     state.selectedPrediction = null;
     await loadAvailableDates();
+    document.querySelector('#match-date').value = date;
     await loadMatches();
     await loadRounds();
     await loadReport();
     await loadRankings();
     await loadKnockout();
     await loadRosterHealth();
-    const sportteryMode = payload.sporttery?.mode === 'live' ? '竞彩网实时赔率' : '竞彩网快照赔率';
+    renderUpdateSummary(payload);
     setStatus(
-      `同步完成：完赛比分已更新，${sportteryMode} ${payload.sporttery?.updated ?? 0} 场，今日页 ${payload.match_count ?? 0} 场。`,
+      `同步完成：今日完赛 ${payload.today_finished_matches?.length ?? 0} 场，本届已完赛 ${payload.world_cup_finished_match_count ?? 0} 场，重算预测 ${payload.prediction_count ?? 0} 条。`,
       'success'
     );
   } catch (error) {
@@ -125,6 +133,234 @@ async function syncMatches() {
     button.disabled = false;
     button.textContent = '↻';
   }
+}
+
+async function syncRoundOverview() {
+  const date = selectedDate();
+  const button = document.querySelector('#round-sync-button');
+  button.disabled = true;
+  button.textContent = '同步中...';
+  setStatus('正在按顺序同步完赛结果、竞彩赔率，并重新预测竞彩页面比赛...');
+  try {
+    const payload = await api(`/api/rounds/sync?date=${encodeURIComponent(date)}`, { method: 'POST' });
+    state.roundSyncSummary = payload;
+    state.lastUpdateSummary = payload.result_sync;
+    state.matchPredictions = {};
+    await loadAvailableDates();
+    await loadMatches();
+    await loadRounds();
+    await loadReport();
+    await loadRankings();
+    await loadKnockout();
+    await loadRosterHealth();
+    renderRoundSyncSummary(payload);
+    setStatus(
+      `赛程同步完成：完赛 ${payload.summary?.finished_total ?? 0} 场，竞彩赔率更新 ${payload.summary?.sporttery_updated ?? 0} 场，重算 ${payload.summary?.prediction_count ?? 0} 场。`,
+      'success'
+    );
+  } catch (error) {
+    setStatus(`赛程同步失败：${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = '同步';
+  }
+}
+
+async function regressRoundOverview() {
+  const date = selectedDate();
+  const button = document.querySelector('#round-regress-button');
+  button.disabled = true;
+  button.textContent = '回归中...';
+  setStatus('正在用已完赛比赛回归球队参数，并重新预测未完赛比赛...');
+  try {
+    const payload = await api(`/api/rounds/regress?date=${encodeURIComponent(date)}&auto_sync=true`, { method: 'POST' });
+    state.roundRegressionSummary = payload;
+    if (payload.sync) {
+      state.roundSyncSummary = payload.sync;
+    }
+    state.matchPredictions = {};
+    await loadMatches();
+    await loadRounds();
+    await loadRankings();
+    await loadKnockout();
+    renderRoundRegressionSummary(payload);
+    setStatus(
+      payload.needs_sync
+        ? '回归需要先同步完赛结果。'
+        : `回归完成：使用 ${payload.finished_match_count ?? 0} 场本届世界杯完赛样本，重算 ${payload.unfinished_predictions?.length ?? 0} 场未完赛比赛。`,
+      payload.needs_sync ? 'error' : 'success'
+    );
+  } catch (error) {
+    setStatus(`回归失败：${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = '回归';
+  }
+}
+
+function renderUpdateSummary(payload) {
+  const target = document.querySelector('#daily-report');
+  if (!target || !payload) return;
+  const regression = payload.regression_evaluation || {};
+  const retraining = payload.retraining || {};
+  const today = payload.today_finished_matches || [];
+  const advanced = payload.advanced_teams || [];
+  const eliminated = payload.eliminated_teams || [];
+  const lines = [
+    `今日完赛：${today.length} 场`,
+    ...today.map((match) => `${match.home_team} ${match.home_goals_90}-${match.away_goals_90} ${match.away_team}${match.decided_by_penalties ? `，点球 ${match.home_penalties}-${match.away_penalties}` : ''}`),
+    `晋级：${advanced.length ? advanced.join('、') : '暂无'}`,
+    `淘汰：${eliminated.length ? eliminated.join('、') : '暂无'}`,
+    `本届已完赛：${payload.world_cup_finished_match_count ?? 0} 场`,
+    `本届世界杯数据权重：${safePercent(retraining.world_cup_data_weight)}`,
+    `XGBoost：${payload.xgboost?.available ? '已导入并参与融合' : payload.xgboost?.engine || 'fallback'}`,
+    `回归检验：胜平负 ${safePercent(regression.accuracy_90)} · LogLoss ${formatNumber(regression.log_loss)} · Brier ${formatNumber(regression.brier_score)} · 进球MAE ${formatNumber(regression.goals_mae)}`
+  ];
+  target.textContent = lines.join('\n');
+}
+
+function renderRoundSyncSummary(payload = state.roundSyncSummary) {
+  const target = document.querySelector('#round-sync-summary');
+  if (!target) return;
+  if (!payload) {
+    target.innerHTML = '';
+    return;
+  }
+  const lastSync = payload.last_sync_time || payload.completed_at;
+  const lastSyncNode = document.querySelector('#round-last-sync');
+  if (lastSyncNode) {
+    lastSyncNode.textContent = `最后同步 ${formatDateTime(lastSync)}`;
+  }
+  const result = payload.result_sync || {};
+  const sporttery = payload.sporttery || {};
+  const predictions = payload.predictions || [];
+  target.innerHTML = `
+    <div class="sync-summary-card">
+      <strong>同步结果</strong>
+      <span>完赛同步 ${result.world_cup_finished_match_count ?? 0} 场 · 今日完赛 ${result.today_finished_matches?.length ?? 0} 场 · 竞彩赔率 ${sporttery.mode || 'unknown'} 更新 ${sporttery.updated ?? 0} 场</span>
+      <small>${sporttery.source || 'Sporttery'} · ${formatDateTime(lastSync)}</small>
+    </div>
+    <div class="round-prediction-strip">
+      ${predictions.length ? predictions.slice(0, 8).map(roundPredictionChip).join('') : '<span class="empty-state">暂无竞彩可售比赛预测。</span>'}
+    </div>
+  `;
+}
+
+function renderRoundRegressionSummary(payload = state.roundRegressionSummary) {
+  const target = document.querySelector('#round-regression-view');
+  if (!target) return;
+  if (!payload) {
+    target.innerHTML = '';
+    return;
+  }
+  if (payload.needs_sync) {
+    target.innerHTML = `<div class="empty-state">${payload.message || '请先同步赛果，再执行回归。'}</div>`;
+    return;
+  }
+  const evaluation = payload.regression_evaluation || {};
+  const predictions = payload.current_sporttery_predictions?.length
+    ? payload.current_sporttery_predictions
+    : (payload.unfinished_predictions || []).slice(0, 12);
+  target.innerHTML = `
+    <div class="regression-head">
+      <div>
+        <strong>回归后的新预测结果</strong>
+        <span>本届世界杯数据权重 ${safePercent(payload.world_cup_data_weight)} · 完成 ${formatDateTime(payload.completed_at)}</span>
+      </div>
+      <div class="regression-metrics">
+        <span>胜平负 ${safePercent(evaluation.accuracy_90)}</span>
+        <span>LogLoss ${formatNumber(evaluation.log_loss)}</span>
+        <span>Brier ${formatNumber(evaluation.brier_score)}</span>
+      </div>
+    </div>
+    <div class="regression-grid">
+      ${predictions.length ? predictions.map(regressionPredictionCard).join('') : '<div class="empty-state">暂无未完赛比赛可预测。</div>'}
+    </div>
+  `;
+}
+
+function roundPredictionChip(item) {
+  if (item.status === 'final') {
+    const result = item.result || {};
+    return `
+      <article class="prediction-chip final">
+        <strong>${teamLabel(item, 'home')} ${result.home_goals_90 ?? '-'}-${result.away_goals_90 ?? '-'} ${teamLabel(item, 'away')}</strong>
+        <span>完赛 · ${result.winner ? `晋级 ${result.winner}` : '结果已同步'}</span>
+      </article>
+    `;
+  }
+  return `
+    <article class="prediction-chip">
+      <strong>${teamLabel(item, 'home')} vs ${teamLabel(item, 'away')}</strong>
+      <span>胜 ${safePercent(item.probabilities_90?.home)} · 平 ${safePercent(item.probabilities_90?.draw)} · 负 ${safePercent(item.probabilities_90?.away)}</span>
+      <small>让球 ${handicapProbLine(item)} · 推荐 ${recommendationLabel(item.recommendation)}</small>
+    </article>
+  `;
+}
+
+function regressionPredictionCard(item) {
+  const delta = item.probability_delta || {};
+  return `
+    <article class="regression-card">
+      <div class="round-card-top">
+        <span>${item.stage || 'World Cup'}</span>
+        <span>${formatDateTime(item.kickoff)}</span>
+      </div>
+      <strong>${teamLabel(item, 'home')} vs ${teamLabel(item, 'away')}</strong>
+      <div class="regression-probs">
+        <span>胜 ${safePercent(item.probabilities_90?.home)} <i>${deltaBadge(delta.home)}</i></span>
+        <span>平 ${safePercent(item.probabilities_90?.draw)} <i>${deltaBadge(delta.draw)}</i></span>
+        <span>负 ${safePercent(item.probabilities_90?.away)} <i>${deltaBadge(delta.away)}</i></span>
+      </div>
+      <div class="round-card-meta">让球 ${handicapProbLine(item)}</div>
+      <div class="round-card-meta">${advanceLine(item)} · 推荐 ${recommendationLabel(item.recommendation)}</div>
+    </article>
+  `;
+}
+
+function teamLabel(item, side) {
+  const flag = item[`${side}_flag`] || '';
+  const zh = item[`${side}_team_zh`];
+  const canonical = item[`${side}_team`];
+  return `${flag ? `${flag} ` : ''}${zh || canonical || '-'}`;
+}
+
+function handicapProbLine(item) {
+  const probs = item.handicap_probabilities || {};
+  if (!Object.keys(probs).length) return '暂无';
+  const line = item.handicap_line === null || item.handicap_line === undefined ? '' : `(${item.handicap_line}) `;
+  return `${line}胜 ${safePercent(probs.home)} · 平 ${safePercent(probs.draw)} · 负 ${safePercent(probs.away)}`;
+}
+
+function advanceLine(item) {
+  const advance = item.advancement_probabilities;
+  if (!advance) return '晋级概率：小组赛不适用';
+  return `晋级 ${safePercent(advance.home)} / ${safePercent(advance.away)}`;
+}
+
+function deltaBadge(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || Math.abs(number) < 0.0001) return '±0.0%';
+  return `${number > 0 ? '+' : ''}${(number * 100).toFixed(1)}%`;
+}
+
+function recommendationLabel(value) {
+  if (!value) return '暂无';
+  return outcomeLabel(value);
+}
+
+function formatDateTime(value) {
+  if (!value) return '--';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Shanghai',
+  });
 }
 
 async function syncReferenceData() {
@@ -171,8 +407,10 @@ async function loadPrediction(fixtureId) {
     renderMatches();
     showView('detail');
     setStatus('单场预测已生成。', 'success');
+    return prediction;
   } catch (error) {
     setStatus(`生成预测失败：${error.message}`, 'error');
+    return null;
   }
 }
 
@@ -342,7 +580,7 @@ async function loadRankings() {
             (team, index) => `
               <div class="rank-item">
                 <strong>${index + 1}. ${teamDisplay(team)}</strong>
-                <span>Elo ${team.elo} · 攻 ${team.attack_rating ?? '-'} · 防 ${team.defense_rating ?? '-'}</span>
+                <span>Elo ${team.elo} · 攻 ${team.attack_rating ?? '-'} · 中 ${team.midfield_rating ?? '-'} · 防 ${team.defense_rating ?? '-'} · 稳 ${team.defensive_stability ?? '-'} · 本届权重 ${safePercent(team.world_cup_data_weight)}</span>
               </div>
             `
           )
@@ -756,8 +994,10 @@ function renderRoundMatches() {
             <strong>${actualScoreText(match) || matchTime(match.kickoff)}</strong>
             ${teamButton(match.away_team, teamDisplay(match, 'away'))}
           </div>
+          ${roundResultLine(match)}
           <div class="round-card-meta">${match.date} · ${match.venue || 'venue pending'}</div>
           <div class="round-card-meta">预测 ${match.predicted_score || '--'} · ${accuracyLabel(match.prediction_accuracy)}</div>
+          ${roundOddsLine(match)}
         </article>
       `
     )
@@ -777,6 +1017,42 @@ function renderRoundMatches() {
       }
     });
   });
+}
+
+function roundResultLine(match) {
+  const result = match.finished_result;
+  if (!result) return '';
+  const extra = result.home_goals_extra_time !== null && result.home_goals_extra_time !== undefined
+    ? ` · 加时 ${result.home_goals_extra_time}-${result.away_goals_extra_time}`
+    : '';
+  const penalties = result.home_penalties !== null && result.home_penalties !== undefined
+    ? ` · 点球 ${result.home_penalties}-${result.away_penalties}`
+    : '';
+  const advance = result.winner ? ` · 晋级 ${result.winner}` : '';
+  const loser = result.loser ? ` · 淘汰 ${result.loser}` : '';
+  const source = result.source ? ` · ${result.source}` : '';
+  const updated = result.fetched_at || result.synced_at;
+  return `
+    <div class="round-card-result">
+      90分钟 ${result.home_goals_90 ?? match.home_score}-${result.away_goals_90 ?? match.away_score}${extra}${penalties}${advance}${loser}${source}${updated ? ` · ${formatDateTime(updated)}` : ''}
+    </div>
+  `;
+}
+
+function roundOddsLine(match) {
+  const lottery = match.lottery_market || {};
+  const h2h = match.odds_markets?.h2h || {};
+  const handicap = match.odds_markets?.handicap || {};
+  if (!h2h.available && !handicap.available) {
+    return '<div class="round-card-meta muted">赔率：等待同步</div>';
+  }
+  return `
+    <div class="round-card-odds">
+      ${lottery.match_no ? `<span>${lottery.match_no}</span>` : ''}
+      ${h2h.available ? `<span>胜 ${formatOdd(h2h.odds?.home)} 平 ${formatOdd(h2h.odds?.draw)} 负 ${formatOdd(h2h.odds?.away)}</span>` : ''}
+      ${handicap.available ? `<span>让${handicap.line ?? ''} 胜 ${formatOdd(handicap.odds?.home)} 平 ${formatOdd(handicap.odds?.draw)} 负 ${formatOdd(handicap.odds?.away)}</span>` : ''}
+    </div>
+  `;
 }
 
 function defaultRoundStage(rounds) {
@@ -896,6 +1172,11 @@ function renderPrediction(prediction, analysis = null) {
   const h2h = analysis?.head_to_head || {};
   const sections = analysis?.analysis_sections || [];
   const profiles = analysis?.team_profiles || {};
+  state.rosterWeight = Number(prediction.roster_weight ?? state.rosterWeight);
+  state.simulations = Number(prediction.simulation_request?.used ?? prediction.monte_carlo?.simulations ?? state.simulations);
+  state.lastPredictionParams = currentPredictionParams(fixture.id);
+  state.predictionParamsDirty = false;
+  state.lastCalculationTime = new Date().toISOString();
   document.querySelector('#selected-fixture').textContent = `${teamDisplay(fixture, 'home')} vs ${teamDisplay(fixture, 'away')}`;
   const probabilities = prediction.probabilities;
   document.querySelector('#prediction-detail').innerHTML = `
@@ -948,13 +1229,16 @@ function renderPrediction(prediction, analysis = null) {
       </div>
       <div class="control-card compact-control">
         <label for="simulation-count">Monte Carlo 模拟次数 <strong id="simulation-count-value">${state.simulations.toLocaleString('zh-CN')}</strong></label>
-        <select id="simulation-count">
-          ${[5000, 10000, 20000, 50000]
+        <div class="calculation-controls">
+          <select id="simulation-count">
+            ${[5000, 10000, 20000, 50000]
             .map((value) => `<option value="${value}" ${state.simulations === value ? 'selected' : ''}>${value.toLocaleString('zh-CN')}</option>`)
             .join('')}
-        </select>
-        <input id="simulation-custom" type="number" min="1000" max="100000" step="1000" value="${state.simulations}" aria-label="自定义模拟次数" />
-        <span>修改后会重新计算 Monte Carlo、XGBoost 和最终融合概率。</span>
+          </select>
+          <input id="simulation-custom" type="number" min="1000" max="100000" step="1000" value="${state.simulations}" aria-label="自定义模拟次数" />
+          <button id="calculate-prediction-button" type="button" disabled>计算</button>
+        </div>
+        <span id="calculation-status">最后计算 ${formatDateTime(state.lastCalculationTime)} · 使用 ${state.simulations.toLocaleString('zh-CN')} 次模拟</span>
       </div>
 
       <section ${predictionSectionAttrs('market')}>
@@ -1034,15 +1318,15 @@ function renderPrediction(prediction, analysis = null) {
   slider?.addEventListener('input', () => {
     state.rosterWeight = Number(slider.value) / 100;
     document.querySelector('#roster-weight-value').textContent = `${slider.value}%`;
+    markPredictionParamsDirty(fixture.id);
   });
-  slider?.addEventListener('change', () => loadPrediction(fixture.id));
   const simulationSelect = document.querySelector('#simulation-count');
   simulationSelect?.addEventListener('change', () => {
     state.simulations = Number(simulationSelect.value);
     document.querySelector('#simulation-count-value').textContent = state.simulations.toLocaleString('zh-CN');
     const custom = document.querySelector('#simulation-custom');
     if (custom) custom.value = state.simulations;
-    loadPrediction(fixture.id);
+    markPredictionParamsDirty(fixture.id);
   });
   const simulationCustom = document.querySelector('#simulation-custom');
   simulationCustom?.addEventListener('change', () => {
@@ -1050,10 +1334,50 @@ function renderPrediction(prediction, analysis = null) {
     state.simulations = value;
     simulationCustom.value = value;
     document.querySelector('#simulation-count-value').textContent = value.toLocaleString('zh-CN');
-    loadPrediction(fixture.id);
+    markPredictionParamsDirty(fixture.id);
   });
+  document.querySelector('#calculate-prediction-button')?.addEventListener('click', () => recalculatePrediction(fixture.id));
   document.querySelector('[data-sync-squads]')?.addEventListener('click', () => syncFixtureSquads(fixture));
   document.querySelector('[data-process-roster]')?.addEventListener('click', () => processRosterQueue());
+}
+
+function currentPredictionParams(fixtureId) {
+  return {
+    fixtureId,
+    rosterWeight: Number(state.rosterWeight.toFixed(4)),
+    simulations: Number(state.simulations),
+  };
+}
+
+function markPredictionParamsDirty(fixtureId) {
+  const button = document.querySelector('#calculate-prediction-button');
+  const status = document.querySelector('#calculation-status');
+  const current = currentPredictionParams(fixtureId);
+  state.predictionParamsDirty = JSON.stringify(current) !== JSON.stringify(state.lastPredictionParams);
+  if (button) {
+    button.disabled = !state.predictionParamsDirty;
+    button.textContent = state.predictionParamsDirty ? '计算' : '已计算';
+  }
+  if (status) {
+    status.textContent = state.predictionParamsDirty
+      ? '参数已修改，点击计算刷新概率。'
+      : `最后计算 ${formatDateTime(state.lastCalculationTime)} · 使用 ${state.simulations.toLocaleString('zh-CN')} 次模拟`;
+  }
+}
+
+async function recalculatePrediction(fixtureId) {
+  const button = document.querySelector('#calculate-prediction-button');
+  const status = document.querySelector('#calculation-status');
+  if (!state.predictionParamsDirty || !button) return;
+  button.disabled = true;
+  button.textContent = '计算中...';
+  if (status) status.textContent = '正在重新计算当前参数...';
+  const result = await loadPrediction(fixtureId);
+  if (!result) {
+    button.disabled = false;
+    button.textContent = '计算';
+    if (status) status.textContent = '计算失败，原有结果已保留。';
+  }
 }
 
 function modelComparisonCards(prediction) {
@@ -1284,6 +1608,12 @@ function safePercent(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return '--';
   return `${(number * 100).toFixed(1)}%`;
+}
+
+function formatNumber(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '--';
+  return number.toFixed(3);
 }
 
 function renderSimulation(prediction) {
@@ -1570,6 +1900,8 @@ function setAllPredictionSectionsCollapsed(collapsed, onlyLong = false) {
 }
 
 document.querySelector('#sync-button').addEventListener('click', syncMatches);
+document.querySelector('#round-sync-button').addEventListener('click', syncRoundOverview);
+document.querySelector('#round-regress-button').addEventListener('click', regressRoundOverview);
 document.querySelector('#sync-reference-button').addEventListener('click', syncReferenceData);
 document.querySelector('#validate-sources-button').addEventListener('click', validateSources);
 document.querySelector('#process-roster-button').addEventListener('click', processRosterQueue);

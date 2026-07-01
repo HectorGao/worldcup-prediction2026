@@ -1261,6 +1261,125 @@ input[type="date"] {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
 }
 
+.round-sync-summary,
+.round-regression-view {
+  padding: 0 14px;
+}
+
+.round-sync-summary:empty,
+.round-regression-view:empty {
+  display: none;
+}
+
+.sync-summary-card,
+.regression-head,
+.prediction-chip,
+.regression-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.sync-summary-card {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.sync-summary-card strong,
+.regression-head strong,
+.prediction-chip strong,
+.regression-card strong {
+  color: var(--paper);
+}
+
+.sync-summary-card span,
+.sync-summary-card small,
+.prediction-chip span,
+.prediction-chip small,
+.regression-head span,
+.regression-card .round-card-meta {
+  color: var(--muted);
+}
+
+.round-prediction-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+  margin: 10px 0 12px;
+}
+
+.prediction-chip {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+}
+
+.prediction-chip.final {
+  border-color: rgba(63, 183, 122, 0.38);
+}
+
+.regression-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 12px;
+}
+
+.regression-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.regression-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.regression-metrics span {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.regression-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+  margin: 10px 0 12px;
+}
+
+.regression-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.regression-probs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.regression-probs span,
+.round-card-odds span {
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--paper);
+  font-size: 0.78rem;
+}
+
+.regression-probs i {
+  color: var(--gold);
+  font-style: normal;
+}
+
 .round-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1314,6 +1433,33 @@ input[type="date"] {
   color: var(--paper);
   text-align: center;
   font-size: 1.15rem;
+}
+
+.round-card-odds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.round-card-result {
+  padding: 7px 8px;
+  border-radius: 7px;
+  background: rgba(63, 183, 122, 0.09);
+  color: var(--paper);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.calculation-controls {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.6fr) minmax(130px, 0.7fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.calculation-controls button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .team-detail-grid {
@@ -2154,6 +2300,15 @@ pre {
 }
 
 @media (max-width: 860px) {
+  .regression-head,
+  .calculation-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .regression-head {
+    display: grid;
+  }
+
   .match-row {
     grid-template-columns: 1fr;
   }

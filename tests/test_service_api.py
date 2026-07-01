@@ -8,6 +8,30 @@ from worldcup_predictor.data.sporttery_snapshot import SPORTTERY_LOTTERY_SNAPSHO
 from worldcup_predictor.service import WorldCupService
 
 
+def seed_sporttery_snapshot_matches(service: WorldCupService) -> None:
+    for market in SPORTTERY_LOTTERY_SNAPSHOT:
+        service.db.upsert_lyihub_match(
+            {
+                "id": market["fixture_id"],
+                "match_id": market["fixture_id"].replace("lyihub-", ""),
+                "date": market["date"],
+                "kickoff": f"{market['date']}T03:00:00+08:00",
+                "home_team": market["home_team"],
+                "away_team": market["away_team"],
+                "home_team_zh_source": market["home_team"],
+                "away_team_zh_source": market["away_team"],
+                "group": "1/16决赛",
+                "venue": "test",
+                "status": "scheduled",
+                "home_score": None,
+                "away_score": None,
+                "has_predict": False,
+                "payload": {},
+            }
+        )
+    service.ensure_sporttery_lottery_snapshot()
+
+
 def test_daily_sync_is_idempotent_and_prediction_contains_required_fields(tmp_path: Path):
     db_path = tmp_path / "worldcup.sqlite3"
     service = WorldCupService(db_path=db_path)
@@ -107,26 +131,7 @@ def test_default_match_date_skips_completed_day_and_shows_sporttery_window(tmp_p
             "payload": {},
         }
     )
-    for market in SPORTTERY_LOTTERY_SNAPSHOT:
-        service.db.upsert_lyihub_match(
-            {
-                "id": market["fixture_id"],
-                "match_id": market["fixture_id"].replace("lyihub-", ""),
-                "date": market["date"],
-                "kickoff": f"{market['date']}T03:00:00+08:00",
-                "home_team": market["home_team"],
-                "away_team": market["away_team"],
-                "home_team_zh_source": market["home_team"],
-                "away_team_zh_source": market["away_team"],
-                "group": "1/16决赛",
-                "venue": "test",
-                "status": "scheduled",
-                "home_score": None,
-                "away_score": None,
-                "has_predict": False,
-                "payload": {},
-            }
-        )
+    seed_sporttery_snapshot_matches(service)
 
     assert service.default_match_date("2026-06-28") == "2026-06-29"
     matches = service.list_matches("2026-06-29")
@@ -144,6 +149,77 @@ def test_default_match_date_skips_completed_day_and_shows_sporttery_window(tmp_p
     assert prediction["score_heatmap"]["handicap"] == -1.0
     assert set(prediction["score_heatmap"]["handicap_probabilities"]) == {"home", "draw", "away"}
     assert "7-7" in prediction["score_heatmap"]["handicap_regions"]
+
+
+def test_round_sync_endpoint_returns_sporttery_predictions(tmp_path: Path, monkeypatch):
+    app = create_app(db_path=tmp_path / "worldcup.sqlite3")
+    service = app.state.service
+    seed_sporttery_snapshot_matches(service)
+    monkeypatch.setattr(
+        service,
+        "update_after_results",
+        lambda **kwargs: {
+            "today_finished_matches": [],
+            "world_cup_finished_match_count": 0,
+            "retraining": {"world_cup_data_weight": 0.0},
+            "regression_evaluation": {},
+            "prediction_count": 0,
+        },
+    )
+    monkeypatch.setattr(
+        service,
+        "refresh_sporttery_odds",
+        lambda: {
+            "source": "https://m.sporttery.cn/mjc/jsq/zqspf/",
+            "mode": "snapshot_fallback",
+            "updated": len(SPORTTERY_LOTTERY_SNAPSHOT),
+        },
+    )
+    client = TestClient(app)
+
+    response = client.post("/api/rounds/sync", params={"date": "2026-06-29"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["sporttery"]["updated"] == len(SPORTTERY_LOTTERY_SNAPSHOT)
+    assert len(payload["predictions"]) == len(SPORTTERY_LOTTERY_SNAPSHOT)
+    first = payload["predictions"][0]
+    assert {"home", "draw", "away"} <= set(first["probabilities_90"])
+    assert {"home", "draw", "away"} <= set(first["handicap_probabilities"])
+    assert first["lottery_market"]["available"] is True
+
+
+def test_round_regress_endpoint_returns_probability_delta(tmp_path: Path):
+    app = create_app(db_path=tmp_path / "worldcup.sqlite3")
+    service = app.state.service
+    seed_sporttery_snapshot_matches(service)
+    service.db.upsert_finished_match_result(
+        {
+            "match_id": "finished-1",
+            "date": "2026-06-20",
+            "stage": "小组赛 第1轮",
+            "home_team": "England",
+            "away_team": "Iran",
+            "home_goals_90": 2,
+            "away_goals_90": 0,
+            "winner": "England",
+            "loser": "Iran",
+            "source": "test",
+            "fetched_at": "2026-06-20T18:00:00+00:00",
+        }
+    )
+    service.predict_fixture(SPORTTERY_LOTTERY_SNAPSHOT[0]["fixture_id"])
+    client = TestClient(app)
+
+    response = client.post("/api/rounds/regress", params={"date": "2026-06-29", "auto_sync": False})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["needs_sync"] is False
+    assert payload["finished_match_count"] == 1
+    assert payload["unfinished_predictions"]
+    assert "regression_evaluation" in payload
+    assert "probability_delta" in payload["unfinished_predictions"][0]
 
 
 def test_api_allows_file_page_cors_origin(tmp_path: Path):

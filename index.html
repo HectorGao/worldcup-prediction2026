@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Cup Prediction System</title>
-    <link rel="stylesheet" href="src/styles.css?v=20260629-detail-collapse-v3" />
+    <link rel="stylesheet" href="src/styles.css?v=20260630-round-actions-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -55,11 +55,16 @@
               <span id="selected-round-title" class="panel-subhead">点击顶部卡片切换轮次</span>
             </div>
             <div class="button-row">
+              <button id="round-sync-button">同步</button>
+              <button id="round-regress-button">回归</button>
               <button id="sync-reference-button">刷新参考数据</button>
+              <span id="round-last-sync">尚未同步</span>
               <span id="round-count">等待同步</span>
             </div>
           </div>
           <div id="round-tabs" class="round-tabs"></div>
+          <div id="round-sync-summary" class="round-sync-summary"></div>
+          <div id="round-regression-view" class="round-regression-view"></div>
           <div id="round-matches" class="round-grid"></div>
         </section>
 
@@ -142,6 +147,6 @@
         </section>
       </main>
     </div>
-    <script defer src="src/main.js?v=20260629-detail-collapse-v3"></script>
+    <script defer src="src/main.js?v=20260630-round-actions-v1"></script>
   </body>
 </html>

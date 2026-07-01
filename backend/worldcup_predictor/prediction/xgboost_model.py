@@ -41,6 +41,7 @@ class TrainedXGBoostLayer:
     means: list[float] | None = None
     stds: list[float] | None = None
     training_loss: float | None = None
+    sample_weight_summary: dict[str, float] | None = None
 
     def predict(self, features: dict[str, float]) -> dict[str, float]:
         vector = np.array([[float(features.get(name, 0.0)) for name in self.feature_names]], dtype=float)
@@ -63,6 +64,8 @@ class TrainedXGBoostLayer:
             "feature_count": len(self.feature_names),
             "training_loss": self.training_loss,
             "class_order": list(self.class_order),
+            "sample_weight_summary": self.sample_weight_summary
+            or {"min": 1.0, "max": 1.0, "mean": 1.0, "weighted_sample_count": float(self.sample_count)},
         }
 
 
@@ -166,10 +169,12 @@ def train_xgboost_layer(
         dtype=float,
     )
     y = np.array([CLASS_ORDER.index(sample["outcome"]) for sample in usable], dtype=int)
+    sample_weights = np.array([max(0.01, float(sample.get("sample_weight", 1.0))) for sample in usable], dtype=float)
     if len(set(y.tolist())) < 2:
         return None
 
-    xgb_model = _try_train_real_xgboost(x, y)
+    weight_summary = _sample_weight_summary(sample_weights)
+    xgb_model = _try_train_real_xgboost(x, y, sample_weights)
     if xgb_model is not None:
         return TrainedXGBoostLayer(
             engine="xgboost.XGBClassifier",
@@ -178,9 +183,10 @@ def train_xgboost_layer(
             class_order=CLASS_ORDER,
             model=xgb_model,
             training_loss=_multiclass_log_loss(xgb_model.predict_proba(x), y),
+            sample_weight_summary=weight_summary,
         )
 
-    return _train_softmax_fallback(x, y, sample_count=len(usable))
+    return _train_softmax_fallback(x, y, sample_weights=sample_weights, sample_count=len(usable), sample_weight_summary=weight_summary)
 
 
 def deterministic_boosted_probabilities(
@@ -222,7 +228,7 @@ def monte_carlo_feature_proxy(poisson: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _try_train_real_xgboost(x: np.ndarray, y: np.ndarray) -> Any | None:
+def _try_train_real_xgboost(x: np.ndarray, y: np.ndarray, sample_weights: np.ndarray | None = None) -> Any | None:
     try:
         from xgboost import XGBClassifier  # type: ignore
     except Exception:
@@ -240,13 +246,20 @@ def _try_train_real_xgboost(x: np.ndarray, y: np.ndarray) -> Any | None:
             random_state=20260627,
             n_jobs=1,
         )
-        model.fit(x, y)
+        model.fit(x, y, sample_weight=sample_weights)
         return model
     except Exception:
         return None
 
 
-def _train_softmax_fallback(x: np.ndarray, y: np.ndarray, *, sample_count: int) -> TrainedXGBoostLayer:
+def _train_softmax_fallback(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    sample_weights: np.ndarray,
+    sample_count: int,
+    sample_weight_summary: dict[str, float],
+) -> TrainedXGBoostLayer:
     means = x.mean(axis=0)
     stds = x.std(axis=0)
     stds = np.where(stds < 1e-6, 1.0, stds)
@@ -254,6 +267,7 @@ def _train_softmax_fallback(x: np.ndarray, y: np.ndarray, *, sample_count: int) 
     weights = np.zeros((transformed.shape[1], len(CLASS_ORDER)), dtype=float)
     targets = np.zeros((len(y), len(CLASS_ORDER)), dtype=float)
     targets[np.arange(len(y)), y] = 1.0
+    normalized_weights = sample_weights / max(float(sample_weights.mean()), 1e-6)
     learning_rate = 0.16
     regularization = 0.015
     for _ in range(360):
@@ -261,7 +275,8 @@ def _train_softmax_fallback(x: np.ndarray, y: np.ndarray, *, sample_count: int) 
         logits -= logits.max(axis=1, keepdims=True)
         probabilities = np.exp(logits)
         probabilities /= probabilities.sum(axis=1, keepdims=True)
-        gradient = (transformed.T @ (probabilities - targets)) / len(y)
+        weighted_error = (probabilities - targets) * normalized_weights[:, None]
+        gradient = (transformed.T @ weighted_error) / len(y)
         gradient[1:] += regularization * weights[1:]
         weights -= learning_rate * gradient
     training_loss = _multiclass_log_loss(_softmax_matrix(transformed @ weights), y)
@@ -274,7 +289,17 @@ def _train_softmax_fallback(x: np.ndarray, y: np.ndarray, *, sample_count: int) 
         means=means.tolist(),
         stds=stds.tolist(),
         training_loss=training_loss,
+        sample_weight_summary=sample_weight_summary,
     )
+
+
+def _sample_weight_summary(sample_weights: np.ndarray) -> dict[str, float]:
+    return {
+        "min": round(float(sample_weights.min()), 6),
+        "max": round(float(sample_weights.max()), 6),
+        "mean": round(float(sample_weights.mean()), 6),
+        "weighted_sample_count": round(float(sample_weights.sum()), 6),
+    }
 
 
 def _softmax_matrix(logits: np.ndarray) -> np.ndarray:
@@ -349,3 +374,27 @@ def softmax(logits: dict[str, float]) -> dict[str, float]:
 
 def clamp(value: float, low: float, high: float) -> float:
     return min(high, max(low, value))
+
+
+def validate_probabilities(prob_dict: dict[str, float], tolerance: float = 1e-6) -> dict[str, float]:
+    aliases = {
+        "home": "home",
+        "home_win": "home",
+        "xgboost_home_win_prob": "home",
+        "draw": "draw",
+        "xgboost_draw_prob": "draw",
+        "away": "away",
+        "away_win": "away",
+        "xgboost_away_win_prob": "away",
+    }
+    normalized = {"home": 0.0, "draw": 0.0, "away": 0.0}
+    for key, value in prob_dict.items():
+        outcome = aliases.get(key)
+        if outcome:
+            normalized[outcome] = max(0.0, float(value))
+    total = sum(normalized.values())
+    if total <= 0:
+        return {outcome: 1 / 3 for outcome in normalized}
+    if abs(total - 1.0) <= tolerance:
+        return normalized
+    return {outcome: value / total for outcome, value in normalized.items()}

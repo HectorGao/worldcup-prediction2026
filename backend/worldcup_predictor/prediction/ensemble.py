@@ -73,6 +73,37 @@ def blend_probabilities(
     }
 
 
+def blend_model_probabilities(
+    poisson_prob: dict[str, float] | None,
+    monte_carlo_prob: dict[str, float] | None,
+    xgboost_prob: dict[str, float] | None,
+    weights: dict[str, float] | None = None,
+) -> dict[str, float]:
+    configured = weights or {"poisson": 0.4, "monte_carlo": 0.3, "xgboost": 0.3}
+    sources = {
+        "poisson": normalize_outcomes(extract_probabilities(poisson_prob or {})) if poisson_prob else None,
+        "monte_carlo": normalize_outcomes(extract_probabilities(monte_carlo_prob or {})) if monte_carlo_prob else None,
+        "xgboost": normalize_outcomes(extract_probabilities(xgboost_prob or {})) if xgboost_prob else None,
+    }
+    available = {name: probs for name, probs in sources.items() if probs}
+    if not available:
+        return normalize_outcomes({})
+    active_weights = {
+        name: max(0.0, float(configured.get(name, 0.0)))
+        for name in available
+    }
+    total = sum(active_weights.values())
+    if total <= 0:
+        active_weights = {name: 1.0 for name in available}
+        total = float(len(available))
+    return normalize_outcomes(
+        {
+            outcome: sum(available[name][outcome] * (active_weights[name] / total) for name in available)
+            for outcome in OUTCOMES
+        }
+    )
+
+
 def extract_probabilities(payload: dict[str, Any]) -> dict[str, float]:
     if "home" in payload:
         return {outcome: float(payload.get(outcome, 0.0)) for outcome in OUTCOMES}

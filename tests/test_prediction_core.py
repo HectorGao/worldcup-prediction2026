@@ -313,6 +313,72 @@ def test_xgboost_trainable_layer_fits_fixed_samples_and_is_stable():
     assert isclose(result["home_win"] + result["draw"] + result["away_win"], 1.0, rel_tol=1e-9)
 
 
+def test_xgboost_trainable_layer_accepts_sample_weights_and_reports_summary():
+    samples = []
+    for index in range(6):
+        samples.append(
+            {
+                "outcome": "home",
+                "sample_weight": 5.0,
+                "features": {name: 0.6 for name in [
+                    "elo_delta",
+                    "lambda_diff",
+                    "lambda_total",
+                    "low_total_goals",
+                    "market_home_edge",
+                    "market_draw_edge",
+                    "mc_home_edge",
+                    "mc_goal_variance",
+                    "roster_attack_edge",
+                    "form_home_edge",
+                ]},
+            }
+        )
+        samples.append(
+            {
+                "outcome": "away",
+                "sample_weight": 0.75,
+                "features": {name: -0.6 for name in [
+                    "elo_delta",
+                    "lambda_diff",
+                    "lambda_total",
+                    "low_total_goals",
+                    "market_home_edge",
+                    "market_draw_edge",
+                    "mc_home_edge",
+                    "mc_goal_variance",
+                    "roster_attack_edge",
+                    "form_home_edge",
+                ]},
+            }
+        )
+        samples.append(
+            {
+                "outcome": "draw",
+                "sample_weight": 1.0,
+                "features": {name: 0.0 for name in [
+                    "elo_delta",
+                    "lambda_diff",
+                    "lambda_total",
+                    "low_total_goals",
+                    "market_home_edge",
+                    "market_draw_edge",
+                    "mc_home_edge",
+                    "mc_goal_variance",
+                    "roster_attack_edge",
+                    "form_home_edge",
+                ]},
+            }
+        )
+
+    trained = train_xgboost_layer(samples, min_samples=9)
+
+    assert trained is not None
+    assert trained.metadata()["sample_weight_summary"]["max"] == 5.0
+    assert trained.metadata()["sample_weight_summary"]["min"] == 0.75
+    assert trained.metadata()["sample_weight_summary"]["weighted_sample_count"] > trained.sample_count
+
+
 def test_learning_adjustment_uses_only_matches_before_fixture_date():
     fixture = {"home_team": "France", "away_team": "Senegal", "date": "2026-06-20"}
     matches = [

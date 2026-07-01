@@ -89,6 +89,28 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
     def refresh_current(date: str):
         return service.refresh_current_data(date)
 
+    @app.post("/api/results/update")
+    def update_after_results(
+        fetch_online_results: bool = True,
+        use_xgboost: bool = True,
+        recalculate: bool = True,
+        date: str | None = None,
+    ):
+        return service.update_after_results(
+            fetch_online_results=fetch_online_results,
+            use_xgboost=use_xgboost,
+            recalculate=recalculate,
+            date=date,
+        )
+
+    @app.post("/api/rounds/sync")
+    def sync_round_overview(date: str | None = None):
+        return service.sync_round_overview(date=date)
+
+    @app.post("/api/rounds/regress")
+    def regress_round_overview(date: str | None = None, auto_sync: bool = True):
+        return service.regress_round_overview(date=date, auto_sync=auto_sync)
+
     @app.post("/api/scrape/public-web")
     def scrape_public_web():
         return service.scrape_public_sources()
