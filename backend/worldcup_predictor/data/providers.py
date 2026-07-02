@@ -291,6 +291,145 @@ class FootballDataProvider:
             return _validation_result(self.name, configured=True, last_error=str(exc))
 
 
+class FootballDataIoProvider:
+    name = "FootballData.io"
+    role = "supplemental_matches_teams_stats"
+    base_url = "https://footballdata.io/api/v1"
+
+    def __init__(self, key: str | None = None):
+        self.key = key or os.getenv("FOOTBALLDATA_IO_API_KEY")
+        self.last_meta: dict[str, Any] = {}
+        self.last_warnings: list[str] = []
+
+    def configured(self) -> bool:
+        return bool(self.key)
+
+    def _headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.key}", "Accept": "application/json"}
+
+    def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        response = httpx.get(f"{self.base_url}{path}", params=params or {}, headers=self._headers(), timeout=20)
+        response.raise_for_status()
+        payload = response.json()
+        self.last_meta = payload.get("meta") or {}
+        return payload
+
+    def fetch_fixtures(self, date: str) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        payload = self._get("/matches", params={"date": date})
+        rows = payload.get("data") or payload.get("matches") or []
+        return [self._normalize_match(item, date) for item in rows]
+
+    def fetch_match_detail(self, source_id: str) -> dict[str, Any]:
+        if not self.configured():
+            return {}
+        return self._get(f"/matches/{source_id}")
+
+    def fetch_teams(self) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        payload = self._get("/teams")
+        return payload.get("data") or payload.get("teams") or []
+
+    def fetch_stats(self, match_id: str | None = None) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        payload = self._get("/stats", params={"match_id": match_id} if match_id else {})
+        return payload.get("data") or payload.get("stats") or []
+
+    def fetch_players(self, team_id: str | None = None) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        payload = self._get("/players", params={"team_id": team_id} if team_id else {})
+        rows = payload.get("data") or payload.get("players") or []
+        if not rows:
+            self.last_warnings.append("FootballData.io did not return player ability rows for this request.")
+        return rows
+
+    def _normalize_match(self, item: dict[str, Any], date: str) -> dict[str, Any]:
+        home = item.get("home_team") or item.get("homeTeam") or item.get("home") or {}
+        away = item.get("away_team") or item.get("awayTeam") or item.get("away") or {}
+        score = item.get("score") or item.get("result") or {}
+        status = str(item.get("status") or "").lower()
+        return {
+            "id": f"footballdata-io-{item.get('id') or item.get('match_id')}",
+            "source_id": str(item.get("id") or item.get("match_id") or ""),
+            "source": self.name,
+            "source_priority": 2,
+            "date": str(item.get("date") or item.get("match_date") or date)[:10],
+            "kickoff": item.get("kickoff") or item.get("utcDate") or item.get("start_time") or f"{date}T00:00:00Z",
+            "home_team": self._team_name(home) or "Home",
+            "away_team": self._team_name(away) or "Away",
+            "group": self._display_value(item.get("stage") or item.get("round") or item.get("group")),
+            "venue": self._display_value(item.get("venue")),
+            "status": "final" if status in {"completed", "complete", "final", "finished"} else "scheduled",
+            "home_score": self._score(score, "home"),
+            "away_score": self._score(score, "away"),
+            "home_elo": 1700,
+            "away_elo": 1700,
+            "market_home": None,
+            "market_draw": None,
+            "market_away": None,
+            "footballdata_io_stats": item.get("stats") or {},
+            "payload": item,
+        }
+
+    def _team_name(self, value: Any) -> str | None:
+        if isinstance(value, dict):
+            return value.get("name") or value.get("displayName") or value.get("short_name")
+        return str(value) if value else None
+
+    def _display_value(self, value: Any) -> str | None:
+        if value is None or value == "":
+            return None
+        if isinstance(value, dict):
+            return (
+                value.get("name")
+                or value.get("displayName")
+                or value.get("short_name")
+                or value.get("title")
+                or value.get("label")
+                or str(value.get("id") or "")
+                or None
+            )
+        if isinstance(value, list):
+            return ", ".join(str(item) for item in value if item is not None) or None
+        return str(value)
+
+    def _score(self, score: dict[str, Any], side: str) -> int | None:
+        if not isinstance(score, dict):
+            return None
+        value = first_present(score, [side, f"{side}_score", f"{side}Score"])
+        try:
+            return int(value) if value is not None and value != "" else None
+        except (TypeError, ValueError):
+            return None
+
+    def validate(self) -> dict[str, Any]:
+        if not self.configured():
+            return _validation_result(self.name, configured=False, last_error="FOOTBALLDATA_IO_API_KEY not set")
+        try:
+            fixtures = self.fetch_fixtures("2026-07-01")
+            used = self.last_meta.get("requests_used")
+            limit = self.last_meta.get("requests_limit")
+            remaining = None
+            if isinstance(used, int) and isinstance(limit, int):
+                remaining = max(0, limit - used)
+            return _validation_result(
+                self.name,
+                configured=True,
+                reachable=True,
+                auth_valid=True,
+                quota_remaining=remaining,
+                sample_count=len(fixtures),
+                capabilities=["matches", "results", "match_detail", "teams", "stats", "players_optional"],
+                warnings=list(self.last_warnings),
+            )
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            return _validation_result(self.name, configured=True, last_error=str(exc))
+
+
 class EspnScoreboardProvider:
     name = "ESPN public scoreboard"
     role = "free_no_key_live_scoreboard_experimental"
@@ -561,6 +700,9 @@ class SportteryOddsProvider:
         if "WAF" in text or "禁止访问" in text or text.startswith("<"):
             raise ValueError("China Sporttery gateway blocked this request or returned non-JSON HTML")
         return self.parse_events(response.json())
+
+    def fetch_historical_odds(self, start_date: str, end_date: str) -> list[dict[str, Any]]:
+        return []
 
     def parse_events(self, payload: dict[str, Any]) -> list[dict[str, Any]]:
         candidates = self._find_event_lists(payload)
@@ -844,8 +986,10 @@ class BetfairOddsProvider:
 
 class ProviderRegistry:
     def __init__(self):
+        self.footballdata_io_provider = FootballDataIoProvider()
         self.providers: list[FixtureProvider] = [
             ApiFootballProvider(),
+            self.footballdata_io_provider,
             FootballDataProvider(),
             EspnScoreboardProvider(),
             SportmonksProvider(),
@@ -864,8 +1008,6 @@ class ProviderRegistry:
             except (httpx.HTTPError, ValueError, KeyError, TypeError):
                 continue
             if fixtures:
-                fixtures = self.odds_provider.enrich_fixtures(fixtures, date)
-                fixtures = self.betfair_odds_provider.enrich_fixtures(fixtures, date)
                 fixtures = self.sporttery_odds_provider.enrich_fixtures(fixtures, date)
                 return provider.name, fixtures
         return "none", []

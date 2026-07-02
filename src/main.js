@@ -110,7 +110,7 @@ async function syncMatches() {
   button.textContent = '...';
   setStatus('正在获取线上真实赛果、更新球队参数并重新预测未完赛比赛...');
   try {
-    const payload = await api(`/api/results/update?fetch_online_results=true&use_xgboost=true&recalculate=true&date=${encodeURIComponent(date)}`, { method: 'POST' });
+    const payload = await api(`/api/results/update?fetch_online_results=true&use_xgboost=true&recalculate=true&sync_fifa=true&sync_fifa_rosters=true&sync_footballdata_io=true&sync_sporttery_odds=true&sync_sporttery_history=true&backfill_historical_matches=true&train_over25=true&date=${encodeURIComponent(date)}`, { method: 'POST' });
     state.lastUpdateSummary = payload;
     state.matchPredictions = {};
     state.selectedPrediction = null;
@@ -132,6 +132,28 @@ async function syncMatches() {
   } finally {
     button.disabled = false;
     button.textContent = '↻';
+  }
+}
+
+async function refreshSportteryOdds() {
+  const button = document.querySelector('#sporttery-refresh-button');
+  button.disabled = true;
+  button.textContent = '刷新中...';
+  setStatus('正在刷新竞彩当前页面赔率...');
+  try {
+    const payload = await api('/api/odds/sporttery/refresh', { method: 'POST' });
+    await loadMatches();
+    renderSportteryRefreshSummary(payload);
+    const groupCount = Object.keys(payload.grouped_by_date || {}).length;
+    setStatus(
+      `赔率刷新完成：${payload.mode}，更新 ${payload.updated ?? 0} 场，比赛日 ${groupCount} 组，未匹配 ${(payload.unmatched_matches || []).length} 场。`,
+      'success'
+    );
+  } catch (error) {
+    setStatus(`赔率刷新失败：${error.message}`, 'error');
+  } finally {
+    button.disabled = false;
+    button.textContent = '刷新赔率';
   }
 }
 
@@ -216,6 +238,23 @@ function renderUpdateSummary(payload) {
     `XGBoost：${payload.xgboost?.available ? '已导入并参与融合' : payload.xgboost?.engine || 'fallback'}`,
     `回归检验：胜平负 ${safePercent(regression.accuracy_90)} · LogLoss ${formatNumber(regression.log_loss)} · Brier ${formatNumber(regression.brier_score)} · 进球MAE ${formatNumber(regression.goals_mae)}`
   ];
+  target.textContent = lines.join('\n');
+}
+
+function renderSportteryRefreshSummary(payload) {
+  const target = document.querySelector('#daily-report');
+  if (!target || !payload) return;
+  const grouped = payload.grouped_by_date || {};
+  const lines = [
+    `竞彩赔率刷新：${payload.mode || 'unknown'}`,
+    `更新时间：${formatDateTime(payload.last_updated)}`,
+    `更新本地比赛：${payload.updated ?? 0} 场`,
+    `未匹配比赛：${(payload.unmatched_matches || []).length} 场`,
+    ...Object.entries(grouped).map(([date, rows]) => `${date}：${rows.length} 场 ${rows.map((row) => row.match_num || `${row.home_team}-${row.away_team}`).join('、')}`),
+  ];
+  if (payload.last_error) {
+    lines.push(`失败原因：${payload.last_error}`);
+  }
   target.textContent = lines.join('\n');
 }
 
@@ -702,6 +741,9 @@ function matchOddsPanel(match) {
           odds_data_status: match.odds_data_status,
           value_analysis: match.value_analysis,
           handicap_analysis: match.handicap_analysis,
+          over25_summary: match.over25_summary,
+          over25_prob: match.over25_prob,
+          under25_prob: match.under25_prob,
         }
       : null;
   if (!entry || entry.status === 'loading') {
@@ -741,6 +783,7 @@ function oddsPanelMarkup(prediction) {
       ${lottery.match_no ? `<div class="odds-ticket-line">${lottery.match_no} · ${lottery.league || '世界杯'} · ${lottery.sale_status || 'selling'}</div>` : ''}
       ${oddsMarketRow('胜平负', h2h, null)}
       ${oddsMarketRow('让球胜平负', handicap, handicap.line)}
+      ${over25OddsLine(prediction)}
       ${valueItems.length ? `
         <div class="odds-edge-row">
           ${valueItems.map((item) => `<i class="${Math.abs(item.edge) < 0.03 ? 'efficient' : item.edge >= 0.05 ? 'value' : ''}">${outcomeLabel(item.outcome)} ${safePercent(item.edge)} · ${edgeLabel(item)}</i>`).join('')}
@@ -752,6 +795,19 @@ function oddsPanelMarkup(prediction) {
         </div>
       ` : ''}
     </aside>
+  `;
+}
+
+function over25OddsLine(prediction) {
+  const over = prediction.over25_summary || {};
+  const available = over.value?.available;
+  return `
+    <div class="odds-market-row ${available ? '' : 'muted'}">
+      <span class="odds-market-label">Over2.5</span>
+      <span class="odds-cell"><b>大</b>${safePercent(over.final_over25_prob ?? prediction.over25_prob)}</span>
+      <span class="odds-cell"><b>小</b>${safePercent(over.under25_prob ?? prediction.under25_prob)}</span>
+      <span class="odds-cell"><b>${available ? 'Edge' : '状态'}</b>${available ? safePercent(over.over25_edge) : '无赔率'}</span>
+    </div>
   `;
 }
 
@@ -770,8 +826,12 @@ function oddsMarketRow(label, market, line) {
 
 function sourceLabel(source) {
   if (!source) return '盘口来源待同步';
-  if (String(source).includes('China Sporttery')) return '中国体育彩票';
-  if (String(source).includes('Odds')) return 'The Odds API';
+  const raw = String(source);
+  const lower = raw.toLowerCase();
+  if (raw.includes('China Sporttery') || raw.includes('中国体育彩票') || raw.includes('竞彩') || lower.includes('sporttery')) {
+    return '中国体育彩票';
+  }
+  if (raw.includes('Odds')) return '非中国体育彩票赔率（已忽略）';
   return source;
 }
 
@@ -1043,14 +1103,17 @@ function roundOddsLine(match) {
   const lottery = match.lottery_market || {};
   const h2h = match.odds_markets?.h2h || {};
   const handicap = match.odds_markets?.handicap || {};
+  const over25 = match.over25_summary || {};
   if (!h2h.available && !handicap.available) {
-    return '<div class="round-card-meta muted">赔率：等待同步</div>';
+    const label = match.historical_without_odds ? '无赔率历史复盘' : '等待同步';
+    return `<div class="round-card-meta muted">赔率：${label}${over25.final_over25_prob !== undefined ? ` · Over2.5 ${safePercent(over25.final_over25_prob)}` : ''}</div>`;
   }
   return `
     <div class="round-card-odds">
       ${lottery.match_no ? `<span>${lottery.match_no}</span>` : ''}
       ${h2h.available ? `<span>胜 ${formatOdd(h2h.odds?.home)} 平 ${formatOdd(h2h.odds?.draw)} 负 ${formatOdd(h2h.odds?.away)}</span>` : ''}
       ${handicap.available ? `<span>让${handicap.line ?? ''} 胜 ${formatOdd(handicap.odds?.home)} 平 ${formatOdd(handicap.odds?.draw)} 负 ${formatOdd(handicap.odds?.away)}</span>` : ''}
+      ${over25.final_over25_prob !== undefined ? `<span>Over2.5 ${safePercent(over25.final_over25_prob)}</span>` : ''}
     </div>
   `;
 }
@@ -1127,6 +1190,15 @@ function renderTeamDetail(detail) {
       }
     )
     .join('');
+  const powerRows = (detail.power_rankings || [])
+    .slice(0, 16)
+    .map((player) => `
+      <div class="player-row">
+        <strong>${player.player_name}</strong>
+        <span>${positionLabel(player.position)} · FIFA power ${formatNumber(player.rating)} · ${sourceLabel(player.source)}</span>
+      </div>
+    `)
+    .join('');
   document.querySelector('#team-detail-view').innerHTML = `
     <div class="team-detail-grid">
       <section>
@@ -1135,7 +1207,8 @@ function renderTeamDetail(detail) {
       </section>
       <section>
         <h3>阵容与能力值</h3>
-        <div class="coach-line">球员 ${detail.coverage.players} · 能力值 ${detail.coverage.players_with_ability} · 源能力 ${detail.coverage.players_with_source_ability ?? detail.coverage.players_with_ability} · 估算 ${detail.coverage.players_with_estimated_ability || 0} · 已知俱乐部 ${detail.coverage.players_with_club}</div>
+        <div class="coach-line">球员 ${detail.coverage.players} · 能力值 ${detail.coverage.players_with_ability} · FIFA power ${detail.coverage.players_with_fifa_power || 0} · 源能力 ${detail.coverage.players_with_source_ability ?? detail.coverage.players_with_ability} · 估算 ${detail.coverage.players_with_estimated_ability || 0} · 已知俱乐部 ${detail.coverage.players_with_club}</div>
+        ${powerRows ? `<div class="player-table power-ranking-table">${powerRows}</div>` : ''}
         <div class="player-table">${playerRows || '<div class="empty-state">暂无球员数据</div>'}</div>
       </section>
     </div>
@@ -1222,23 +1295,18 @@ function renderPrediction(prediction, analysis = null) {
         ${valueAnalysisCard(prediction)}
       </section>
 
+      <section ${predictionSectionAttrs('over25')}>
+        <div class="section-title">
+          <h3>Over2.5 / Under2.5</h3>
+          <div class="section-title-actions"><span>90分钟总进球，仅模型概率或中国体育彩票盘口校准</span>${predictionSectionToggle('over25')}</div>
+        </div>
+        ${over25AnalysisCard(prediction)}
+      </section>
+
       <div class="control-card">
         <label for="roster-weight">阵容权重 <strong id="roster-weight-value">${Math.round(state.rosterWeight * 100)}%</strong></label>
         <input id="roster-weight" type="range" min="0" max="50" value="${Math.round(state.rosterWeight * 100)}" />
         <span>顶级锋线对薄弱后防会提高 xG；强防线会抵消对手进攻端优势。</span>
-      </div>
-      <div class="control-card compact-control">
-        <label for="simulation-count">Monte Carlo 模拟次数 <strong id="simulation-count-value">${state.simulations.toLocaleString('zh-CN')}</strong></label>
-        <div class="calculation-controls">
-          <select id="simulation-count">
-            ${[5000, 10000, 20000, 50000]
-            .map((value) => `<option value="${value}" ${state.simulations === value ? 'selected' : ''}>${value.toLocaleString('zh-CN')}</option>`)
-            .join('')}
-          </select>
-          <input id="simulation-custom" type="number" min="1000" max="100000" step="1000" value="${state.simulations}" aria-label="自定义模拟次数" />
-          <button id="calculate-prediction-button" type="button" disabled>计算</button>
-        </div>
-        <span id="calculation-status">最后计算 ${formatDateTime(state.lastCalculationTime)} · 使用 ${state.simulations.toLocaleString('zh-CN')} 次模拟</span>
       </div>
 
       <section ${predictionSectionAttrs('market')}>
@@ -1282,6 +1350,7 @@ function renderPrediction(prediction, analysis = null) {
           <h3>Monte Carlo 脚本</h3>
           <div class="section-title-actions"><span>${prediction.monte_carlo?.simulations?.toLocaleString('zh-CN') || '-'} 次模拟</span>${predictionSectionToggle('monte-carlo', true)}</div>
         </div>
+        ${simulationControlCard()}
         ${monteCarloCard(prediction)}
       </section>
 
@@ -1339,6 +1408,24 @@ function renderPrediction(prediction, analysis = null) {
   document.querySelector('#calculate-prediction-button')?.addEventListener('click', () => recalculatePrediction(fixture.id));
   document.querySelector('[data-sync-squads]')?.addEventListener('click', () => syncFixtureSquads(fixture));
   document.querySelector('[data-process-roster]')?.addEventListener('click', () => processRosterQueue());
+}
+
+function simulationControlCard() {
+  return `
+    <div class="control-card compact-control">
+      <label for="simulation-count">Monte Carlo 模拟次数 <strong id="simulation-count-value">${state.simulations.toLocaleString('zh-CN')}</strong></label>
+      <div class="calculation-controls">
+        <select id="simulation-count">
+          ${[5000, 10000, 20000, 50000]
+            .map((value) => `<option value="${value}" ${state.simulations === value ? 'selected' : ''}>${value.toLocaleString('zh-CN')}</option>`)
+            .join('')}
+        </select>
+        <input id="simulation-custom" type="number" min="1000" max="100000" step="1000" value="${state.simulations}" aria-label="自定义模拟次数" />
+        <button id="calculate-prediction-button" type="button" disabled>计算</button>
+      </div>
+      <span id="calculation-status">最后计算 ${formatDateTime(state.lastCalculationTime)} · 使用 ${state.simulations.toLocaleString('zh-CN')} 次模拟</span>
+    </div>
+  `;
 }
 
 function currentPredictionParams(fixtureId) {
@@ -1487,6 +1574,35 @@ function valueAnalysisCard(prediction) {
           .join('')}
       </div>
       <p>${value.risk_warning}</p>
+    </div>
+  `;
+}
+
+function over25AnalysisCard(prediction) {
+  const over = prediction.over25_summary || {};
+  const value = over.value || {};
+  return `
+    <div class="value-card ${value.available ? '' : 'muted'}">
+      <div class="value-summary">
+        <strong>融合 Over2.5 ${safePercent(over.final_over25_prob ?? prediction.final_over25_prob ?? prediction.over25_prob)}</strong>
+        <span>Under2.5 ${safePercent(over.under25_prob ?? prediction.under25_prob)} · ${value.available ? '含市场赔率' : '无赔率，仅模型概率'}</span>
+      </div>
+      <div class="metric-grid compact-metrics">
+        <div class="metric-card"><strong>Poisson</strong><span>${safePercent(over.poisson_over25_prob ?? prediction.totals?.['2.5']?.over)}</span></div>
+        <div class="metric-card"><strong>XGBoost</strong><span>${safePercent(over.xgboost_over25_prob ?? prediction.xgboost_over25_prob)}</span></div>
+        <div class="metric-card"><strong>Monte Carlo</strong><span>${safePercent(over.monte_carlo_over25_prob ?? prediction.monte_carlo_over25_prob)}</span></div>
+        <div class="metric-card"><strong>热力图</strong><span>${safePercent(over.score_heatmap_over25_prob ?? prediction.score_heatmap_over25_prob)}</span></div>
+      </div>
+      ${value.available ? `
+        <div class="value-grid">
+          <div class="value-item ${Number(over.over25_edge || 0) >= 0.05 ? 'positive' : ''}">
+            <strong>Over2.5</strong>
+            <span>市场 ${safePercent(over.over25_market_prob)} · Edge ${safePercent(over.over25_edge)}</span>
+            <small>Kelly ${safePercent(over.over25_kelly?.full)} / 半Kelly ${safePercent(over.over25_kelly?.half)} / 1/4 Kelly ${safePercent(over.over25_kelly?.quarter)}</small>
+            <small>仅数据分析，不构成投注建议。</small>
+          </div>
+        </div>
+      ` : `<p>${value.reason || '无赔率，仅模型概率。'}</p>`}
     </div>
   `;
 }
@@ -1744,23 +1860,28 @@ function profileCard(teamName, profile = {}) {
 }
 
 function strengthCard(label, strength = {}) {
+  const fallback = strength.fallback_fields || [];
+  const source = strength.paper_strength_source || strength.source || 'fallback';
   return `
-    <div class="metric-card profile-card">
+    <div class="metric-card profile-card strength-card">
       <strong>${label}</strong>
-      ${miniMeter('进攻', strength.attack_strength ?? 70)}
-      ${miniMeter('中场', strength.midfield_control_strength ?? 70)}
-      ${miniMeter('后防+门将', strength.defense_gk_strength ?? 70)}
-      <small>覆盖率 ${formatPercent(strength.coverage ?? 0)} · 待补 ${(strength.missing_player_stats ?? 0)} 人</small>
+      ${miniMeter('进攻', strength.attack_line_strength ?? strength.attack_strength ?? 65)}
+      ${miniMeter('中场', strength.midfield_line_strength ?? strength.midfield_control_strength ?? 65)}
+      ${miniMeter('后防', strength.defense_line_strength ?? strength.defense_gk_strength ?? 65)}
+      ${miniMeter('门将', strength.goalkeeper_strength ?? strength.defense_gk_strength ?? 65)}
+      <small>来源 ${source} · 覆盖率 ${formatPercent(strength.coverage ?? 0)} · 待补 ${(strength.missing_player_stats ?? 0)} 人${fallback.length ? ` · fallback ${fallback.length} 项` : ''}</small>
     </div>
   `;
 }
 
 function miniMeter(label, value) {
+  const numeric = Number(value);
+  const quality = numeric >= 85 ? 'elite' : numeric >= 75 ? 'strong' : numeric >= 65 ? 'medium' : 'weak';
   return `
-    <div class="mini-meter">
+    <div class="mini-meter strength-${quality}">
       <span>${label}</span>
-      <div class="bar-track"><div class="bar-fill home-fill" style="width:${Math.min(100, Math.max(0, value))}%"></div></div>
-      <strong>${Number(value).toFixed(1)}</strong>
+      <div class="bar-track"><div class="bar-fill home-fill" style="width:${Math.min(100, Math.max(0, numeric))}%"></div></div>
+      <strong>${numeric.toFixed(1)}</strong>
     </div>
   `;
 }
@@ -1902,6 +2023,7 @@ function setAllPredictionSectionsCollapsed(collapsed, onlyLong = false) {
 document.querySelector('#sync-button').addEventListener('click', syncMatches);
 document.querySelector('#round-sync-button').addEventListener('click', syncRoundOverview);
 document.querySelector('#round-regress-button').addEventListener('click', regressRoundOverview);
+document.querySelector('#sporttery-refresh-button').addEventListener('click', refreshSportteryOdds);
 document.querySelector('#sync-reference-button').addEventListener('click', syncReferenceData);
 document.querySelector('#validate-sources-button').addEventListener('click', validateSources);
 document.querySelector('#process-roster-button').addEventListener('click', processRosterQueue);

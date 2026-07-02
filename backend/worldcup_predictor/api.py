@@ -50,10 +50,18 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
             effective_date in {sporttery_window_anchor_date(), sporttery_window_match_start_date()}
             and len(matches) == len(sporttery_snapshot_ids())
         )
+        is_historical_completed = bool(matches) and all(
+            match.get("status") == "final" and match.get("historical_without_odds")
+            for match in matches
+        )
         return {
             "date": effective_date,
             "requested_date": date,
-            "display_mode": "sporttery_lottery_window" if is_lottery_window else "match_day",
+            "display_mode": "sporttery_lottery_window"
+            if is_lottery_window
+            else "historical_completed_with_prediction"
+            if is_historical_completed
+            else "match_day",
             "window_dates": sorted({match["date"] for match in matches}),
             "matches": matches,
         }
@@ -95,12 +103,38 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
         use_xgboost: bool = True,
         recalculate: bool = True,
         date: str | None = None,
+        sync_fifa: bool = False,
+        sync_fifa_rosters: bool = False,
+        sync_footballdata_io: bool = False,
+        sync_sporttery_odds: bool = False,
+        sync_sporttery_history: bool = False,
+        backfill_historical_matches: bool = False,
+        train_over25: bool = False,
     ):
         return service.update_after_results(
             fetch_online_results=fetch_online_results,
             use_xgboost=use_xgboost,
             recalculate=recalculate,
             date=date,
+            sync_fifa=sync_fifa,
+            sync_fifa_rosters=sync_fifa_rosters,
+            sync_footballdata_io=sync_footballdata_io,
+            sync_sporttery_odds=sync_sporttery_odds,
+            sync_sporttery_history=sync_sporttery_history,
+            backfill_historical_matches=backfill_historical_matches,
+            train_over25=train_over25,
+        )
+
+    @app.post("/api/odds/sporttery/refresh")
+    def refresh_sporttery_odds(
+        include_history: bool = False,
+        history_start: str = "2026-06-23",
+        history_end: str = "2026-06-28",
+    ):
+        return app.state.service.refresh_sporttery_odds(
+            include_history=include_history,
+            history_start=history_start,
+            history_end=history_end,
         )
 
     @app.post("/api/rounds/sync")

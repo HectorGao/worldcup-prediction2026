@@ -16,6 +16,7 @@ from worldcup_predictor.roster_strength import (
     player_strength,
 )
 from worldcup_predictor.service import WorldCupService
+from worldcup_predictor.data.fifa_official import FifaOfficialWorldCupCrawler
 
 
 class DummyResponse:
@@ -272,6 +273,205 @@ def test_team_strength_buckets_positions_and_reports_coverage():
     assert strength["defense_gk_strength"] == 73.5
     assert strength["coverage"] == 0.75
     assert strength["missing_player_stats"] == 1
+
+
+def test_team_strength_uses_fifa_power_rankings_and_marks_fallback_fields():
+    players = [
+        {
+            "name": "Elite Forward",
+            "position": "Forward",
+            "fifa_power_rating": 91,
+            "power_ranking_source": "FIFA power rankings",
+            "stats_status": "complete",
+        },
+        {
+            "name": "Control Mid",
+            "position": "Midfielder",
+            "fifa_power_rating": 84,
+            "power_ranking_source": "FIFA power rankings",
+            "stats_status": "complete",
+        },
+        {
+            "name": "Backup Defender",
+            "position": "Defender",
+            "stats_status": "queued",
+        },
+    ]
+
+    strength = aggregate_team_strength("Brazil", players)
+
+    assert strength["attack_line_strength"] == 91
+    assert strength["midfield_line_strength"] == 84
+    assert strength["defense_line_strength"] != 70
+    assert "defense_line_strength" in strength["fallback_fields"]
+    assert strength["paper_strength_source"] == "FIFA power rankings"
+    assert strength["starting_xi_strength"] > strength["bench_strength"]
+
+
+def test_service_strength_fallback_uses_team_profile_not_default_seventy(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.save_team_profile(
+        "Brazil",
+        {
+            "team": "Brazil",
+            "attack_rating": 2.15,
+            "midfield_rating": 83,
+            "defensive_stability": 1.72,
+            "defense_rating": 0.78,
+            "world_cup_data_weight": 0.8,
+        },
+    )
+
+    strength = service.get_team_strength("Brazil", allow_empty=True)
+
+    assert strength["model_version"] == "team-performance-fallback-v1"
+    assert strength["paper_strength_source"] == "本届世界杯表现 fallback"
+    assert {
+        strength["attack_line_strength"],
+        strength["midfield_line_strength"],
+        strength["defense_line_strength"],
+    } != {70.0}
+
+
+def test_service_strength_uses_team_level_fifa_power_rankings_without_exact_player_match(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    for ranking in [
+        {"team": "Brazil", "player_name": "FIFA Forward", "position": "Forward", "rating": 91, "source": "FIFA", "source_priority": 1},
+        {"team": "Brazil", "player_name": "FIFA Mid", "position": "Midfielder", "rating": 84, "source": "FIFA", "source_priority": 1},
+        {"team": "Brazil", "player_name": "FIFA Back", "position": "Defender", "rating": 82, "source": "FIFA", "source_priority": 1},
+    ]:
+        service.db.save_player_power_ranking(ranking)
+
+    strength = service.get_team_strength("Brazil", allow_empty=True)
+
+    assert strength["paper_strength_source"] == "FIFA power rankings"
+    assert strength["attack_line_strength"] == 91
+    assert strength["midfield_line_strength"] == 84
+    assert strength["defense_line_strength"] == 82
+
+
+def test_fifa_parser_extracts_roster_lineup_and_substitutes():
+    crawler = FifaOfficialWorldCupCrawler()
+    parsed = crawler.parse_embedded_payload(
+        {
+            "matches": [
+                {
+                    "id": "fifa-1",
+                    "date": "2026-06-23",
+                    "status": "final",
+                    "homeTeam": {"name": "Brazil"},
+                    "awayTeam": {"name": "Germany"},
+                    "score": {"home": 2, "away": 1},
+                    "lineup": {
+                        "home": {
+                            "team": "Brazil",
+                            "startingXI": [
+                                {"id": 10, "name": "FIFA Forward", "position": "Forward", "rating": 91}
+                            ],
+                            "substitutes": [
+                                {"id": 20, "name": "FIFA Bench", "position": "Midfielder", "rating": 78}
+                            ],
+                        },
+                        "away": {
+                            "team": "Germany",
+                            "players": [
+                                {"id": 30, "name": "FIFA Defender", "position": "Defender", "rating": 84}
+                            ],
+                        },
+                    },
+                }
+            ]
+        },
+        source_url="https://www.fifa.com/match",
+    )
+
+    assert parsed["rosters"][0]["team"] == "Brazil"
+    assert parsed["rosters"][0]["source"] == "FIFA"
+    assert parsed["rosters"][0]["players"][0]["name"] == "FIFA Forward"
+    assert parsed["rosters"][0]["players"][0]["lineup_role"] == "starting"
+    assert parsed["rosters"][0]["players"][1]["lineup_role"] == "substitute"
+    assert parsed["rosters"][1]["players"][0]["position"] == "Defender"
+
+
+def test_fifa_roster_priority_prevents_lower_source_overwrite(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.save_team_squad(
+        "Brazil",
+        {
+            "team": "Brazil",
+            "source": "FIFA",
+            "source_priority": 1,
+            "players": [
+                {
+                    "player_id": "10",
+                    "name": "FIFA Forward",
+                    "position": "Forward",
+                    "source": "FIFA",
+                    "source_priority": 1,
+                    "fifa_power_rating": 91,
+                }
+            ],
+        },
+    )
+    service.db.save_team_squad(
+        "Brazil",
+        {
+            "team": "Brazil",
+            "source": "FootballData.io",
+            "source_priority": 2,
+            "players": [
+                {
+                    "player_id": "10",
+                    "name": "Lower Source Name",
+                    "position": "Defender",
+                    "source": "FootballData.io",
+                    "source_priority": 2,
+                }
+            ],
+        },
+    )
+
+    squad = service.get_team_squad("Brazil")
+    player = squad["players"][0]
+
+    assert squad["source"] == "FIFA"
+    assert player["name"] == "FIFA Forward"
+    assert player["position"] == "Forward"
+    assert player["source_name"] == "FIFA"
+    assert player["source_priority"] == 1
+    assert player["fifa_power_rating"] == 91
+
+
+def test_service_recomputes_legacy_squad_strength_cache_missing_line_fields(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.save_team_squad(
+        "Netherlands",
+        {
+            "team": "Netherlands",
+            "source": "test",
+            "players": [
+                {"player_id": 1, "name": "Forward", "position": "Forward"},
+                {"player_id": 2, "name": "Mid", "position": "Midfielder"},
+                {"player_id": 3, "name": "Back", "position": "Defender"},
+            ],
+        },
+    )
+    service.db.save_squad_strength(
+        "Netherlands",
+        {
+            "team": "Netherlands",
+            "attack_strength": 70,
+            "midfield_control_strength": 70,
+            "defense_gk_strength": 70,
+            "coverage": 0,
+            "model_version": "roster-strength-v1",
+        },
+    )
+
+    strength = service.get_team_strength("Netherlands", allow_empty=True)
+
+    assert strength["model_version"] == "roster-strength-v2"
+    assert "attack_line_strength" in strength
 
 
 def test_team_strength_regresses_uncompleted_players_to_neutral_not_low_score():

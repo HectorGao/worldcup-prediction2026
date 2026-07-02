@@ -59,7 +59,8 @@ def test_daily_sync_is_idempotent_and_prediction_contains_required_fields(tmp_pa
     assert "score_heatmap" in prediction
     assert "model_weight_run" in prediction
     assert "odds_data_status" in prediction
-    assert prediction["odds_data_status"]["market_available"] is True
+    assert prediction["odds_data_status"]["market_available"] is False
+    assert "中国体育彩票" in prediction["odds_data_status"]["reason"]
     assert isinstance(prediction["value_analysis"]["risk_warnings"], list)
     assert prediction["llm_vote_audit"]["weight_cap"] == 0.15
     assert "数据分析" in prediction["chinese_report"]
@@ -358,6 +359,235 @@ def test_sporttery_parser_normalizes_odds_without_live_fetch():
     assert events[0]["totals"]["over"] == 1.78
 
 
+def test_refresh_sporttery_endpoint_groups_live_odds_and_reports_unmatched(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.upsert_lyihub_match(
+        {
+            "id": "lyihub-france-senegal",
+            "match_id": "france-senegal",
+            "date": "2026-07-01",
+            "kickoff": "2026-07-01T20:00:00+08:00",
+            "home_team": "France",
+            "away_team": "Senegal",
+            "home_team_zh_source": "France",
+            "away_team_zh_source": "Senegal",
+            "group": "1/16决赛",
+            "venue": "test",
+            "status": "scheduled",
+            "home_score": None,
+            "away_score": None,
+            "has_predict": False,
+            "payload": {},
+        }
+    )
+    service.providers.sporttery_odds_provider.fetch_odds = lambda: [
+        {
+            "source": "China Sporttery",
+            "date": "2026-07-01",
+            "match_num": "周三001",
+            "league": "世界杯",
+            "home_team": "France",
+            "away_team": "Senegal",
+            "h2h": {"home": 1.7, "draw": 3.4, "away": 5.2},
+            "handicap": {"home": 3.1, "draw": 3.3, "away": 1.9},
+            "handicap_line": "-1",
+        },
+        {
+            "source": "China Sporttery",
+            "date": "2026-07-02",
+            "match_num": "周四001",
+            "league": "世界杯",
+            "home_team": "Unknown A",
+            "away_team": "Unknown B",
+            "h2h": {"home": 2.0, "draw": 3.0, "away": 3.5},
+            "handicap": {},
+        },
+    ]
+
+    app = create_app(db_path=tmp_path / "worldcup.sqlite3")
+    app.state.service = service
+    client = TestClient(app)
+    payload = client.post("/api/odds/sporttery/refresh").json()
+
+    assert payload["mode"] == "live"
+    assert payload["updated"] == 1
+    assert payload["grouped_by_date"]["2026-07-01"][0]["match_num"] == "周三001"
+    assert payload["unmatched_matches"][0]["home_team"] == "Unknown A"
+    assert payload["last_updated"]
+
+
+def test_update_after_results_accepts_external_sync_flags(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.sync_fifa_official_data = lambda date=None: {
+        "source": "FIFA",
+        "matches": [],
+        "power_rankings": [],
+        "warnings": [],
+    }
+    service.sync_footballdata_io = lambda date=None: {
+        "source": "FootballData.io",
+        "configured": True,
+        "fixtures": [],
+        "warnings": [],
+    }
+    service.refresh_sporttery_odds = lambda: {
+        "source": "https://m.sporttery.cn/mjc/jsq/zqspf/",
+        "mode": "live",
+        "updated": 0,
+        "grouped_by_date": {},
+        "unmatched_matches": [],
+    }
+
+    result = service.update_after_results(
+        fetch_online_results=False,
+        use_xgboost=False,
+        recalculate=False,
+        output_dir=tmp_path / "outputs",
+        date="2026-07-01",
+        sync_fifa=True,
+        sync_footballdata_io=True,
+        sync_sporttery_odds=True,
+    )
+
+    assert result["external_data"]["fifa"]["source"] == "FIFA"
+    assert result["external_data"]["footballdata_io"]["configured"] is True
+    assert result["external_data"]["sporttery"]["mode"] == "live"
+
+
+def test_backfill_historical_matches_keeps_predictions_without_fake_odds(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    for match_id, date, home, away, home_score, away_score in [
+        ("group3-1", "2026-06-23", "France", "Senegal", 2, 0),
+        ("before-window-1", "2026-06-28", "Brazil", "Germany", 1, 1),
+    ]:
+        service.db.upsert_lyihub_match(
+            {
+                "id": f"lyihub-{match_id}",
+                "match_id": match_id,
+                "date": date,
+                "kickoff": f"{date}T20:00:00+08:00",
+                "home_team": home,
+                "away_team": away,
+                "home_team_zh_source": home,
+                "away_team_zh_source": away,
+                "group": "小组赛 第3轮",
+                "venue": "test",
+                "status": "final",
+                "home_score": home_score,
+                "away_score": away_score,
+                "has_predict": True,
+                "payload": {},
+            }
+        )
+
+    result = service.backfill_historical_matches(start_date="2026-06-23", end_date="2026-06-28")
+
+    assert result["backfilled_match_count"] == 2
+    assert len(service.db.list_finished_matches()) == 2
+    prediction = service.db.get_prediction("lyihub-group3-1")
+    assert prediction is not None
+    assert prediction["odds_data_status"]["market_available"] is False
+    assert prediction["fixture"]["historical_without_odds"] is True
+    assert prediction["fixture"]["odds_available"] is False
+    matches_payload = service.list_matches_with_prediction_summary("2026-06-23")[0]
+    assert matches_payload["has_prediction_record"] is True
+    assert matches_payload["historical_without_odds"] is True
+
+
+def test_sporttery_history_attempt_records_empty_without_fake_odds(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.providers.sporttery_odds_provider.fetch_historical_odds = lambda start_date, end_date: []
+
+    result = service.refresh_sporttery_odds(include_history=True, history_start="2026-06-23", history_end="2026-06-28")
+
+    assert result["history"]["history_available"] is False
+    assert result["history"]["updated"] == 0
+    assert result["history"]["covered_dates"] == []
+
+
+def test_train_over25_uses_only_90_minute_scores_and_updates_profiles(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    for match in [
+        {
+            "match_id": "m1",
+            "date": "2026-06-23",
+            "stage": "小组赛 第3轮",
+            "home_team": "France",
+            "away_team": "Senegal",
+            "home_goals_90": 3,
+            "away_goals_90": 0,
+            "source": "test",
+        },
+        {
+            "match_id": "m2",
+            "date": "2026-06-24",
+            "stage": "1/16决赛",
+            "home_team": "France",
+            "away_team": "Brazil",
+            "home_goals_90": 1,
+            "away_goals_90": 1,
+            "home_goals_extra_time": 2,
+            "away_goals_extra_time": 1,
+            "winner": "France",
+            "loser": "Brazil",
+            "decided_by_extra_time": True,
+            "source": "test",
+        },
+    ]:
+        service.db.upsert_finished_match_result(match)
+
+    report = service.train_over25_parameters(start_date="2026-06-23")
+    profiles = {profile["team"]: profile for profile in service.db.list_team_profiles()}
+
+    assert report["sample_count"] == 2
+    assert report["over25_count"] == 1
+    assert report["matches"][1]["total_goals_90"] == 2
+    assert report["matches"][1]["over25"] is False
+    for field in (
+        "over25_attack_tendency",
+        "over25_defense_tendency",
+        "over25_match_tendency",
+        "over25_recent_rate",
+        "over25_adjusted_rating",
+        "under25_stability",
+    ):
+        assert field in profiles["France"]
+
+
+def test_prediction_payload_includes_over25_breakdown_and_no_value_without_totals_odds(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.upsert_fixture(
+        {
+            "id": "over25-fixture",
+            "date": "2026-06-30",
+            "kickoff": "2026-06-30T20:00:00+08:00",
+            "home_team": "France",
+            "away_team": "Senegal",
+            "group": "1/16决赛",
+            "venue": "test",
+            "status": "scheduled",
+            "home_elo": 1900,
+            "away_elo": 1750,
+        }
+    )
+    service.db.save_team_profile("France", {"team": "France", "elo": 1900, "over25_adjusted_rating": 0.72, "under25_stability": 0.28})
+    service.db.save_team_profile("Senegal", {"team": "Senegal", "elo": 1750, "over25_adjusted_rating": 0.42, "under25_stability": 0.58})
+
+    prediction = service.predict_fixture("over25-fixture", simulations=1000)
+
+    assert 0 <= prediction["over25_prob"] <= 1
+    assert prediction["under25_prob"] == 1 - prediction["over25_prob"]
+    assert 0 <= prediction["xgboost_over25_prob"] <= 1
+    assert 0 <= prediction["monte_carlo_over25_prob"] <= 1
+    assert 0 <= prediction["score_heatmap_over25_prob"] <= 1
+    assert 0 <= prediction["final_over25_prob"] <= 1
+    assert prediction["over25_market_prob"] is None
+    assert prediction["over25_edge"] is None
+    assert prediction["over25_kelly"] is None
+    assert prediction["over25_value"]["available"] is False
+    assert "无赔率" in prediction["over25_value"]["reason"]
+
+
 def test_betfair_parser_normalizes_match_odds_handicap_and_totals():
     provider = BetfairOddsProvider(app_key="app", session_token="session")
     catalogue = [
@@ -435,3 +665,20 @@ def test_betfair_parser_normalizes_match_odds_handicap_and_totals():
     assert enriched["market_source"] == "Betfair Exchange"
     assert enriched["market_home"] == 1.82
     assert enriched["market_handicap"] == {"home": 2.18, "away": 1.76}
+
+
+def test_market_payload_rejects_non_sporttery_market_source(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    payload = service._market_payload(
+        {
+            "home_team": "France",
+            "away_team": "Senegal",
+            "market_home": 1.82,
+            "market_draw": 3.45,
+            "market_away": 4.6,
+            "market_source": "The Odds API",
+        }
+    )
+
+    assert payload["available"] is False
+    assert "中国体育彩票" in payload["reason"]

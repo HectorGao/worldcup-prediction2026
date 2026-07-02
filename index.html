@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Cup Prediction System</title>
-    <link rel="stylesheet" href="src/styles.css?v=20260630-round-actions-v1" />
+    <link rel="stylesheet" href="src/styles.css?v=20260701-data-sources-v1" />
   </head>
   <body>
     <div class="app-shell">
@@ -75,7 +75,10 @@
                 <h2>今日比赛</h2>
                 <span id="match-window-note" class="panel-subhead inline-subhead">北京时间比赛日</span>
               </div>
-              <span id="match-count">等待同步</span>
+              <div class="button-row">
+                <button id="sporttery-refresh-button" type="button">刷新赔率</button>
+                <span id="match-count">等待同步</span>
+              </div>
             </div>
             <div id="matches" class="match-list"></div>
           </div>

@@ -52,6 +52,57 @@ CREATE TABLE IF NOT EXISTS raw_provider_payloads (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS source_field_values (
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  field_name TEXT NOT NULL,
+  field_value_json TEXT NOT NULL,
+  source TEXT NOT NULL,
+  source_priority INTEGER NOT NULL,
+  source_id TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(entity_type, entity_id, field_name, source)
+);
+
+CREATE TABLE IF NOT EXISTS source_conflict_warnings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  field_name TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fifa_match_contexts (
+  match_id TEXT PRIMARY KEY,
+  payload_json TEXT NOT NULL,
+  source_url TEXT,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS player_power_rankings (
+  team TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  position TEXT,
+  rating REAL,
+  source TEXT NOT NULL,
+  source_priority INTEGER NOT NULL,
+  payload_json TEXT NOT NULL,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(team, player_name, source)
+);
+
+CREATE TABLE IF NOT EXISTS sporttery_odds_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_num TEXT,
+  date TEXT,
+  home_team TEXT,
+  away_team TEXT,
+  matched_fixture_id TEXT,
+  payload_json TEXT NOT NULL,
+  fetched_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS web_fixtures (
   id TEXT PRIMARY KEY,
   date TEXT NOT NULL,
@@ -106,6 +157,7 @@ CREATE TABLE IF NOT EXISTS team_squads (
   team TEXT PRIMARY KEY,
   coach_json TEXT,
   source_name TEXT NOT NULL,
+  source_priority INTEGER NOT NULL DEFAULT 5,
   source_url TEXT,
   fetched_at TEXT,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -120,8 +172,13 @@ CREATE TABLE IF NOT EXISTS squad_players (
   position TEXT,
   photo TEXT,
   source_name TEXT,
+  source_priority INTEGER NOT NULL DEFAULT 5,
+  source_id TEXT,
+  lineup_role TEXT,
   stats_status TEXT NOT NULL DEFAULT 'queued',
   player_strength REAL,
+  fifa_power_rating REAL,
+  power_ranking_source TEXT,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY(team, player_id)
 );
@@ -256,6 +313,169 @@ class Database:
             self._ensure_column(connection, "fixtures", "market_source", "TEXT")
             self._ensure_column(connection, "fixtures", "market_handicap", "TEXT")
             self._ensure_column(connection, "fixtures", "market_handicap_line", "TEXT")
+            self._ensure_column(connection, "squad_players", "fifa_power_rating", "REAL")
+            self._ensure_column(connection, "squad_players", "power_ranking_source", "TEXT")
+            self._ensure_column(connection, "team_squads", "source_priority", "INTEGER NOT NULL DEFAULT 5")
+            self._ensure_column(connection, "squad_players", "source_priority", "INTEGER NOT NULL DEFAULT 5")
+            self._ensure_column(connection, "squad_players", "source_id", "TEXT")
+            self._ensure_column(connection, "squad_players", "lineup_role", "TEXT")
+
+    def save_raw_provider_payload(self, provider: str, payload: dict[str, Any], fixture_id: str | None = None) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO raw_provider_payloads (provider, fixture_id, payload_json)
+                VALUES (?, ?, ?)
+                """,
+                (provider, fixture_id, json.dumps(payload, ensure_ascii=False)),
+            )
+
+    def save_field_source(
+        self,
+        *,
+        entity_type: str,
+        entity_id: str,
+        field_name: str,
+        value: Any,
+        source: str,
+        source_priority: int,
+        source_id: str | None = None,
+    ) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO source_field_values (
+                  entity_type, entity_id, field_name, field_value_json, source, source_priority, source_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(entity_type, entity_id, field_name, source) DO UPDATE SET
+                  field_value_json=excluded.field_value_json,
+                  source_priority=excluded.source_priority,
+                  source_id=excluded.source_id,
+                  updated_at=CURRENT_TIMESTAMP
+                """,
+                (
+                    entity_type,
+                    entity_id,
+                    field_name,
+                    json.dumps(value, ensure_ascii=False),
+                    source,
+                    int(source_priority),
+                    source_id,
+                ),
+            )
+
+    def save_source_conflict_warning(self, entity_type: str, entity_id: str, field_name: str, payload: dict[str, Any]) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO source_conflict_warnings (entity_type, entity_id, field_name, payload_json)
+                VALUES (?, ?, ?, ?)
+                """,
+                (entity_type, entity_id, field_name, json.dumps(payload, ensure_ascii=False)),
+            )
+
+    def save_fifa_match_context(self, match: dict[str, Any]) -> None:
+        match_id = str(match.get("match_id") or match.get("id"))
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO fifa_match_contexts (match_id, payload_json, source_url)
+                VALUES (?, ?, ?)
+                ON CONFLICT(match_id) DO UPDATE SET
+                  payload_json=excluded.payload_json,
+                  source_url=excluded.source_url,
+                  updated_at=CURRENT_TIMESTAMP
+                """,
+                (match_id, json.dumps(match, ensure_ascii=False), match.get("source_url")),
+            )
+
+    def save_player_power_ranking(self, ranking: dict[str, Any]) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO player_power_rankings (
+                  team, player_name, position, rating, source, source_priority, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(team, player_name, source) DO UPDATE SET
+                  position=excluded.position,
+                  rating=excluded.rating,
+                  source_priority=excluded.source_priority,
+                  payload_json=excluded.payload_json,
+                  updated_at=CURRENT_TIMESTAMP
+                """,
+                (
+                    ranking["team"],
+                    ranking["player_name"],
+                    ranking.get("position"),
+                    ranking.get("rating"),
+                    ranking.get("source") or "FIFA",
+                    int(ranking.get("source_priority") or 1),
+                    json.dumps(ranking, ensure_ascii=False),
+                ),
+            )
+
+    def apply_player_power_ranking_to_squad(self, ranking: dict[str, Any]) -> bool:
+        team = ranking.get("team")
+        player_name = str(ranking.get("player_name") or "")
+        rating = ranking.get("rating")
+        if not team or not player_name or rating is None:
+            return False
+        normalized = player_name.lower()
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT player_id, name FROM squad_players
+                WHERE team = ? AND lower(name) = ?
+                LIMIT 1
+                """,
+                (team, normalized),
+            ).fetchone()
+            if not row:
+                return False
+            connection.execute(
+                """
+                UPDATE squad_players
+                SET fifa_power_rating = ?, power_ranking_source = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE team = ? AND player_id = ?
+                """,
+                (rating, ranking.get("source") or "FIFA power rankings", team, row["player_id"]),
+            )
+        return True
+
+    def list_player_power_rankings(self, team: str | None = None) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            if team:
+                rows = connection.execute(
+                    "SELECT * FROM player_power_rankings WHERE team = ? ORDER BY rating DESC",
+                    (team,),
+                ).fetchall()
+            else:
+                rows = connection.execute("SELECT * FROM player_power_rankings ORDER BY team, rating DESC").fetchall()
+        return [
+            {
+                **dict(row),
+                "payload": json.loads(row["payload_json"] or "{}"),
+            }
+            for row in rows
+        ]
+
+    def save_sporttery_odds_snapshot(self, event: dict[str, Any], matched_fixture_id: str | None = None) -> None:
+        with self.connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO sporttery_odds_snapshots (
+                  match_num, date, home_team, away_team, matched_fixture_id, payload_json
+                ) VALUES (?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    event.get("match_num"),
+                    event.get("date"),
+                    event.get("home_team"),
+                    event.get("away_team"),
+                    matched_fixture_id,
+                    json.dumps(event, ensure_ascii=False),
+                ),
+            )
 
     def upsert_finished_match_result(self, match: dict[str, Any]) -> dict[str, Any]:
         existing = self.get_finished_match(str(match["match_id"]))
@@ -518,6 +738,28 @@ class Database:
                 (start_date, f"%{source_keyword}%", int(limit)),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def clear_non_sporttery_market_fields(self) -> int:
+        with self.connect() as connection:
+            cursor = connection.execute(
+                """
+                UPDATE fixtures
+                SET market_home = NULL,
+                    market_draw = NULL,
+                    market_away = NULL,
+                    market_over_2_5 = NULL,
+                    market_under_2_5 = NULL,
+                    market_handicap = NULL,
+                    market_handicap_line = NULL,
+                    market_source = NULL,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE market_source IS NOT NULL
+                  AND lower(market_source) NOT LIKE '%sporttery%'
+                  AND market_source NOT LIKE '%中国体育彩票%'
+                  AND market_source NOT LIKE '%竞彩%'
+                """
+            )
+            return int(cursor.rowcount or 0)
 
     def get_fixture(self, fixture_id: str) -> dict[str, Any] | None:
         with self.connect() as connection:
@@ -987,6 +1229,7 @@ class Database:
         }
 
     def save_team_squad(self, team: str, squad: dict[str, Any]) -> None:
+        squad_priority = int(squad.get("source_priority") or 5)
         with self.connect() as connection:
             connection.execute(
                 """
@@ -1001,37 +1244,52 @@ class Database:
             )
             connection.execute(
                 """
-                INSERT INTO team_squads (team, coach_json, source_name, source_url, fetched_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO team_squads (team, coach_json, source_name, source_priority, source_url, fetched_at)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(team) DO UPDATE SET
-                  coach_json=excluded.coach_json,
-                  source_name=excluded.source_name,
-                  source_url=excluded.source_url,
-                  fetched_at=excluded.fetched_at,
+                  coach_json=CASE WHEN excluded.source_priority <= source_priority THEN excluded.coach_json ELSE coach_json END,
+                  source_name=CASE WHEN excluded.source_priority <= source_priority THEN excluded.source_name ELSE source_name END,
+                  source_priority=MIN(source_priority, excluded.source_priority),
+                  source_url=CASE WHEN excluded.source_priority <= source_priority THEN excluded.source_url ELSE source_url END,
+                  fetched_at=CASE WHEN excluded.source_priority <= source_priority THEN excluded.fetched_at ELSE fetched_at END,
                   updated_at=CURRENT_TIMESTAMP
                 """,
                 (
                     team,
                     json.dumps(squad.get("coach") or {}, ensure_ascii=False),
                     squad.get("source") or "unknown",
+                    squad_priority,
                     squad.get("source_url"),
                     squad.get("fetched_at"),
                 ),
             )
             for player in squad.get("players", []):
                 player_id = str(player["player_id"])
+                player_priority = int(player.get("source_priority") or squad_priority)
                 connection.execute(
                     """
                     INSERT INTO squad_players (
-                      team, player_id, name, age, number, position, photo, source_name, stats_status
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued')
+                      team, player_id, name, age, number, position, photo, source_name,
+                      source_priority, source_id, lineup_role, stats_status, fifa_power_rating, power_ranking_source
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, ?)
                     ON CONFLICT(team, player_id) DO UPDATE SET
-                      name=excluded.name,
-                      age=excluded.age,
-                      number=excluded.number,
-                      position=excluded.position,
-                      photo=excluded.photo,
-                      source_name=excluded.source_name,
+                      name=CASE WHEN excluded.source_priority <= source_priority THEN excluded.name ELSE name END,
+                      age=CASE WHEN excluded.source_priority <= source_priority THEN excluded.age ELSE age END,
+                      number=CASE WHEN excluded.source_priority <= source_priority THEN excluded.number ELSE number END,
+                      position=CASE WHEN excluded.source_priority <= source_priority THEN excluded.position ELSE position END,
+                      photo=CASE WHEN excluded.source_priority <= source_priority THEN excluded.photo ELSE photo END,
+                      source_name=CASE WHEN excluded.source_priority <= source_priority THEN excluded.source_name ELSE source_name END,
+                      source_priority=MIN(source_priority, excluded.source_priority),
+                      source_id=CASE WHEN excluded.source_priority <= source_priority THEN excluded.source_id ELSE source_id END,
+                      lineup_role=CASE WHEN excluded.source_priority <= source_priority THEN excluded.lineup_role ELSE lineup_role END,
+                      fifa_power_rating=COALESCE(
+                        CASE WHEN excluded.source_priority <= source_priority THEN excluded.fifa_power_rating END,
+                        fifa_power_rating
+                      ),
+                      power_ranking_source=COALESCE(
+                        CASE WHEN excluded.source_priority <= source_priority THEN excluded.power_ranking_source END,
+                        power_ranking_source
+                      ),
                       updated_at=CURRENT_TIMESTAMP
                     """,
                     (
@@ -1043,6 +1301,11 @@ class Database:
                         player.get("position"),
                         player.get("photo"),
                         player.get("source") or squad.get("source"),
+                        player_priority,
+                        player.get("source_id"),
+                        player.get("lineup_role"),
+                        player.get("fifa_power_rating"),
+                        player.get("power_ranking_source") or player.get("source"),
                     ),
                 )
                 connection.execute(

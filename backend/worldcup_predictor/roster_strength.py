@@ -63,17 +63,49 @@ def player_strength(stats: dict[str, Any]) -> float:
 def aggregate_team_strength(team: str, players: list[dict[str, Any]]) -> dict[str, Any]:
     attack = [_strength(player) for player in players if position_bucket(player.get("position")) == "attack"]
     midfield = [_strength(player) for player in players if position_bucket(player.get("position")) == "midfield"]
-    defense = [_strength(player) for player in players if position_bucket(player.get("position")) == "defense_gk"]
+    defense = [_strength(player) for player in players if position_bucket(player.get("position")) == "defense"]
+    goalkeepers = [_strength(player) for player in players if position_bucket(player.get("position")) == "goalkeeper"]
+    defense_gk = defense + goalkeepers
+    all_strengths = sorted([_strength(player) for player in players], reverse=True)
     completed = [player for player in players if player.get("stats_status") in USABLE_STATUSES]
+    fifa_power_count = len([player for player in players if player.get("fifa_power_rating") is not None])
+    fallback_fields = []
+    if not attack or not _has_fifa_power(players, "attack"):
+        fallback_fields.append("attack_line_strength")
+    if not midfield or not _has_fifa_power(players, "midfield"):
+        fallback_fields.append("midfield_line_strength")
+    if not defense or not _has_fifa_power(players, "defense"):
+        fallback_fields.append("defense_line_strength")
+    if not goalkeepers or not _has_fifa_power(players, "goalkeeper"):
+        fallback_fields.append("goalkeeper_strength")
+    starting = all_strengths[:11]
+    bench = all_strengths[11:]
     total = len(players)
+    attack_strength = round(mean(attack), 2) if attack else 65.0
+    midfield_strength = round(mean(midfield), 2) if midfield else 65.0
+    defense_strength = round(mean(defense), 2) if defense else 65.0
+    goalkeeper_strength = round(mean(goalkeepers), 2) if goalkeepers else defense_strength
+    defense_gk_strength = round(mean(defense_gk), 2) if defense_gk else 65.0
+    starting_xi_strength = round(mean(starting), 2) if starting else round(mean([attack_strength, midfield_strength, defense_gk_strength]), 2)
+    bench_strength = round(mean(bench), 2) if bench else max(55.0, round(starting_xi_strength - 8, 2))
     return {
         "team": team,
-        "attack_strength": round(mean(attack), 2) if attack else 65.0,
-        "midfield_control_strength": round(mean(midfield), 2) if midfield else 65.0,
-        "defense_gk_strength": round(mean(defense), 2) if defense else 65.0,
+        "attack_strength": attack_strength,
+        "midfield_control_strength": midfield_strength,
+        "defense_gk_strength": defense_gk_strength,
+        "attack_line_strength": attack_strength,
+        "midfield_line_strength": midfield_strength,
+        "defense_line_strength": defense_strength,
+        "goalkeeper_strength": goalkeeper_strength,
+        "squad_depth": round(0.65 * starting_xi_strength + 0.35 * bench_strength, 2),
+        "starting_xi_strength": starting_xi_strength,
+        "bench_strength": bench_strength,
         "coverage": round(len(completed) / total, 4) if total else 0.0,
+        "fifa_power_coverage": round(fifa_power_count / total, 4) if total else 0.0,
         "missing_player_stats": max(0, total - len(completed)),
-        "model_version": "roster-strength-v1",
+        "paper_strength_source": "FIFA power rankings" if fifa_power_count else "fallback",
+        "fallback_fields": fallback_fields,
+        "model_version": "roster-strength-v2",
     }
 
 
@@ -83,8 +115,10 @@ def position_bucket(position: str | None) -> str:
         return "attack"
     if any(token in normalized for token in ("midfielder", "midfield", "centre mid", "defensive mid")):
         return "midfield"
-    if any(token in normalized for token in ("defender", "back", "goalkeeper", "keeper")):
-        return "defense_gk"
+    if any(token in normalized for token in ("goalkeeper", "keeper")):
+        return "goalkeeper"
+    if any(token in normalized for token in ("defender", "back")):
+        return "defense"
     return "midfield"
 
 
@@ -126,11 +160,20 @@ def _stability_score(stats: dict[str, Any]) -> float:
 
 
 def _strength(player: dict[str, Any]) -> float:
+    if player.get("fifa_power_rating") is not None:
+        return _clamp(float(player["fifa_power_rating"]), 0, 100)
     if player.get("player_strength") is not None:
         return float(player["player_strength"])
     if player.get("stats_status") not in USABLE_STATUSES:
         return 65.0
     return player_strength(player)
+
+
+def _has_fifa_power(players: list[dict[str, Any]], bucket: str) -> bool:
+    return any(
+        position_bucket(player.get("position")) == bucket and player.get("fifa_power_rating") is not None
+        for player in players
+    )
 
 
 def _float(value: Any) -> float | None:

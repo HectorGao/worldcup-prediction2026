@@ -1569,6 +1569,26 @@ input[type="date"] {
   text-align: right;
 }
 
+.mini-meter.strength-elite .bar-fill {
+  background: #168a4a;
+}
+
+.mini-meter.strength-strong .bar-fill {
+  background: #2f78d4;
+}
+
+.mini-meter.strength-medium .bar-fill {
+  background: #c88915;
+}
+
+.mini-meter.strength-weak .bar-fill {
+  background: #bf3f3f;
+}
+
+.strength-card small {
+  line-height: 1.45;
+}
+
 .squad-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 0;

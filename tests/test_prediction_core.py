@@ -15,7 +15,7 @@ from worldcup_predictor.prediction.monte_carlo import MonteCarloConfig, simulate
 from worldcup_predictor.prediction.odds import convert_odds, devig
 from worldcup_predictor.prediction.poisson_model import PoissonModelConfig, estimate_poisson_prediction
 from worldcup_predictor.prediction.learning import rolling_worldcup_adjustment
-from worldcup_predictor.prediction.xgboost_model import estimate_xgboost_prediction, train_xgboost_layer
+from worldcup_predictor.prediction.xgboost_model import FEATURE_NAMES, build_features, estimate_xgboost_prediction, train_xgboost_layer
 from worldcup_predictor.prediction.weight_calibration import calibrate_model_weights
 
 
@@ -215,6 +215,137 @@ def test_xgboost_adapter_is_stable_and_consistent_with_base_models():
     assert isclose(first["home_win"] + first["draw"] + first["away_win"], 1.0, rel_tol=1e-9)
     assert first["home_win"] > first["away_win"]
     assert first["engine"] == "deterministic_xgboost_adapter"
+
+
+def test_xgboost_features_include_new_source_and_squad_inputs():
+    fixture = {
+        "home_team": "France",
+        "away_team": "Senegal",
+        "date": "2026-07-01",
+        "fifa_match_stats": {"home_xg": 1.8, "away_xg": 0.9},
+        "footballdata_io_stats": {"home_shots": 14, "away_shots": 7},
+        "lineup_context": {"home_missing_starters": 1, "away_missing_starters": 3},
+    }
+    features = build_features(
+        fixture=fixture,
+        home_profile={"team": "France", "elo": 1960, "form_rating": 0.3},
+        away_profile={"team": "Senegal", "elo": 1760, "form_rating": -0.1},
+        poisson={"lambda_home": 1.8, "lambda_away": 0.9, "home_win": 0.58, "draw": 0.25, "away_win": 0.17},
+        monte_carlo={"home_win": 0.60, "draw": 0.24, "away_win": 0.16, "goal_variance": {"total": 2.4}},
+        market={"available": True, "market_probability_no_vig": {"home": 0.53, "draw": 0.25, "away": 0.22}},
+        roster_strength={
+            "home": {
+                "attack_line_strength": 88,
+                "midfield_line_strength": 85,
+                "defense_line_strength": 82,
+                "starting_xi_strength": 86,
+                "bench_strength": 78,
+                "squad_depth": 80,
+                "coverage": 0.9,
+            },
+            "away": {
+                "attack_line_strength": 74,
+                "midfield_line_strength": 72,
+                "defense_line_strength": 70,
+                "starting_xi_strength": 73,
+                "bench_strength": 68,
+                "squad_depth": 69,
+                "coverage": 0.7,
+            },
+        },
+        learning_adjustment={"completed_match_count": 8},
+    )
+
+    for name in [
+        "attack_line_edge",
+        "midfield_line_edge",
+        "defense_line_edge",
+        "starting_xi_edge",
+        "bench_strength_edge",
+        "squad_depth_edge",
+        "fifa_stats_xg_edge",
+        "footballdata_shot_edge",
+        "lineup_missing_edge",
+        "roster_coverage_edge",
+    ]:
+        assert name in FEATURE_NAMES
+        assert name in features
+    assert features["attack_line_edge"] > 0
+    assert features["lineup_missing_edge"] > 0
+
+
+def test_xgboost_features_and_output_include_over25_inputs():
+    fixture = {"home_team": "France", "away_team": "Senegal", "date": "2026-07-01"}
+    poisson = {
+        "lambda_home": 1.8,
+        "lambda_away": 1.2,
+        "home_win": 0.52,
+        "draw": 0.24,
+        "away_win": 0.24,
+        "over_2_5": 0.58,
+        "under_2_5": 0.42,
+    }
+    monte_carlo = {
+        "home_win": 0.54,
+        "draw": 0.23,
+        "away_win": 0.23,
+        "over_2_5": 0.61,
+        "under_2_5": 0.39,
+        "goal_variance": {"total": 3.0},
+    }
+    features = build_features(
+        fixture=fixture,
+        home_profile={
+            "team": "France",
+            "elo": 1960,
+            "over25_attack_tendency": 0.72,
+            "over25_defense_tendency": 0.44,
+            "over25_recent_rate": 0.67,
+            "over25_adjusted_rating": 0.69,
+            "under25_stability": 0.31,
+        },
+        away_profile={
+            "team": "Senegal",
+            "elo": 1760,
+            "over25_attack_tendency": 0.38,
+            "over25_defense_tendency": 0.56,
+            "over25_recent_rate": 0.33,
+            "over25_adjusted_rating": 0.45,
+            "under25_stability": 0.55,
+        },
+        poisson=poisson,
+        monte_carlo=monte_carlo,
+        market={
+            "available": True,
+            "market_probability_no_vig": {"home": 0.50, "draw": 0.26, "away": 0.24},
+            "totals_probability_no_vig": {"over": 0.53, "under": 0.47},
+        },
+        roster_strength={"home": {}, "away": {}},
+        learning_adjustment={},
+    )
+    result = estimate_xgboost_prediction(
+        fixture=fixture,
+        home_profile={"team": "France", "elo": 1960, "over25_adjusted_rating": 0.69},
+        away_profile={"team": "Senegal", "elo": 1760, "over25_adjusted_rating": 0.45},
+        poisson=poisson,
+        monte_carlo=monte_carlo,
+        market=None,
+        roster_strength={"home": {}, "away": {}},
+    )
+
+    for name in [
+        "over25_attack_edge",
+        "over25_defense_edge",
+        "over25_recent_edge",
+        "over25_adjusted_edge",
+        "under25_stability_edge",
+        "over25_market_edge",
+    ]:
+        assert name in FEATURE_NAMES
+        assert name in features
+    assert features["over25_attack_edge"] > 0
+    assert 0 <= result["over25_prob"] <= 1
+    assert result["under25_prob"] == 1 - result["over25_prob"]
 
 
 def test_xgboost_trainable_layer_fits_fixed_samples_and_is_stable():

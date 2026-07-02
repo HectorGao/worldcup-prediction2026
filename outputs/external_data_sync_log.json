@@ -1,0 +1,319 @@
+{
+  "fifa": {
+    "source": "FIFA",
+    "source_priority": 1,
+    "matches": [],
+    "match_count": 0,
+    "power_rankings": [],
+    "power_ranking_count": 0,
+    "power_ranking_matched_players": 0,
+    "rosters": [],
+    "roster_count": 0,
+    "news": [],
+    "warnings": [
+      "No embedded FIFA JSON payload found; dynamic API discovery may be required."
+    ]
+  },
+  "footballdata_io": {
+    "source": "FootballData.io",
+    "configured": true,
+    "fixtures": [
+      {
+        "id": "footballdata-io-500498428",
+        "source_id": "500498428",
+        "source": "FootballData.io",
+        "source_priority": 2,
+        "date": "2026-07-01",
+        "kickoff": "2026-07-01T00:00:00Z",
+        "home_team": "Home",
+        "away_team": "Away",
+        "group": null,
+        "venue": "Estadio Banorte",
+        "status": "final",
+        "home_score": 2,
+        "away_score": 0,
+        "home_elo": 1700,
+        "away_elo": 1700,
+        "market_home": null,
+        "market_draw": null,
+        "market_away": null,
+        "footballdata_io_stats": {},
+        "payload": {
+          "match_id": 500498428,
+          "match_date": "2026-07-01 02:00:00",
+          "date_unix": 1782871200,
+          "status": "complete",
+          "status_localized": "Finished",
+          "round_id": 122062,
+          "game_week": 0,
+          "league": {
+            "league_id": 50,
+            "league_name": "World Cup",
+            "country": "International",
+            "league_image": "https://footballdata.io/img/league/international-world-cup.png"
+          },
+          "season": {
+            "season_id": 618,
+            "year": 2026
+          },
+          "home_team": {
+            "team_id": 2197,
+            "team_name": "Mexico National Team",
+            "seo_slug": "mexico-national-team",
+            "team_logo": "https://footballdata.io/img/team/mexico-mexico-national-team.png",
+            "country": "Mexico"
+          },
+          "away_team": {
+            "team_id": 2190,
+            "team_name": "Ecuador National Team",
+            "seo_slug": "ecuador-national-team",
+            "team_logo": "https://footballdata.io/img/team/ecuador-ecuador-national-team.png",
+            "country": "Ecuador"
+          },
+          "score": {
+            "home": 2,
+            "away": 0,
+            "total": 2,
+            "halftime_home": 2,
+            "halftime_away": 0,
+            "halftime_total": 2,
+            "second_half_home": 0,
+            "second_half_away": 0,
+            "second_half_total": 0
+          },
+          "xg": {
+            "home": 1.34,
+            "away": 0.93,
+            "total": 2.27,
+            "prematch_home": 1.23,
+            "prematch_away": 1.85,
+            "prematch_total": 3.08
+          },
+          "form": {
+            "home_ppg": 3,
+            "away_ppg": 1,
+            "pre_match_home_ppg": 3,
+            "pre_match_away_ppg": 1.33
+          },
+          "venue": {
+            "name": "Estadio Banorte",
+            "location": "Calzada de Tlalpan 3665, CoyoacÃ¡n",
+            "attendance": 80824
+          },
+          "winner_text": "Mexico National Team won the match"
+        }
+      },
+      {
+        "id": "footballdata-io-690940473",
+        "source_id": "690940473",
+        "source": "FootballData.io",
+        "source_priority": 2,
+        "date": "2026-07-01",
+        "kickoff": "2026-07-01T00:00:00Z",
+        "home_team": "Home",
+        "away_team": "Away",
+        "group": null,
+        "venue": "Mercedes-Benz Stadium",
+        "status": "scheduled",
+        "home_score": 0,
+        "away_score": 0,
+        "home_elo": 1700,
+        "away_elo": 1700,
+        "market_home": null,
+        "market_draw": null,
+        "market_away": null,
+        "footballdata_io_stats": {},
+        "payload": {
+          "match_id": 690940473,
+          "match_date": "2026-07-01 16:00:00",
+          "date_unix": 1782921600,
+          "status": "incomplete",
+          "status_localized": "Scheduled",
+          "round_id": 122062,
+          "game_week": 0,
+          "league": {
+            "league_id": 50,
+            "league_name": "World Cup",
+            "country": "International",
+            "league_image": "https://footballdata.io/img/league/international-world-cup.png"
+          },
+          "season": {
+            "season_id": 618,
+            "year": 2026
+          },
+          "home_team": {
+            "team_id": 2064,
+            "team_name": "England National Team",
+            "seo_slug": "england-national-team",
+            "team_logo": "https://footballdata.io/img/team/england-england-national-team.png",
+            "country": "England"
+          },
+          "away_team": {
+            "team_id": 2237,
+            "team_name": "Congo DR National Team",
+            "seo_slug": "congo-dr-national-team",
+            "team_logo": "https://footballdata.io/img/team/congo-dr-congo-dr-national-team.png",
+            "country": "Congo DR"
+          },
+          "score": {
+            "home": 0,
+            "away": 0,
+            "total": 0,
+            "halftime_home": 0,
+            "halftime_away": 0,
+            "halftime_total": 0,
+            "second_half_home": 0,
+            "second_half_away": 0,
+            "second_half_total": 0
+          },
+          "xg": {
+            "home": 0,
+            "away": 0,
+            "total": 0,
+            "prematch_home": 2.12,
+            "prematch_away": 1.14,
+            "prematch_total": 3.26
+          },
+          "form": {
+            "home_ppg": 2.33,
+            "away_ppg": 1.33,
+            "pre_match_home_ppg": 2.33,
+            "pre_match_away_ppg": 1.33
+          },
+          "venue": {
+            "name": "Mercedes-Benz Stadium",
+            "location": "1 AMB Drive North West",
+            "attendance": -1
+          }
+        }
+      },
+      {
+        "id": "footballdata-io-683454200",
+        "source_id": "683454200",
+        "source": "FootballData.io",
+        "source_priority": 2,
+        "date": "2026-07-01",
+        "kickoff": "2026-07-01T00:00:00Z",
+        "home_team": "Home",
+        "away_team": "Away",
+        "group": null,
+        "venue": "Lumen Field",
+        "status": "scheduled",
+        "home_score": 0,
+        "away_score": 0,
+        "home_elo": 1700,
+        "away_elo": 1700,
+        "market_home": null,
+        "market_draw": null,
+        "market_away": null,
+        "footballdata_io_stats": {},
+        "payload": {
+          "match_id": 683454200,
+          "match_date": "2026-07-01 20:00:00",
+          "date_unix": 1782936000,
+          "status": "incomplete",
+          "status_localized": "Scheduled",
+          "round_id": 122062,
+          "game_week": 0,
+          "league": {
+            "league_id": 50,
+            "league_name": "World Cup",
+            "country": "International",
+            "league_image": "https://footballdata.io/img/league/international-world-cup.png"
+          },
+          "season": {
+            "season_id": 618,
+            "year": 2026
+          },
+          "home_team": {
+            "team_id": 2073,
+            "team_name": "Belgium National Team",
+            "seo_slug": "belgium-national-team",
+            "team_logo": "https://footballdata.io/img/team/belgium-belgium-national-team.png",
+            "country": "Belgium"
+          },
+          "away_team": {
+            "team_id": 2202,
+            "team_name": "Senegal National Team",
+            "seo_slug": "senegal-national-team",
+            "team_logo": "https://footballdata.io/img/team/senegal-senegal-national-team.png",
+            "country": "Senegal"
+          },
+          "score": {
+            "home": 0,
+            "away": 0,
+            "total": 0,
+            "halftime_home": 0,
+            "halftime_away": 0,
+            "halftime_total": 0,
+            "second_half_home": 0,
+            "second_half_away": 0,
+            "second_half_total": 0
+          },
+          "xg": {
+            "home": 0,
+            "away": 0,
+            "total": 0,
+            "prematch_home": 2.55,
+            "prematch_away": 1.9,
+            "prematch_total": 4.45
+          },
+          "form": {
+            "home_ppg": 1.67,
+            "away_ppg": 1,
+            "pre_match_home_ppg": 1.67,
+            "pre_match_away_ppg": 1
+          },
+          "venue": {
+            "name": "Lumen Field",
+            "location": "800 Occidental Avenue South",
+            "attendance": -1
+          }
+        }
+      }
+    ],
+    "fixture_count": 3,
+    "meta": {
+      "plan": "free",
+      "requests_used": 3,
+      "requests_limit": 1000,
+      "requests_remaining": 997,
+      "coverage_note": "Coverage varies by league and season.",
+      "league_limit": 5,
+      "language": "en",
+      "page": 1,
+      "limit": 50,
+      "count": 3,
+      "total": 3,
+      "total_pages": 1
+    },
+    "warnings": []
+  },
+  "sporttery": {
+    "source": "https://m.sporttery.cn/mjc/jsq/zqspf/",
+    "mode": "snapshot_fallback",
+    "updated": 9,
+    "cleared_non_sporttery_markets": 0,
+    "match_numbers": [
+      "周一074",
+      "周一075",
+      "周一076",
+      "周二077",
+      "周二078",
+      "周二079",
+      "周三080",
+      "周三081",
+      "周三082"
+    ],
+    "last_error": "Client error '403 Forbidden' for url 'https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=m&poolCode=hhad%2Chad'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403",
+    "last_updated": "2026-07-01T13:19:42.087390+00:00",
+    "grouped_by_date": {},
+    "unmatched_matches": [],
+    "history": {
+      "history_available": false,
+      "updated": 0,
+      "covered_dates": [],
+      "reason": "No sporttery historical odds were returned; keeping historical matches without odds."
+    }
+  }
+}

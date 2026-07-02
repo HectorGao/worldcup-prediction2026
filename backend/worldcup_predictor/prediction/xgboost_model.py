@@ -26,6 +26,22 @@ FEATURE_NAMES = [
     "mc_goal_variance",
     "roster_attack_edge",
     "form_home_edge",
+    "attack_line_edge",
+    "midfield_line_edge",
+    "defense_line_edge",
+    "starting_xi_edge",
+    "bench_strength_edge",
+    "squad_depth_edge",
+    "fifa_stats_xg_edge",
+    "footballdata_shot_edge",
+    "lineup_missing_edge",
+    "roster_coverage_edge",
+    "over25_attack_edge",
+    "over25_defense_edge",
+    "over25_recent_edge",
+    "over25_adjusted_edge",
+    "under25_stability_edge",
+    "over25_market_edge",
 ]
 
 CLASS_ORDER = ("home", "draw", "away")
@@ -133,12 +149,15 @@ def estimate_xgboost_prediction(
         for outcome in ("home", "draw", "away")
     }
     probabilities = normalize_outcomes(probabilities)
+    over25_prob = deterministic_over25_probability(poisson, monte_carlo, features)
     return {
         "engine": engine,
         "model_version": "xgb-trainable-v2",
         "home_win": probabilities["home"],
         "draw": probabilities["draw"],
         "away_win": probabilities["away"],
+        "over25_prob": over25_prob,
+        "under25_prob": 1 - over25_prob,
         "features": {key: round(value, 6) for key, value in features.items()},
         "correction_strength": correction_strength,
         "training": training,
@@ -211,6 +230,23 @@ def deterministic_boosted_probabilities(
         away_logit += 0.18 * (market_probs["away"] - base["away"])
 
     return softmax({"home": home_logit, "draw": draw_logit, "away": away_logit})
+
+
+def deterministic_over25_probability(
+    poisson: dict[str, Any],
+    monte_carlo: dict[str, Any],
+    features: dict[str, float],
+) -> float:
+    poisson_over = float(poisson.get("over_2_5", 0.5))
+    mc_over = float(monte_carlo.get("over_2_5", poisson_over))
+    base_logit = logit(0.58 * poisson_over + 0.42 * mc_over)
+    base_logit += 0.18 * features.get("over25_attack_edge", 0.0)
+    base_logit += 0.12 * features.get("over25_defense_edge", 0.0)
+    base_logit += 0.16 * features.get("over25_adjusted_edge", 0.0)
+    base_logit += 0.10 * features.get("over25_recent_edge", 0.0)
+    base_logit -= 0.12 * features.get("under25_stability_edge", 0.0)
+    base_logit += 0.14 * features.get("over25_market_edge", 0.0)
+    return clamp(1 / (1 + math.exp(-base_logit)), 0.02, 0.98)
 
 
 def monte_carlo_feature_proxy(poisson: dict[str, Any]) -> dict[str, Any]:
@@ -333,12 +369,20 @@ def build_features(
         if market and market.get("available")
         else {}
     )
+    totals_probs = (
+        market.get("totals_probability_no_vig") or market.get("totals_market_probability_no_vig", {})
+        if market and market.get("available")
+        else {}
+    )
     home_strength = roster_strength.get("home") or {}
     away_strength = roster_strength.get("away") or {}
     form = learning_adjustment.get("team_form_adjustment") or {}
     home_form = float((form.get(fixture.get("home_team")) or {}).get("goal_delta", 0.0))
     away_form = float((form.get(fixture.get("away_team")) or {}).get("goal_delta", 0.0))
-    return {
+    fifa_stats = fixture.get("fifa_match_stats") or {}
+    football_stats = fixture.get("footballdata_io_stats") or {}
+    lineup_context = fixture.get("lineup_context") or {}
+    features = {
         "elo_delta": clamp((home_elo - away_elo) / 450, -1.5, 1.5),
         "lambda_diff": clamp(home_lambda - away_lambda, -2.0, 2.0),
         "lambda_total": clamp(home_lambda + away_lambda, 0.4, 6.5),
@@ -358,6 +402,43 @@ def build_features(
         ),
         "form_home_edge": clamp(home_form - away_form, -1.5, 1.5),
     }
+    features.update(
+        {
+            "attack_line_edge": clamp(
+                (strength_value(home_strength, "attack_line_strength", "attack_strength") - strength_value(away_strength, "attack_line_strength", "attack_strength")) / 35,
+                -1.5,
+                1.5,
+            ),
+            "midfield_line_edge": clamp(
+                (strength_value(home_strength, "midfield_line_strength", "midfield_control_strength") - strength_value(away_strength, "midfield_line_strength", "midfield_control_strength")) / 35,
+                -1.5,
+                1.5,
+            ),
+            "defense_line_edge": clamp(
+                (strength_value(home_strength, "defense_line_strength", "defense_gk_strength") - strength_value(away_strength, "defense_line_strength", "defense_gk_strength")) / 35,
+                -1.5,
+                1.5,
+            ),
+            "starting_xi_edge": clamp((float(home_strength.get("starting_xi_strength", 70)) - float(away_strength.get("starting_xi_strength", 70))) / 35, -1.5, 1.5),
+            "bench_strength_edge": clamp((float(home_strength.get("bench_strength", 65)) - float(away_strength.get("bench_strength", 65))) / 35, -1.5, 1.5),
+            "squad_depth_edge": clamp((float(home_strength.get("squad_depth", 65)) - float(away_strength.get("squad_depth", 65))) / 35, -1.5, 1.5),
+            "fifa_stats_xg_edge": clamp((float(fifa_stats.get("home_xg", 0) or 0) - float(fifa_stats.get("away_xg", 0) or 0)) / 2.5, -1.5, 1.5),
+            "footballdata_shot_edge": clamp((float(football_stats.get("home_shots", 0) or 0) - float(football_stats.get("away_shots", 0) or 0)) / 20, -1.5, 1.5),
+            "lineup_missing_edge": clamp((float(lineup_context.get("away_missing_starters", 0) or 0) - float(lineup_context.get("home_missing_starters", 0) or 0)) / 5, -1.5, 1.5),
+            "roster_coverage_edge": clamp((float(home_strength.get("coverage", 0) or 0) - float(away_strength.get("coverage", 0) or 0)), -1.0, 1.0),
+            "over25_attack_edge": clamp(float(home_profile.get("over25_attack_tendency", 0.5)) - float(away_profile.get("over25_attack_tendency", 0.5)), -1.0, 1.0),
+            "over25_defense_edge": clamp(float(home_profile.get("over25_defense_tendency", 0.5)) - float(away_profile.get("over25_defense_tendency", 0.5)), -1.0, 1.0),
+            "over25_recent_edge": clamp(float(home_profile.get("over25_recent_rate", 0.5)) - float(away_profile.get("over25_recent_rate", 0.5)), -1.0, 1.0),
+            "over25_adjusted_edge": clamp(float(home_profile.get("over25_adjusted_rating", 0.5)) - float(away_profile.get("over25_adjusted_rating", 0.5)), -1.0, 1.0),
+            "under25_stability_edge": clamp(float(home_profile.get("under25_stability", 0.5)) - float(away_profile.get("under25_stability", 0.5)), -1.0, 1.0),
+            "over25_market_edge": float(totals_probs.get("over", 0.0)) - float(poisson.get("over_2_5", 0.0)),
+        }
+    )
+    return features
+
+
+def strength_value(payload: dict[str, Any], primary: str, fallback: str) -> float:
+    return float(payload.get(primary, payload.get(fallback, 70)) or 70)
 
 
 def logit(probability: float) -> float:

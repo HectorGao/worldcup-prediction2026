@@ -3,10 +3,12 @@ import httpx
 from worldcup_predictor.data.providers import (
     ApiFootballProvider,
     EspnScoreboardProvider,
+    FootballDataIoProvider,
     FootballDataProvider,
     OddsApiProvider,
     ProviderRegistry,
 )
+from worldcup_predictor.data.fifa_official import FifaOfficialWorldCupCrawler, merge_field_sources
 
 
 class DummyResponse:
@@ -48,6 +50,151 @@ def test_football_data_provider_normalizes_free_tier_world_cup_matches(monkeypat
     assert fixtures[0]["status"] == "final"
     assert fixtures[0]["home_score"] == 2
     assert fixtures[0]["group"] == "Group Stage"
+
+
+def test_footballdata_io_provider_uses_bearer_key_and_redacts_validation(monkeypatch):
+    calls = []
+
+    def fake_get(url, **kwargs):
+        calls.append({"url": url, **kwargs})
+        return DummyResponse(
+            {
+                "data": [
+                    {
+                        "id": "m-100",
+                        "date": "2026-07-01",
+                        "status": "completed",
+                        "home_team": {"name": "Brazil"},
+                        "away_team": {"name": "Japan"},
+                        "score": {"home": 2, "away": 1},
+                    }
+                ],
+                "meta": {"requests_used": 4, "requests_limit": 1000},
+            }
+        )
+
+    monkeypatch.setattr(httpx, "get", fake_get)
+
+    provider = FootballDataIoProvider(key="fd_secret_key")
+    fixtures = provider.fetch_fixtures("2026-07-01")
+    validation = provider.validate()
+
+    assert calls[0]["url"] == "https://footballdata.io/api/v1/matches"
+    assert calls[0]["headers"]["Authorization"] == "Bearer fd_secret_key"
+    assert fixtures[0]["id"] == "footballdata-io-m-100"
+    assert fixtures[0]["status"] == "final"
+    assert fixtures[0]["source_priority"] == 2
+    assert validation["quota_remaining"] == 996
+    assert "fd_secret_key" not in str(validation)
+
+
+def test_fifa_parser_and_field_merge_prefer_fifa_with_conflict_warning():
+    crawler = FifaOfficialWorldCupCrawler()
+    parsed = crawler.parse_embedded_payload(
+        {
+            "matches": [
+                {
+                    "id": "400",
+                    "date": "2026-07-01",
+                    "status": "final",
+                    "homeTeam": {"name": "Brazil"},
+                    "awayTeam": {"name": "Japan"},
+                    "score": {"home": 2, "away": 1},
+                    "stats": {"possessionHome": 58},
+                    "lineup": {"home": ["A"], "away": ["B"]},
+                }
+            ],
+            "powerRankings": [
+                {"player": "Forward A", "team": "Brazil", "position": "Forward", "rating": 91}
+            ],
+        },
+        source_url="https://www.fifa.com/example",
+    )
+    merged = merge_field_sources(
+        [
+            {
+                "home_goals_90": 1,
+                "home_team": "Brazil",
+                "source": "ESPN",
+                "source_priority": 3,
+            },
+            {
+                "home_goals_90": 2,
+                "home_team": "Brazil",
+                "source": "FIFA",
+                "source_priority": 1,
+            },
+        ]
+    )
+
+    assert parsed["matches"][0]["source"] == "FIFA"
+    assert parsed["matches"][0]["match_stats"]["possessionHome"] == 58
+    assert parsed["power_rankings"][0]["player_name"] == "Forward A"
+    assert merged["fields"]["home_goals_90"]["value"] == 2
+    assert merged["warnings"][0]["field"] == "home_goals_90"
+
+
+def test_provider_registry_enriches_fixtures_with_sporttery_only():
+    class FixtureSource:
+        name = "fixture-source"
+
+        def configured(self):
+            return True
+
+        def fetch_fixtures(self, date):
+            return [
+                {
+                    "id": "fixture-1",
+                    "date": date,
+                    "kickoff": f"{date}T12:00:00Z",
+                    "home_team": "France",
+                    "away_team": "Senegal",
+                    "group": "World Cup",
+                    "venue": "test",
+                    "status": "scheduled",
+                    "home_elo": 1800,
+                    "away_elo": 1700,
+                    "market_home": None,
+                    "market_draw": None,
+                    "market_away": None,
+                }
+            ]
+
+    class ForbiddenOdds:
+        name = "forbidden"
+        role = "forbidden"
+
+        def configured(self):
+            return True
+
+        def enrich_fixtures(self, fixtures, date):
+            raise AssertionError("non-sporttery odds provider must not be called")
+
+    class SportteryOnly:
+        name = "China Sporttery"
+        role = "official_cn_odds_public_web_fallback"
+
+        def configured(self):
+            return True
+
+        def enrich_fixtures(self, fixtures, date):
+            enriched = dict(fixtures[0])
+            enriched["market_home"] = 1.8
+            enriched["market_draw"] = 3.4
+            enriched["market_away"] = 4.8
+            enriched["market_source"] = "China Sporttery live 周三001"
+            return [enriched]
+
+    registry = ProviderRegistry()
+    registry.providers = [FixtureSource()]
+    registry.odds_provider = ForbiddenOdds()
+    registry.betfair_odds_provider = ForbiddenOdds()
+    registry.sporttery_odds_provider = SportteryOnly()
+
+    source, fixtures = registry.fetch_fixtures("2026-07-01")
+
+    assert source == "fixture-source"
+    assert fixtures[0]["market_source"].startswith("China Sporttery")
 
 
 def test_espn_public_scoreboard_normalizes_no_key_events(monkeypatch):
