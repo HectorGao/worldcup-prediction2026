@@ -1,21 +1,13 @@
 {
-  "generated_at": "2026-07-01T13:20:26.932731+00:00",
+  "generated_at": "2026-07-04T08:44:40.736870+00:00",
   "source_priority": {
     "FIFA": 1,
-    "FootballData.io": 2,
-    "ESPN": 3,
-    "sporttery": 4,
-    "other": 5
+    "sportmonks": 2,
+    "FootballData.io": 3,
+    "ESPN": 4,
+    "sporttery": 5,
+    "other": 9
   },
-  "warnings": [
-    {
-      "source": "fifa",
-      "warning": "No embedded FIFA JSON payload found; dynamic API discovery may be required."
-    },
-    {
-      "source": "sporttery",
-      "warning": "Client error '403 Forbidden' for url 'https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=m&poolCode=hhad%2Chad'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403"
-    }
-  ],
+  "warnings": [],
   "note": "FIFA fields take precedence when present; conflicts are recorded here instead of silently overwriting."
 }

@@ -110,7 +110,7 @@ async function syncMatches() {
   button.textContent = '...';
   setStatus('正在获取线上真实赛果、更新球队参数并重新预测未完赛比赛...');
   try {
-    const payload = await api(`/api/results/update?fetch_online_results=true&use_xgboost=true&recalculate=true&sync_fifa=true&sync_fifa_rosters=true&sync_footballdata_io=true&sync_sporttery_odds=true&sync_sporttery_history=true&backfill_historical_matches=true&train_over25=true&date=${encodeURIComponent(date)}`, { method: 'POST' });
+    const payload = await api(`/api/results/update?fetch_online_results=true&use_xgboost=true&recalculate=true&sync_fifa=true&sync_fifa_rosters=true&sync_sportmonks=true&use_sportmonks=true&sync_footballdata_io=true&sync_sporttery_odds=true&sync_sporttery_history=true&backfill_historical_matches=true&train_over25=true&date=${encodeURIComponent(date)}`, { method: 'POST' });
     state.lastUpdateSummary = payload;
     state.matchPredictions = {};
     state.selectedPrediction = null;
@@ -224,6 +224,7 @@ function renderUpdateSummary(payload) {
   const target = document.querySelector('#daily-report');
   if (!target || !payload) return;
   const regression = payload.regression_evaluation || {};
+  const r32 = payload.r32_regression?.after || {};
   const retraining = payload.retraining || {};
   const today = payload.today_finished_matches || [];
   const advanced = payload.advanced_teams || [];
@@ -236,9 +237,10 @@ function renderUpdateSummary(payload) {
     `本届已完赛：${payload.world_cup_finished_match_count ?? 0} 场`,
     `本届世界杯数据权重：${safePercent(retraining.world_cup_data_weight)}`,
     `XGBoost：${payload.xgboost?.available ? '已导入并参与融合' : payload.xgboost?.engine || 'fallback'}`,
-    `回归检验：胜平负 ${safePercent(regression.accuracy_90)} · LogLoss ${formatNumber(regression.log_loss)} · Brier ${formatNumber(regression.brier_score)} · 进球MAE ${formatNumber(regression.goals_mae)}`
+    `回归检验：胜平负 ${safePercent(regression.accuracy_90)} · LogLoss ${formatNumber(regression.log_loss)} · Brier ${formatNumber(regression.brier_score)} · 进球MAE ${formatNumber(regression.goals_mae)}`,
+    r32.match_count ? `1/16回归：90分钟 ${safePercent(r32.accuracy_90)} · 平局召回 ${r32.draw_recall == null ? '无平局样本' : safePercent(r32.draw_recall)} · Brier ${formatNumber(r32.brier_score)}` : null
   ];
-  target.textContent = lines.join('\n');
+  target.textContent = lines.filter(Boolean).join('\n');
 }
 
 function renderSportteryRefreshSummary(payload) {
@@ -250,8 +252,27 @@ function renderSportteryRefreshSummary(payload) {
     `更新时间：${formatDateTime(payload.last_updated)}`,
     `更新本地比赛：${payload.updated ?? 0} 场`,
     `未匹配比赛：${(payload.unmatched_matches || []).length} 场`,
+    `被过滤比赛：${(payload.filtered_matches || []).length} 场`,
     ...Object.entries(grouped).map(([date, rows]) => `${date}：${rows.length} 场 ${rows.map((row) => row.match_num || `${row.home_team}-${row.away_team}`).join('、')}`),
   ];
+  if ((payload.unmatched_matches || []).length) {
+    lines.push('未匹配赔率比赛：');
+    payload.unmatched_matches.forEach((row) => {
+      lines.push(`- ${row.match_num || '-'} ${row.home_team || '-'} vs ${row.away_team || '-'}：${row.reason || 'no_local_fixture_match'}`);
+    });
+  }
+  if ((payload.filtered_matches || []).length) {
+    lines.push('被过滤赔率比赛：');
+    payload.filtered_matches.forEach((row) => {
+      lines.push(`- ${row.match_num || '-'} ${row.home_team || '-'} vs ${row.away_team || '-'}：${row.reason || 'unknown'}`);
+    });
+  }
+  if ((payload.match_results || []).length) {
+    lines.push('赔率匹配明细：');
+    payload.match_results.forEach((row) => {
+      lines.push(`- ${row.match_num || '-'} ${row.home_team || '-'} vs ${row.away_team || '-'}：${row.status || '-'} / ${row.reason || '-'}`);
+    });
+  }
   if (payload.last_error) {
     lines.push(`失败原因：${payload.last_error}`);
   }
@@ -297,6 +318,10 @@ function renderRoundRegressionSummary(payload = state.roundRegressionSummary) {
     return;
   }
   const evaluation = payload.regression_evaluation || {};
+  const r32 = payload.r32_regression || {};
+  const r32After = r32.after || {};
+  const r32Before = r32.before || {};
+  const r32Weights = r32.blend_weights || {};
   const predictions = payload.current_sporttery_predictions?.length
     ? payload.current_sporttery_predictions
     : (payload.unfinished_predictions || []).slice(0, 12);
@@ -312,6 +337,14 @@ function renderRoundRegressionSummary(payload = state.roundRegressionSummary) {
         <span>Brier ${formatNumber(evaluation.brier_score)}</span>
       </div>
     </div>
+    ${r32.after ? `
+      <div class="regression-r32-summary">
+        <strong>1/16淘汰赛90分钟回归</strong>
+        <span>优化前 ${safePercent(r32Before.accuracy_90)} · 优化后 ${safePercent(r32After.accuracy_90)}</span>
+        <span>平局召回 ${r32After.draw_recall == null ? '无平局样本' : safePercent(r32After.draw_recall)} · LogLoss ${formatNumber(r32After.log_loss)} · Brier ${formatNumber(r32After.brier_score)}</span>
+        <small>权重 Poisson ${safePercent(r32Weights.poisson)} · Monte Carlo ${safePercent(r32Weights.monte_carlo)} · XGBoost ${safePercent(r32Weights.xgboost)} · 市场 ${safePercent(r32Weights.market)} · 平局校准 ${safePercent(r32Weights.draw_adjustment)}</small>
+      </div>
+    ` : ''}
     <div class="regression-grid">
       ${predictions.length ? predictions.map(regressionPredictionCard).join('') : '<div class="empty-state">暂无未完赛比赛可预测。</div>'}
     </div>
@@ -609,7 +642,7 @@ async function loadReport() {
 }
 
 async function loadRankings() {
-  const payload = await api('/api/teams/rankings');
+  const payload = await api('/api/teams/rankings?alive_only=true');
   const rows = payload.teams.slice(0, 12);
   document.querySelector('#team-rankings').innerHTML =
     rows.length === 0
@@ -1207,6 +1240,7 @@ function renderTeamDetail(detail) {
       </section>
       <section>
         <h3>阵容与能力值</h3>
+        ${strengthCard(teamDisplay({ team: detail.team, team_zh: detail.display?.zh, flag: detail.display?.flag }), detail.squad_strength || {})}
         <div class="coach-line">球员 ${detail.coverage.players} · 能力值 ${detail.coverage.players_with_ability} · FIFA power ${detail.coverage.players_with_fifa_power || 0} · 源能力 ${detail.coverage.players_with_source_ability ?? detail.coverage.players_with_ability} · 估算 ${detail.coverage.players_with_estimated_ability || 0} · 已知俱乐部 ${detail.coverage.players_with_club}</div>
         ${powerRows ? `<div class="player-table power-ranking-table">${powerRows}</div>` : ''}
         <div class="player-table">${playerRows || '<div class="empty-state">暂无球员数据</div>'}</div>
@@ -1335,14 +1369,18 @@ function renderPrediction(prediction, analysis = null) {
       <section ${predictionSectionAttrs('score')}>
         <div class="section-title">
           <h3>比分概率</h3>
-          <div class="section-title-actions"><span>Top 6 与 0-7 热力图</span>${predictionSectionToggle('score')}</div>
+          <div class="section-title-actions"><span>${teamDisplay(fixture, 'home')} vs ${teamDisplay(fixture, 'away')} · Top 6 与 0-7 热力图</span>${predictionSectionToggle('score')}</div>
         </div>
+        <div class="score-match-title">${teamDisplay(fixture, 'home')} vs ${teamDisplay(fixture, 'away')}</div>
         <div class="score-grid">
           ${prediction.top_scorelines
             .map((item) => `<div class="score-item"><strong>${item.score}</strong><span>${formatPercent(item.probability)}</span></div>`)
             .join('')}
         </div>
-        ${scoreHeatmap(prediction.score_heatmap || { matrix: prediction.score_matrix }, prediction.handicap_analysis)}
+        ${scoreHeatmap(prediction.score_heatmap || { matrix: prediction.score_matrix }, prediction.handicap_analysis, {
+          homeLabel: teamDisplay(fixture, 'home'),
+          awayLabel: teamDisplay(fixture, 'away'),
+        })}
       </section>
 
       <section ${predictionSectionAttrs('monte-carlo', true)}>
@@ -1758,8 +1796,10 @@ function bar(label, value, className) {
   `;
 }
 
-function scoreHeatmap(heatmap, handicapAnalysis = {}) {
+function scoreHeatmap(heatmap, handicapAnalysis = {}, teams = {}) {
   const matrix = Array.isArray(heatmap) ? heatmap : heatmap?.matrix || [];
+  const homeLabel = teams.homeLabel || '主队';
+  const awayLabel = teams.awayLabel || '客队';
   const handicapRegions = heatmap?.handicap_regions || {};
   const cells = new Map(matrix.map((item) => [`${item.home_goals}-${item.away_goals}`, item.probability]));
   const goals = scoreHeatmapGoals(matrix);
@@ -1777,6 +1817,10 @@ function scoreHeatmap(heatmap, handicapAnalysis = {}) {
     {};
   return `
     <div class="heatmap-wrap" aria-label="比分概率热力图，颜色越暖代表概率越高">
+      <div class="heatmap-axis-title">
+        <strong>${escapeAttr(homeLabel)} vs ${escapeAttr(awayLabel)}</strong>
+        <span>横轴：客队进球（${escapeAttr(awayLabel)}） · 纵轴：主队进球（${escapeAttr(homeLabel)}）</span>
+      </div>
       ${handicapLine !== undefined && handicapLine !== null ? `
         <div class="heatmap-handicap-note">
           <b>让球区域 ${formatHandicapLine(handicapLine)}</b>
@@ -1786,11 +1830,11 @@ function scoreHeatmap(heatmap, handicapAnalysis = {}) {
         </div>
       ` : ''}
       <div class="heatmap" style="--heatmap-goals: ${goals.length}">
-        <div class="heatmap-head"></div>
-        ${goals.map((goal) => `<div class="heatmap-head">客 ${goal}</div>`).join('')}
+        <div class="heatmap-head heatmap-corner">主队进球<br>${escapeAttr(homeLabel)}</div>
+        ${goals.map((goal) => `<div class="heatmap-head">客队进球<br>${escapeAttr(awayLabel)} ${goal}</div>`).join('')}
         ${goals
           .map((home) => {
-            const row = [`<div class="heatmap-head">主 ${home}</div>`];
+            const row = [`<div class="heatmap-head">主队进球<br>${escapeAttr(homeLabel)} ${home}</div>`];
             goals.forEach((away) => {
               const probability = cells.get(`${home}-${away}`) || 0;
               const level = heatLevel(probability, maxProbability);
@@ -1862,25 +1906,28 @@ function profileCard(teamName, profile = {}) {
 function strengthCard(label, strength = {}) {
   const fallback = strength.fallback_fields || [];
   const source = strength.paper_strength_source || strength.source || 'fallback';
+  const baseline = strength.strength_baseline || '50 = 本届世界杯48队平均水平';
   return `
     <div class="metric-card profile-card strength-card">
       <strong>${label}</strong>
-      ${miniMeter('进攻', strength.attack_line_strength ?? strength.attack_strength ?? 65)}
-      ${miniMeter('中场', strength.midfield_line_strength ?? strength.midfield_control_strength ?? 65)}
-      ${miniMeter('后防', strength.defense_line_strength ?? strength.defense_gk_strength ?? 65)}
-      ${miniMeter('门将', strength.goalkeeper_strength ?? strength.defense_gk_strength ?? 65)}
-      <small>来源 ${source} · 覆盖率 ${formatPercent(strength.coverage ?? 0)} · 待补 ${(strength.missing_player_stats ?? 0)} 人${fallback.length ? ` · fallback ${fallback.length} 项` : ''}</small>
+      <small class="strength-baseline">${baseline}</small>
+      ${miniMeter('进攻', strength.attack_line_strength ?? strength.attack_strength ?? 50)}
+      ${miniMeter('中场', strength.midfield_line_strength ?? strength.midfield_control_strength ?? 50)}
+      ${miniMeter('后防', strength.defense_line_strength ?? strength.defense_gk_strength ?? 50)}
+      ${miniMeter('门将', strength.goalkeeper_strength ?? strength.defense_gk_strength ?? 50)}
+      <small>来源 ${source} · 覆盖率 ${formatPercent(strength.coverage ?? 0)} · 置信 ${formatPercent(strength.model_confidence ?? strength.coverage ?? 0)} · 待补 ${(strength.missing_player_stats ?? 0)} 人${fallback.length ? ` · fallback ${fallback.length} 项` : ''}</small>
     </div>
   `;
 }
 
 function miniMeter(label, value) {
   const numeric = Number(value);
-  const quality = numeric >= 85 ? 'elite' : numeric >= 75 ? 'strong' : numeric >= 65 ? 'medium' : 'weak';
+  const quality = numeric >= 65 ? 'elite' : numeric >= 55 ? 'strong' : numeric >= 45 ? 'medium' : numeric >= 35 ? 'weak' : 'very-weak';
+  const width = ((Math.min(85, Math.max(30, numeric)) - 30) / 55) * 100;
   return `
     <div class="mini-meter strength-${quality}">
       <span>${label}</span>
-      <div class="bar-track"><div class="bar-fill home-fill" style="width:${Math.min(100, Math.max(0, numeric))}%"></div></div>
+      <div class="bar-track"><div class="bar-fill home-fill" style="width:${width}%"></div></div>
       <strong>${numeric.toFixed(1)}</strong>
     </div>
   `;

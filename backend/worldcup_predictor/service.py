@@ -31,7 +31,7 @@ from .prediction.dixon_coles import (
     top_scorelines,
     totals_probability,
 )
-from .prediction.ensemble import EnsembleConfig, blend_probabilities
+from .prediction.ensemble import EnsembleConfig, blend_probabilities, normalize_outcomes
 from .prediction.handicap import handicap_probabilities, handicap_value_analysis, parse_handicap_line
 from .prediction.learning import apply_learning_to_lambdas, rolling_worldcup_adjustment
 from .prediction.market import analyze_value, kelly_fraction, market_bundle, market_from_decimal_odds, unavailable_market
@@ -44,11 +44,13 @@ from .prediction.xgboost_model import (
     build_features,
     estimate_xgboost_prediction,
     monte_carlo_feature_proxy,
+    stage_bucket_for_fixture,
     train_xgboost_layer,
 )
 from .prediction.weight_calibration import calibrate_model_weights, default_weight_run
 from .result_sync import (
     collect_world_cup_finished_matches,
+    evaluate_round_of_32_regression,
     evaluate_world_cup_regression,
     fetch_latest_finished_matches,
     retrain_team_ratings_from_world_cup,
@@ -130,6 +132,84 @@ class WorldCupService:
             "fixture_count": len(fixtures),
             "meta": getattr(provider, "last_meta", {}),
             "warnings": warnings,
+        }
+
+    def sync_sportmonks(self, date: str | None = None) -> dict[str, Any]:
+        provider = getattr(self.providers, "sportmonks_provider", None)
+        if provider is None:
+            provider = next((item for item in self.providers.providers if getattr(item, "name", "") == "SportMonks"), None)
+        if provider is None or not provider.configured():
+            return {
+                "source": "sportmonks",
+                "source_priority": 2,
+                "configured": False,
+                "fixtures": [],
+                "warnings": ["SPORTMONKS_API_KEY not set"],
+            }
+        target_date = date or datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
+        try:
+            fixtures = provider.fetch_fixtures(target_date)
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            return {
+                "source": "sportmonks",
+                "source_priority": 2,
+                "configured": True,
+                "fixtures": [],
+                "warnings": [str(exc)],
+            }
+        supplemental: dict[str, Any] = {"teams": [], "players": [], "livescores": []}
+        supplemental_warnings: list[str] = []
+        for key, fetcher in (
+            ("teams", getattr(provider, "fetch_teams", None)),
+            ("players", getattr(provider, "fetch_players", None)),
+            ("livescores", getattr(provider, "fetch_livescores", None)),
+        ):
+            if not fetcher:
+                continue
+            try:
+                rows = fetcher()
+                supplemental[key] = rows[:50] if isinstance(rows, list) else []
+            except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                supplemental_warnings.append(f"{key}: {exc}")
+        for fixture in fixtures:
+            self.db.save_raw_provider_payload("sportmonks", fixture, fixture_id=fixture.get("id"))
+            self.db.upsert_fixture(fixture)
+            for field in (
+                "home_score",
+                "away_score",
+                "status",
+                "sportmonks_features",
+                "sportmonks_lineups",
+                "sportmonks_statistics",
+                "sportmonks_sidelined",
+                "sportmonks_standings",
+            ):
+                if fixture.get(field) is not None:
+                    self.db.save_field_source(
+                        entity_type="match",
+                        entity_id=fixture["id"],
+                        field_name=field,
+                        value=fixture.get(field),
+                        source="sportmonks",
+                        source_priority=2,
+                        source_id=fixture.get("source_id"),
+                    )
+        for key, rows in supplemental.items():
+            for row in rows[:10]:
+                source_id = str(row.get("id") or row.get("source_id") or "") if isinstance(row, dict) else None
+                self.db.save_raw_provider_payload(f"sportmonks_{key}", row if isinstance(row, dict) else {"value": row}, fixture_id=source_id)
+        return {
+            "source": "sportmonks",
+            "source_priority": 2,
+            "configured": True,
+            "fixtures": fixtures,
+            "fixture_count": len(fixtures),
+            "teams_count": len(supplemental["teams"]),
+            "players_count": len(supplemental["players"]),
+            "livescores_count": len(supplemental["livescores"]),
+            "normalized_count": len(fixtures),
+            "rate_limit": getattr(provider, "last_rate_limit", {}),
+            "warnings": list(getattr(provider, "capability_warnings", [])) + supplemental_warnings,
         }
 
     def sync_fifa_official_data(self, date: str | None = None) -> dict[str, Any]:
@@ -430,6 +510,8 @@ class WorldCupService:
         sync_footballdata_io: bool = False,
         sync_sporttery_odds: bool = False,
         sync_sporttery_history: bool = False,
+        sync_sportmonks: bool = False,
+        use_sportmonks: bool = False,
         backfill_historical_matches: bool = False,
         train_over25: bool = False,
     ) -> dict[str, Any]:
@@ -453,6 +535,7 @@ class WorldCupService:
             sporttery_sync = self.refresh_sporttery_odds()
         external_data = {
             "fifa": self.sync_fifa_official_data(date=target_date if not sync_fifa_rosters else None) if sync_fifa or sync_fifa_rosters else None,
+            "sportmonks": self.sync_sportmonks(date=target_date) if sync_sportmonks or use_sportmonks else None,
             "footballdata_io": self.sync_footballdata_io(date=target_date) if sync_footballdata_io else None,
             "sporttery": sporttery_sync,
         }
@@ -465,8 +548,11 @@ class WorldCupService:
         )
         print("[INFO] Finished matches synced.")
         all_world_cup_matches = collect_world_cup_finished_matches(self.db)
+        weight_scheme_comparison = self.compare_world_cup_weight_schemes(all_world_cup_matches)
+        selected_world_cup_weight = (weight_scheme_comparison.get("selected_scheme") or {}).get("current_world_cup")
         print("[INFO] Retraining team ratings from all finished World Cup matches.")
-        retraining = self._retrain_ratings_from_world_cup(all_world_cup_matches)
+        retraining = self._retrain_ratings_from_world_cup(all_world_cup_matches, world_cup_weight=selected_world_cup_weight)
+        retraining["weight_scheme_comparison"] = weight_scheme_comparison
         over25_retraining = self.train_over25_parameters(start_date="2026-06-23") if train_over25 else None
         self._xgboost_model_cache.clear()
         print("[INFO] Updating knockout bracket from real winners.")
@@ -491,6 +577,7 @@ class WorldCupService:
         print("[INFO] Recalculating all remaining knockout matches.")
         predictions = self._updated_prediction_rows(recalculate=recalculate, teams=teams)
         regression_evaluation = self._evaluate_world_cup_regression(all_world_cup_matches)
+        r32_regression = self.run_round_of_32_regression(output_dir=output_dir, before_matches=all_world_cup_matches)
         advanced_teams = sorted(
             {
                 str(match.get("winner"))
@@ -519,6 +606,7 @@ class WorldCupService:
             "sync": sync_result,
             "historical_backfill": historical_backfill,
             "ratings": retraining,
+            "weight_scheme_comparison": weight_scheme_comparison,
             "over25_retraining": over25_retraining,
             "squad_strength_update": squad_strength_update,
             "bracket_validation": bracket_validation,
@@ -526,28 +614,60 @@ class WorldCupService:
             "external_data": external_data,
             "source_priority": {
                 "FIFA": 1,
-                "FootballData.io": 2,
-                "ESPN": 3,
-                "sporttery": 4,
-                "other": 5,
+                "sportmonks": 2,
+                "FootballData.io": 3,
+                "ESPN": 4,
+                "sporttery": 5,
+                "other": 9,
             },
             "regression_evaluation": {
                 key: value
                 for key, value in regression_evaluation.items()
                 if key != "per_match_errors"
             },
+            "r32_regression": {
+                key: value for key, value in r32_regression.items() if key != "per_match_errors"
+            },
         }
+        team_ratings_with_strength = []
+        for profile in sorted(teams.values(), key=lambda item: item.get("elo", 0), reverse=True):
+            enriched_profile = dict(profile)
+            strength = self.db.get_squad_strength(str(profile.get("team") or ""))
+            if strength:
+                enriched_profile["squad_strength"] = strength
+                for field in (
+                    "attack_line_strength",
+                    "midfield_line_strength",
+                    "defense_line_strength",
+                    "goalkeeper_strength",
+                    "squad_overall_strength",
+                    "starting_xi_strength",
+                    "bench_strength",
+                    "strength_baseline",
+                    "paper_strength_source",
+                    "line_strength_source",
+                    "model_version",
+                ):
+                    if field in strength:
+                        enriched_profile[field] = strength[field]
+            team_ratings_with_strength.append(enriched_profile)
         outputs = write_prediction_outputs(
             output_dir=Path(output_dir),
             predictions=predictions,
             bracket=bracket,
-            team_ratings=sorted(teams.values(), key=lambda item: item.get("elo", 0), reverse=True),
+            team_ratings=team_ratings_with_strength,
             result_sync_log=result_sync_log,
             regression_evaluation=regression_evaluation,
             model_retraining_report=retraining,
         )
+        outputs["r32_result_90_error_analysis_json"] = str(Path(output_dir) / "r32_result_90_error_analysis.json")
+        outputs["r32_regression_metrics_before_after_json"] = str(Path(output_dir) / "r32_regression_metrics_before_after.json")
+        scheme_path = Path(output_dir) / "world_cup_weight_scheme_comparison.json"
+        scheme_path.write_text(json.dumps(weight_scheme_comparison, ensure_ascii=False, indent=2), encoding="utf-8")
+        outputs["world_cup_weight_scheme_comparison_json"] = str(scheme_path)
         extra_outputs = self._write_external_source_outputs(Path(output_dir), external_data, result_sync_log)
         outputs.update(extra_outputs)
+        outputs.update(self._write_squad_strength_outputs(Path(output_dir)))
         print("[INFO] Saved updated predictions.")
         print("[INFO] Validation completed.")
         return {
@@ -560,9 +680,11 @@ class WorldCupService:
             "historical_backfill": historical_backfill,
             "ratings": retraining,
             "retraining": retraining,
+            "weight_scheme_comparison": weight_scheme_comparison,
             "over25_retraining": over25_retraining,
             "squad_strength_update": squad_strength_update,
             "regression_evaluation": regression_evaluation,
+            "r32_regression": r32_regression,
             "bracket": bracket,
             "bracket_validation": bracket_validation,
             "xgboost": xgb_status,
@@ -580,6 +702,7 @@ class WorldCupService:
         output_dir.mkdir(parents=True, exist_ok=True)
         sync_log = output_dir / "external_data_sync_log.json"
         conflict_report = output_dir / "source_conflict_report.json"
+        sportmonks_log = output_dir / "sportmonks_sync_log.json"
         warnings = []
         for source_name, payload in (external_data or {}).items():
             if not payload:
@@ -589,6 +712,8 @@ class WorldCupService:
             if payload.get("last_error"):
                 warnings.append({"source": source_name, "warning": payload["last_error"]})
         sync_log.write_text(json.dumps(external_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        if (external_data or {}).get("sportmonks"):
+            sportmonks_log.write_text(json.dumps(external_data["sportmonks"], ensure_ascii=False, indent=2), encoding="utf-8")
         conflict_report.write_text(
             json.dumps(
                 {
@@ -602,10 +727,13 @@ class WorldCupService:
             ),
             encoding="utf-8",
         )
-        return {
+        outputs = {
             "external_data_sync_log_json": str(sync_log),
             "source_conflict_report_json": str(conflict_report),
         }
+        if sportmonks_log.exists():
+            outputs["sportmonks_sync_log_json"] = str(sportmonks_log)
+        return outputs
 
     def _fetch_reference_finished_matches(self, target_date: str) -> list[dict[str, Any]]:
         try:
@@ -635,8 +763,25 @@ class WorldCupService:
     def _lyihub_finished_match_payload(self, match: dict[str, Any]) -> dict[str, Any]:
         home_score = match.get("home_score")
         away_score = match.get("away_score")
+        full_score = self._lyihub_full_score(match)
+        home_penalties = away_penalties = None
+        decided_by_penalties = False
         winner = loser = None
-        if home_score is not None and away_score is not None and home_score != away_score:
+        if (
+            home_score is not None
+            and away_score is not None
+            and home_score == away_score
+            and full_score["home"] is not None
+            and full_score["away"] is not None
+            and full_score["home"] != full_score["away"]
+            and max(int(full_score["home"]), int(full_score["away"])) >= 3
+        ):
+            decided_by_penalties = True
+            home_penalties = full_score["home"]
+            away_penalties = full_score["away"]
+            winner = match["home_team"] if home_penalties > away_penalties else match["away_team"]
+            loser = match["away_team"] if winner == match["home_team"] else match["home_team"]
+        elif home_score is not None and away_score is not None and home_score != away_score:
             winner = match["home_team"] if home_score > away_score else match["away_team"]
             loser = match["away_team"] if winner == match["home_team"] else match["home_team"]
         return {
@@ -649,17 +794,27 @@ class WorldCupService:
             "away_goals_90": away_score,
             "home_goals_extra_time": None,
             "away_goals_extra_time": None,
-            "home_penalties": None,
-            "away_penalties": None,
+            "home_penalties": home_penalties,
+            "away_penalties": away_penalties,
             "winner": winner,
             "loser": loser,
             "is_finished": True,
             "decided_by_extra_time": False,
-            "decided_by_penalties": False,
+            "decided_by_penalties": decided_by_penalties,
             "source": "lyihub_worldcup_static_json",
             "source_url": match.get("source_url"),
             "fetched_at": datetime.now(timezone.utc).isoformat(),
         }
+
+    def _lyihub_full_score(self, match: dict[str, Any]) -> dict[str, int | None]:
+        payload = match.get("payload") if isinstance(match.get("payload"), dict) else {}
+        detail_match = (match.get("detail") or {}).get("match", {}) if isinstance(match.get("detail"), dict) else {}
+        for candidate in (payload, detail_match):
+            for key in ("score_full", "score"):
+                score = candidate.get(key)
+                if isinstance(score, dict) and score.get("team_a") is not None and score.get("team_b") is not None:
+                    return {"home": score.get("team_a"), "away": score.get("team_b")}
+        return {"home": match.get("home_score"), "away": match.get("away_score")}
 
     def sync_round_overview(self, date: str | None = None) -> dict[str, Any]:
         requested_date = date or datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
@@ -720,6 +875,7 @@ class WorldCupService:
         self._xgboost_model_cache.clear()
         weight_run = self.recalibrate_model_weights(effective_date)
         regression_evaluation = self._evaluate_world_cup_regression(finished_matches)
+        r32_regression = self.run_round_of_32_regression(before_matches=finished_matches)
         unfinished_predictions = self._unfinished_prediction_briefs(before=before)
         current_sporttery_predictions = [
             item
@@ -739,6 +895,7 @@ class WorldCupService:
             "retraining": retraining,
             "model_weight_run": weight_run,
             "regression_evaluation": regression_evaluation,
+            "r32_regression": r32_regression,
             "unfinished_predictions": unfinished_predictions,
             "current_sporttery_predictions": current_sporttery_predictions,
         }
@@ -898,15 +1055,81 @@ class WorldCupService:
             "away": round(away + draw * 0.5, 6),
         }
 
-    def _retrain_ratings_from_world_cup(self, finished_matches: list[dict[str, Any]]) -> dict[str, Any]:
+    def _retrain_ratings_from_world_cup(self, finished_matches: list[dict[str, Any]], world_cup_weight: float | None = None) -> dict[str, Any]:
         teams = {profile["team"]: profile for profile in self.db.list_team_profiles()}
-        result = retrain_team_ratings_from_world_cup(finished_matches, teams)
+        result = retrain_team_ratings_from_world_cup(finished_matches, teams, world_cup_weight_override=world_cup_weight)
         for team, profile in result["teams"].items():
             self.db.save_team_profile(team, profile)
         report = dict(result)
         report["team_count"] = len(result["teams"])
         report["teams"] = sorted(result["teams"].values(), key=lambda item: item.get("elo", 0), reverse=True)
         return report
+
+    def compare_world_cup_weight_schemes(self, finished_matches: list[dict[str, Any]]) -> dict[str, Any]:
+        schemes = {
+            "scheme_1": {"current_world_cup": 0.70, "historical": 0.20, "market": 0.10},
+            "scheme_2": {"current_world_cup": 0.75, "historical": 0.15, "market": 0.10},
+            "scheme_3": {"current_world_cup": 0.80, "historical": 0.10, "market": 0.10},
+            "scheme_4": {"current_world_cup": 0.85, "historical": 0.10, "market": 0.05},
+        }
+        prior_profiles = {profile["team"]: profile for profile in self.db.list_team_profiles()}
+        evaluated: dict[str, Any] = {}
+        for name, scheme in schemes.items():
+            retrained = retrain_team_ratings_from_world_cup(
+                finished_matches,
+                prior_profiles,
+                world_cup_weight_override=scheme["current_world_cup"],
+            )
+            predictions = {
+                str(match.get("match_id") or ""): self._fallback_regression_prediction_with_profiles(
+                    match,
+                    retrained["teams"],
+                    apply_stage_adjustment=True,
+                )
+                for match in finished_matches
+                if match.get("match_id")
+            }
+            metrics = evaluate_world_cup_regression(finished_matches, predictions)
+            evaluated[name] = {
+                **scheme,
+                "metrics": {key: value for key, value in metrics.items() if key != "per_match_errors"},
+                "selection_score": self._weight_scheme_score(metrics),
+            }
+        has_knockout = any(self._is_knockout_stage(match.get("stage") or match.get("group")) for match in finished_matches)
+        target_weight = 0.80 if has_knockout else 0.75
+        selected_name = (
+            min(
+                evaluated,
+                key=lambda key: (
+                    round(float(evaluated[key]["selection_score"]), 5),
+                    abs(float(evaluated[key]["current_world_cup"]) - target_weight),
+                ),
+            )
+            if evaluated
+            else None
+        )
+        selected = {"name": selected_name, **evaluated[selected_name]} if selected_name else {}
+        return {
+            "schemes": evaluated,
+            "selected_scheme": selected,
+            "selection_policy": "minimize log_loss + brier + calibration_error + goal error, with small rewards for accuracy and over2.5 accuracy",
+            "tie_break_target_world_cup_weight": target_weight,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+    def _weight_scheme_score(self, metrics: dict[str, Any]) -> float:
+        accuracy = float(metrics.get("accuracy_90") or 0.0)
+        over25 = float(metrics.get("over25_accuracy") or 0.0)
+        return round(
+            float(metrics.get("log_loss") or 0.0)
+            + float(metrics.get("brier_score") or 0.0)
+            + float(metrics.get("calibration_error") or 0.0)
+            + 0.15 * float(metrics.get("goals_mae") or 0.0)
+            + 0.08 * float(metrics.get("goals_rmse") or 0.0)
+            - 0.35 * accuracy
+            - 0.15 * over25,
+            6,
+        )
 
     def _is_knockout_stage(self, stage: Any) -> bool:
         value = str(stage or "").lower()
@@ -1004,11 +1227,112 @@ class WorldCupService:
                 predictions[match_id] = prediction
         return evaluate_world_cup_regression(matches, predictions)
 
-    def _prediction_for_finished_match(self, match: dict[str, Any]) -> dict[str, Any] | None:
-        return self._fallback_regression_prediction(match)
+    def run_round_of_32_regression(
+        self,
+        *,
+        output_dir: str | Path = "outputs",
+        before_matches: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        matches = before_matches or collect_world_cup_finished_matches(self.db)
+        legacy_matches = self._legacy_full_score_r32_matches(matches)
+        before_predictions = self._stage_regression_predictions(legacy_matches, apply_stage_adjustment=False)
+        before_metrics = evaluate_round_of_32_regression(legacy_matches, before_predictions)
+        self._xgboost_model_cache.clear()
+        after_predictions = self._stage_regression_predictions(matches, apply_stage_adjustment=True)
+        after_metrics = evaluate_round_of_32_regression(matches, after_predictions)
+        payload = {
+            "stage": "round_of_32",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "blend_weights": {
+                **self._stage_blend_weights({"group": "1/16决赛"}, {}),
+                "draw_adjustment": 0.05,
+            },
+            "before": {key: value for key, value in before_metrics.items() if key != "per_match_errors"},
+            "after": {key: value for key, value in after_metrics.items() if key != "per_match_errors"},
+            "per_match_errors": after_metrics.get("per_match_errors", []),
+            "notes": [
+                "before 使用旧版 full-score/row-score 口径，用于暴露点球或全场比分污染；after 使用修正后的90分钟比分口径。",
+                "90分钟胜平负只使用 home_goals_90 / away_goals_90；加时和点球只用于晋级字段。",
+                "draw_recall 仅统计真实90分钟平局样本；点球胜者不计为90分钟胜者。",
+            ],
+        }
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        (output_path / "r32_result_90_error_analysis.json").write_text(
+            json.dumps(
+                {
+                    "generated_at": payload["generated_at"],
+                    "stage": payload["stage"],
+                    "match_count": after_metrics.get("match_count", 0),
+                    "per_match_errors": after_metrics.get("per_match_errors", []),
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        (output_path / "r32_regression_metrics_before_after.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return payload
 
-    def _fallback_regression_prediction(self, match: dict[str, Any]) -> dict[str, Any]:
+    def _legacy_full_score_r32_matches(self, matches: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        lyihub_by_id = {str(row.get("match_id") or row.get("id")): row for row in self.db.list_lyihub_matches()}
+        legacy_matches: list[dict[str, Any]] = []
+        for match in matches:
+            legacy = dict(match)
+            if stage_bucket_for_fixture({"group": match.get("stage") or match.get("group")}) != "round_of_32":
+                legacy_matches.append(legacy)
+                continue
+            row = lyihub_by_id.get(str(match.get("match_id") or "").replace("lyihub-", ""))
+            if not row:
+                legacy_matches.append(legacy)
+                continue
+            full_score = self._lyihub_full_score(row)
+            if full_score["home"] is None or full_score["away"] is None:
+                legacy_matches.append(legacy)
+                continue
+            if full_score["home"] == match.get("home_goals_90") and full_score["away"] == match.get("away_goals_90"):
+                legacy_matches.append(legacy)
+                continue
+            legacy["home_goals_90"] = full_score["home"]
+            legacy["away_goals_90"] = full_score["away"]
+            legacy["decided_by_penalties"] = False
+            if full_score["home"] != full_score["away"]:
+                legacy["winner"] = legacy["home_team"] if full_score["home"] > full_score["away"] else legacy["away_team"]
+                legacy["loser"] = legacy["away_team"] if legacy["winner"] == legacy["home_team"] else legacy["home_team"]
+            legacy["score_source"] = "legacy_full_score"
+            legacy_matches.append(legacy)
+        return legacy_matches
+
+    def _stage_regression_predictions(self, matches: list[dict[str, Any]], *, apply_stage_adjustment: bool) -> dict[str, dict[str, Any]]:
+        predictions: dict[str, dict[str, Any]] = {}
+        for match in matches:
+            match_id = str(match.get("match_id") or "")
+            if not match_id:
+                continue
+            predictions[match_id] = self._prediction_for_finished_match(match, apply_stage_adjustment=apply_stage_adjustment)
+        return predictions
+
+    def _prediction_for_finished_match(self, match: dict[str, Any], *, apply_stage_adjustment: bool = True) -> dict[str, Any] | None:
+        return self._fallback_regression_prediction(match, apply_stage_adjustment=apply_stage_adjustment)
+
+    def _fallback_regression_prediction(self, match: dict[str, Any], *, apply_stage_adjustment: bool = True) -> dict[str, Any]:
         profiles = {profile["team"]: profile for profile in self.db.list_team_profiles()}
+        return self._fallback_regression_prediction_with_profiles(
+            match,
+            profiles,
+            apply_stage_adjustment=apply_stage_adjustment,
+        )
+
+    def _fallback_regression_prediction_with_profiles(
+        self,
+        match: dict[str, Any],
+        profiles: dict[str, dict[str, Any]],
+        *,
+        apply_stage_adjustment: bool = True,
+    ) -> dict[str, Any]:
         home = profiles.get(str(match.get("home_team"))) or {}
         away = profiles.get(str(match.get("away_team"))) or {}
         home_strength = float(home.get("strength_rating") or home.get("elo") or 1700)
@@ -1029,13 +1353,33 @@ class WorldCupService:
             "away": math.exp(away_logit - max_logit),
         }
         total = sum(exps.values())
+        probabilities = {key: value / total for key, value in exps.items()}
+        draw_adjustment = {"applied": False, "weight": 0.0, "probabilities": probabilities}
+        if apply_stage_adjustment:
+            draw_adjustment = self._stage_draw_adjustment(
+                fixture={
+                    "group": match.get("stage") or match.get("group"),
+                    "home_team": match.get("home_team"),
+                    "away_team": match.get("away_team"),
+                },
+                probabilities=probabilities,
+                home_profile=home,
+                away_profile=away,
+                market_payload={"available": False},
+            )
+        if apply_stage_adjustment and draw_adjustment.get("applied"):
+            probabilities = draw_adjustment["probabilities"]
         return {
             "fixture": {
                 "home_team": match.get("home_team"),
                 "away_team": match.get("away_team"),
             },
-            "probabilities": {key: value / total for key, value in exps.items()},
+            "probabilities": probabilities,
             "expected_goals": {"home": home_xg, "away": away_xg},
+            "stage_calibration": {
+                "stage": stage_bucket_for_fixture({"group": match.get("stage") or match.get("group")}),
+                "draw_adjustment": draw_adjustment,
+            },
         }
 
     def _xgboost_sample_summary(self, date: str) -> dict[str, Any]:
@@ -1053,7 +1397,7 @@ class WorldCupService:
             "min_weight": round(min(weights), 6),
             "max_weight": round(max(weights), 6),
             "mean_weight": round(sum(weights) / len(weights), 6),
-            "world_cup_weight_policy": "group=4.0 knockout=5.0 historical=0.75",
+            "world_cup_weight_policy": "wc2026_r32=4.0 wc2026_other=3.0 historical_knockout=1.2 historical_other=0.5",
         }
 
     def _finished_output_row(self, row: dict[str, Any], result: dict[str, Any] | None) -> dict[str, Any]:
@@ -1169,16 +1513,28 @@ class WorldCupService:
             if not fixture:
                 unmatched.append(event)
             grouped.setdefault(str(event.get("date") or "unknown"), []).append(event)
-        updated = self._upsert_sporttery_events(events)
+        upsert_summary = self._upsert_sporttery_events(events)
+        updated = upsert_summary["updated"]
+        mode = "live" if events else "empty_live"
+        print(
+            "[INFO] Sporttery odds refresh: "
+            f"fetched={len(events)} matched={updated} "
+            f"unmatched={len(unmatched)} filtered={len(upsert_summary['filtered_matches'])}"
+        )
         return {
             "source": "https://m.sporttery.cn/mjc/jsq/zqspf/",
-            "mode": "live",
+            "mode": mode,
             "updated": updated,
             "cleared_non_sporttery_markets": cleared,
             "sample_count": len(events),
             "last_updated": fetched_at,
             "grouped_by_date": grouped,
             "unmatched_matches": unmatched,
+            "matched_count": updated,
+            "failed_count": 0,
+            "filtered_matches": upsert_summary["filtered_matches"],
+            "match_results": upsert_summary["match_results"],
+            "empty_reason": "sporttery current page returned no matches" if not events else None,
             "history": history,
         }
 
@@ -1201,7 +1557,8 @@ class WorldCupService:
                 "covered_dates": [],
                 "reason": str(exc),
             }
-        updated = self._upsert_sporttery_events(events)
+        upsert_summary = self._upsert_sporttery_events(events)
+        updated = upsert_summary["updated"]
         for event in events:
             event["is_historical"] = True
             fixture = self._fixture_for_sporttery_event(event)
@@ -1209,22 +1566,49 @@ class WorldCupService:
         return {
             "history_available": bool(events),
             "updated": updated,
+            "filtered_matches": upsert_summary["filtered_matches"],
+            "match_results": upsert_summary["match_results"],
             "covered_dates": sorted({str(event.get("date")) for event in events if event.get("date")}),
             "reason": None if events else "No sporttery historical odds were returned; keeping historical matches without odds.",
         }
 
-    def _upsert_sporttery_events(self, events: list[dict[str, Any]]) -> int:
+    def _upsert_sporttery_events(self, events: list[dict[str, Any]]) -> dict[str, Any]:
         updated = 0
+        filtered: list[dict[str, Any]] = []
+        match_results: list[dict[str, Any]] = []
         for event in events:
             home_team = canonical_team(str(event.get("home_team") or ""))
             away_team = canonical_team(str(event.get("away_team") or ""))
             fixture = self._find_lyihub_fixture_for_market(home_team, away_team, str(event.get("date") or ""))
             if not fixture:
+                match_results.append(
+                    {
+                        "match_num": event.get("match_num"),
+                        "home_team": event.get("home_team"),
+                        "away_team": event.get("away_team"),
+                        "status": "unmatched",
+                        "reason": "no_local_fixture_match",
+                    }
+                )
                 continue
             h2h = event.get("h2h") or {}
             handicap = event.get("handicap") or {}
             totals = event.get("totals") or {}
-            if not {"home", "draw", "away"} <= set(h2h):
+            has_h2h = {"home", "draw", "away"} <= set(h2h)
+            has_handicap = {"home", "draw", "away"} <= set(handicap)
+            has_totals = {"over", "under"} <= set(totals)
+            if not (has_h2h or has_handicap or has_totals):
+                filtered.append({**event, "reason": "no_supported_market"})
+                match_results.append(
+                    {
+                        "match_num": event.get("match_num"),
+                        "fixture_id": fixture.get("id"),
+                        "home_team": event.get("home_team"),
+                        "away_team": event.get("away_team"),
+                        "status": "filtered",
+                        "reason": "no_supported_market",
+                    }
+                )
                 continue
             home_elo, away_elo = self._fixture_elos(fixture)
             self.db.upsert_fixture(
@@ -1241,24 +1625,40 @@ class WorldCupService:
                     "away_score": fixture.get("away_score"),
                     "home_elo": home_elo,
                     "away_elo": away_elo,
-                    "market_home": h2h.get("home"),
-                    "market_draw": h2h.get("draw"),
-                    "market_away": h2h.get("away"),
+                    "market_home": h2h.get("home") if has_h2h else None,
+                    "market_draw": h2h.get("draw") if has_h2h else None,
+                    "market_away": h2h.get("away") if has_h2h else None,
                     "market_over_2_5": totals.get("over"),
                     "market_under_2_5": totals.get("under"),
                     "market_source": f"China Sporttery live {event.get('match_num') or ''}".strip(),
-                    "market_handicap": handicap if {"home", "draw", "away"} <= set(handicap) else None,
+                    "market_handicap": handicap if has_handicap else None,
                     "market_handicap_line": event.get("handicap_line"),
                 }
             )
             updated += 1
-        return updated
+            reason = "full_market" if has_h2h else "handicap_only" if has_handicap else "totals_only"
+            match_results.append(
+                {
+                    "match_num": event.get("match_num"),
+                    "fixture_id": fixture.get("id"),
+                    "home_team": event.get("home_team"),
+                    "away_team": event.get("away_team"),
+                    "status": "updated",
+                    "reason": reason,
+                    "has_h2h": has_h2h,
+                    "has_handicap": has_handicap,
+                    "has_totals": has_totals,
+                }
+            )
+        return {"updated": updated, "filtered_matches": filtered, "match_results": match_results}
 
     def _find_lyihub_fixture_for_market(self, home_team: str, away_team: str, date: str) -> dict[str, Any] | None:
         for row in self.db.list_lyihub_matches():
             if date and row.get("date") != date:
                 continue
-            if row.get("home_team") == home_team and row.get("away_team") == away_team:
+            row_home_candidates = {str(row.get("home_team") or ""), str(row.get("home_team_zh") or "")}
+            row_away_candidates = {str(row.get("away_team") or ""), str(row.get("away_team_zh") or "")}
+            if home_team in row_home_candidates and away_team in row_away_candidates:
                 return row
         return None
 
@@ -1293,6 +1693,11 @@ class WorldCupService:
             fixture = self.db.get_lyihub_match_by_fixture(fixture_id)
         if not fixture:
             raise KeyError(f"Unknown fixture: {fixture_id}")
+        if isinstance(fixture.get("sportmonks_features"), str):
+            try:
+                fixture["sportmonks_features"] = json.loads(fixture["sportmonks_features"])
+            except (TypeError, ValueError):
+                fixture["sportmonks_features"] = {}
 
         roster_weight = self._clamp(float(roster_weight), 0.0, 0.5)
         home_profile, away_profile = self._fixture_profiles(fixture)
@@ -1379,19 +1784,32 @@ class WorldCupService:
             ),
             "xgboost_sample_summary": self._xgboost_sample_summary(str(fixture.get("date") or "")),
         }
+        stage_blend_weights = self._stage_blend_weights(fixture, model_weight_run["weights"])
+        model_weight_run["stage"] = stage_bucket_for_fixture(fixture)
+        model_weight_run["stage_blend_weights"] = stage_blend_weights
         ensemble = blend_probabilities(
             elo={key: elo[key] for key in ("home", "draw", "away")},
             poisson=poisson,
             monte_carlo=monte_carlo,
             market=market_payload,
             xgboost=xgboost,
-            config=EnsembleConfig(weights=model_weight_run["weights"]),
+            config=EnsembleConfig(weights=stage_blend_weights),
+        )
+        draw_adjustment = self._stage_draw_adjustment(
+            fixture=fixture,
+            probabilities={key: ensemble[key] for key in ("home", "draw", "away")},
+            home_profile=home_profile,
+            away_profile=away_profile,
+            market_payload=market_payload,
         )
         probabilities = {
             "home": ensemble["home"],
             "draw": ensemble["draw"],
             "away": ensemble["away"],
         }
+        if draw_adjustment["applied"]:
+            probabilities = draw_adjustment["probabilities"]
+            ensemble.update(probabilities)
         final_score_matrix = self._serialize_score_matrix(calibrated_matrix)
         final_top_scorelines = top_scorelines(calibrated_matrix, limit=6)
         final_expected_goals = expected_goals(calibrated_matrix)
@@ -1472,6 +1890,7 @@ class WorldCupService:
                 "monte_carlo": ensemble["weights"].get("monte_carlo", 0.0),
                 "market": ensemble["weights"].get("market", 0.0),
                 "xgboost": ensemble["weights"].get("xgboost", 0.0),
+                "draw_adjustment": draw_adjustment.get("weight", 0.0),
                 "market_calibration": 0.35 if market else 0.0,
                 "llm_vote": 0.0,
                 "llm_vote_cap": 0.15,
@@ -1507,6 +1926,11 @@ class WorldCupService:
             "score_heatmap": score_heatmap,
             "xgboost": xgboost,
             "ensemble": ensemble,
+            "stage_calibration": {
+                "stage": model_weight_run["stage"],
+                "stage_blend_weights": stage_blend_weights,
+                "draw_adjustment": draw_adjustment,
+            },
             "value_analysis": value_analysis,
             "betting_recommendations": combined_recommendations,
             "learning": learning_adjustment,
@@ -1649,20 +2073,21 @@ class WorldCupService:
         strength = self.db.get_squad_strength(team)
         if strength and self._squad_strength_cache_current(strength):
             return strength
-        squad = self.db.get_team_squad(team)
-        if squad:
-            return self._recompute_squad_strength(team)
-        if strength:
-            upgraded = self._upgrade_legacy_strength(team, strength)
-            if upgraded:
-                self.db.save_squad_strength(team, upgraded)
-                return upgraded
-        power_strength = self._team_power_rankings_strength(team)
-        if power_strength:
-            self.db.save_squad_strength(team, power_strength)
-            return power_strength
         if allow_empty:
-            return self._team_performance_strength_fallback(team)
+            self.recompute_all_squad_strengths(force=True)
+            refreshed = self.db.get_squad_strength(team)
+            if refreshed and self._squad_strength_cache_current(refreshed):
+                return refreshed
+            raw = self._raw_squad_strength_for_team(team)
+            normalized = self._standardize_squad_strengths({team: raw}, pool_note="single-team fallback").get(team, raw)
+            self.db.save_squad_strength(team, normalized)
+            return normalized
+        squad = self.db.get_team_squad(team)
+        if squad or strength or self.db.list_player_power_rankings(team):
+            self.recompute_all_squad_strengths(force=True)
+            refreshed = self.db.get_squad_strength(team)
+            if refreshed:
+                return refreshed
         raise KeyError(f"Unknown strength: {team}")
 
     def _squad_strength_cache_current(self, strength: dict[str, Any]) -> bool:
@@ -1676,11 +2101,7 @@ class WorldCupService:
         }
         if not required <= set(strength):
             return False
-        return str(strength.get("model_version") or "") in {
-            "roster-strength-v2",
-            "team-power-rankings-v1",
-            "team-performance-fallback-v1",
-        }
+        return str(strength.get("model_version") or "") == "world-cup-line-strength-v1"
 
     def _upgrade_legacy_strength(self, team: str, strength: dict[str, Any]) -> dict[str, Any] | None:
         if not {"attack_strength", "midfield_control_strength", "defense_gk_strength"} <= set(strength):
@@ -1757,6 +2178,7 @@ class WorldCupService:
             "midfield_line_strength": round(midfield, 2),
             "defense_line_strength": round(defense, 2),
             "goalkeeper_strength": round(goalkeeper, 2),
+            "squad_overall_strength": starting,
             "squad_depth": round(0.65 * starting + 0.35 * bench, 2),
             "starting_xi_strength": starting,
             "bench_strength": bench,
@@ -1775,33 +2197,226 @@ class WorldCupService:
         }
 
     def recompute_all_squad_strengths(self, force: bool = False) -> dict[str, Any]:
-        teams = {profile["team"] for profile in self.db.list_team_profiles() if profile.get("team")}
-        teams.update({ranking["team"] for ranking in self.db.list_player_power_rankings() if ranking.get("team")})
+        teams = self._current_world_cup_teams()
+        if not teams:
+            teams = {profile["team"] for profile in self.db.list_team_profiles() if profile.get("team")}
+            teams.update({ranking["team"] for ranking in self.db.list_player_power_rankings() if ranking.get("team")})
+        raw_by_team: dict[str, dict[str, Any]] = {}
+        for team in sorted(teams):
+            raw_by_team[team] = self._raw_squad_strength_for_team(team)
+        normalized_by_team = self._standardize_squad_strengths(raw_by_team)
         updated: list[str] = []
         fallback: list[str] = []
-        for team in sorted(teams):
-            existing = self.db.get_squad_strength(team)
-            if existing and not force and self._squad_strength_cache_current(existing):
-                continue
-            squad = self.db.get_team_squad(team)
-            if squad:
-                strength = self._recompute_squad_strength(team)
-            else:
-                strength = self._team_power_rankings_strength(team) or self._team_performance_strength_fallback(team)
-                self.db.save_squad_strength(team, strength)
+        for team, strength in normalized_by_team.items():
+            self.db.save_squad_strength(team, strength)
             updated.append(team)
-            if strength.get("model_version") == "team-performance-fallback-v1":
+            if "fallback" in str(strength.get("paper_strength_source") or "").lower():
                 fallback.append(team)
+        summary = self._squad_strength_standardization_summary(normalized_by_team)
         return {
             "updated": len(updated),
             "fallback_count": len(fallback),
             "fallback_teams": fallback,
+            "standardization": summary,
+            "baseline_note": "50 = 本届世界杯48队平均水平",
             "model_versions": [
-                "roster-strength-v2",
-                "team-power-rankings-v1",
-                "team-performance-fallback-v1",
+                "world-cup-line-strength-v1",
             ],
         }
+
+    def _write_squad_strength_outputs(self, output_dir: Path) -> dict[str, str]:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        teams = sorted(self._current_world_cup_teams())
+        if not teams:
+            teams = sorted({profile["team"] for profile in self.db.list_team_profiles() if profile.get("team")})
+            teams.extend(
+                sorted(
+                    {
+                        ranking["team"]
+                        for ranking in self.db.list_player_power_rankings()
+                        if ranking.get("team") and ranking.get("team") not in set(teams)
+                    }
+                )
+            )
+        strengths = {
+            team: self.db.get_squad_strength(team)
+            for team in teams
+            if self.db.get_squad_strength(team)
+        }
+        payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "baseline_note": "50 = 本届世界杯48队平均水平",
+            "source_priority": ["FIFA", "SportMonks", "FootballData.io", "ESPN", "historical/fallback"],
+            "standardization": self._squad_strength_standardization_summary(strengths),
+            "teams": [
+                {
+                    "team": team,
+                    **strengths[team],
+                }
+                for team in sorted(strengths)
+            ],
+        }
+        path = output_dir / "squad_strengths_updated.json"
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        return {"squad_strengths_updated_json": str(path)}
+
+    def _current_world_cup_teams(self) -> set[str]:
+        group_stage_teams: set[str] = set()
+        teams: set[str] = set()
+        for row in self.db.list_lyihub_matches():
+            group = str(row.get("group") or row.get("stage") or "")
+            for side in ("home_team", "away_team"):
+                team = str(row.get(side) or "")
+                if not self._is_concrete_team_name(team):
+                    continue
+                if "小组赛" in group or "Group" in group:
+                    group_stage_teams.add(team)
+                    teams.add(team)
+        if group_stage_teams:
+            return group_stage_teams
+        if not teams:
+            for date in self.available_dates():
+                for row in self.db.list_web_fixtures(date):
+                    group = str(row.get("group") or row.get("stage") or "")
+                    for side in ("home_team", "away_team"):
+                        team = str(row.get(side) or "")
+                        if not self._is_concrete_team_name(team):
+                            continue
+                        if "小组赛" in group or "Group" in group:
+                            group_stage_teams.add(team)
+                            teams.add(team)
+            if group_stage_teams:
+                return group_stage_teams
+        return teams
+
+    def _is_concrete_team_name(self, team: str) -> bool:
+        if not team:
+            return False
+        lowered = team.lower()
+        if lowered.startswith(("winner ", "loser ", "tbd")):
+            return False
+        placeholder_tokens = ("胜者", "败者", "第", "/")
+        return not any(token in team for token in placeholder_tokens)
+
+    def _raw_squad_strength_for_team(self, team: str) -> dict[str, Any]:
+        squad = self.db.get_team_squad(team)
+        if squad:
+            strength = aggregate_team_strength(team, squad.get("players", []))
+        else:
+            strength = self._team_power_rankings_strength(team) or self._team_performance_strength_fallback(team)
+        return self._ensure_squad_overall(team, strength)
+
+    def _ensure_squad_overall(self, team: str, strength: dict[str, Any]) -> dict[str, Any]:
+        payload = dict(strength)
+        attack = float(payload.get("attack_line_strength", payload.get("attack_strength", 50)) or 50)
+        midfield = float(payload.get("midfield_line_strength", payload.get("midfield_control_strength", 50)) or 50)
+        defense = float(payload.get("defense_line_strength", payload.get("defense_gk_strength", 50)) or 50)
+        goalkeeper = float(payload.get("goalkeeper_strength", payload.get("defense_gk_strength", defense)) or defense)
+        starting = float(payload.get("starting_xi_strength") or round((attack + midfield + defense + goalkeeper) / 4, 2))
+        bench = float(payload.get("bench_strength") or round(max(35.0, starting - 8), 2))
+        payload.update(
+            {
+                "team": team,
+                "attack_strength": attack,
+                "midfield_control_strength": midfield,
+                "defense_gk_strength": round((defense + goalkeeper) / 2, 2),
+                "attack_line_strength": attack,
+                "midfield_line_strength": midfield,
+                "defense_line_strength": defense,
+                "goalkeeper_strength": goalkeeper,
+                "starting_xi_strength": starting,
+                "bench_strength": bench,
+                "squad_overall_strength": float(payload.get("squad_overall_strength") or round((attack + midfield + defense + goalkeeper + starting + bench) / 6, 2)),
+            }
+        )
+        return payload
+
+    def _standardize_squad_strengths(
+        self,
+        raw_by_team: dict[str, dict[str, Any]],
+        *,
+        pool_note: str = "current World Cup teams",
+    ) -> dict[str, dict[str, Any]]:
+        fields = [
+            "attack_line_strength",
+            "midfield_line_strength",
+            "defense_line_strength",
+            "goalkeeper_strength",
+            "squad_overall_strength",
+            "starting_xi_strength",
+            "bench_strength",
+        ]
+        if not raw_by_team:
+            return {}
+        scale = 10.0
+        stats: dict[str, dict[str, float]] = {}
+        for field in fields:
+            values = [float(payload.get(field) or 50.0) for payload in raw_by_team.values()]
+            mean_value = sum(values) / len(values)
+            variance = sum((value - mean_value) ** 2 for value in values) / len(values)
+            std_value = math.sqrt(variance)
+            stats[field] = {"mean": mean_value, "std": std_value}
+        normalized: dict[str, dict[str, Any]] = {}
+        for team, raw in raw_by_team.items():
+            payload = dict(raw)
+            for field in fields:
+                raw_value = float(raw.get(field) or 50.0)
+                stat = stats[field]
+                if stat["std"] < 1e-6:
+                    normalized_value = 50.0
+                else:
+                    normalized_value = 50 + ((raw_value - stat["mean"]) / stat["std"]) * scale
+                payload[f"{field}_raw"] = round(raw_value, 4)
+                payload[field] = round(self._clamp(normalized_value, 30, 85), 2)
+            payload["attack_strength"] = payload["attack_line_strength"]
+            payload["midfield_control_strength"] = payload["midfield_line_strength"]
+            payload["defense_gk_strength"] = round((payload["defense_line_strength"] + payload["goalkeeper_strength"]) / 2, 2)
+            payload["squad_depth"] = round(0.65 * payload["starting_xi_strength"] + 0.35 * payload["bench_strength"], 2)
+            payload["strength_baseline"] = "50 = 本届世界杯48队平均水平"
+            payload["strength_baseline_value"] = 50
+            payload["standardization_method"] = "z-score: 50 + (raw - mean) / std * 10, clamped to 30-85"
+            payload["standardization_pool"] = pool_note
+            payload["standardization_pool_size"] = len(raw_by_team)
+            payload["standardization_scale"] = scale
+            payload["standardization_bounds"] = {"min": 30, "max": 85}
+            payload["data_source_priority"] = ["FIFA", "SportMonks", "FootballData.io", "ESPN", "historical/fallback"]
+            payload["model_confidence"] = round(
+                max(
+                    float(payload.get("coverage", 0.0) or 0.0),
+                    0.75 if float(payload.get("fifa_power_coverage", 0.0) or 0.0) > 0 else 0.45 if "fallback" in str(payload.get("paper_strength_source") or "").lower() else 0.6,
+                ),
+                4,
+            )
+            payload["model_version"] = "world-cup-line-strength-v1"
+            normalized[team] = payload
+        return normalized
+
+    def _squad_strength_standardization_summary(self, strengths: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        fields = [
+            "attack_line_strength",
+            "midfield_line_strength",
+            "defense_line_strength",
+            "goalkeeper_strength",
+            "squad_overall_strength",
+            "starting_xi_strength",
+            "bench_strength",
+        ]
+        summary: dict[str, Any] = {
+            "baseline": "50 = 本届世界杯48队平均水平",
+            "team_count": len(strengths),
+            "method": "z-score",
+            "scale": 10,
+            "bounds": [30, 85],
+        }
+        for field in fields:
+            values = [float(payload.get(field) or 0) for payload in strengths.values()]
+            if values:
+                summary[field] = {
+                    "mean": round(sum(values) / len(values), 4),
+                    "min": round(min(values), 4),
+                    "max": round(max(values), 4),
+                }
+        return summary
 
     def roster_data_health(self) -> dict[str, Any]:
         health = self.db.roster_health()
@@ -1840,6 +2455,118 @@ class WorldCupService:
         if existing:
             return existing
         return self.recalibrate_model_weights(date)
+
+    def _stage_blend_weights(self, fixture: dict[str, Any], calibrated_weights: dict[str, float] | None = None) -> dict[str, float]:
+        stage = stage_bucket_for_fixture(fixture)
+        if stage == "round_of_32":
+            return {
+                "elo": 0.0,
+                "poisson": 0.25,
+                "monte_carlo": 0.25,
+                "xgboost": 0.30,
+                "market": 0.15,
+            }
+        if stage == "later_knockout":
+            return {
+                "elo": 0.05,
+                "poisson": 0.25,
+                "monte_carlo": 0.25,
+                "xgboost": 0.30,
+                "market": 0.15,
+            }
+        if stage == "group":
+            return calibrated_weights or {
+                "elo": 0.15,
+                "poisson": 0.25,
+                "monte_carlo": 0.25,
+                "xgboost": 0.25,
+                "market": 0.10,
+            }
+        return calibrated_weights or {
+            "elo": 0.15,
+            "poisson": 0.25,
+            "monte_carlo": 0.25,
+            "xgboost": 0.25,
+            "market": 0.10,
+        }
+
+    def _stage_draw_adjustment(
+        self,
+        *,
+        fixture: dict[str, Any],
+        probabilities: dict[str, float],
+        home_profile: dict[str, Any],
+        away_profile: dict[str, Any],
+        market_payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        stage = stage_bucket_for_fixture(fixture)
+        if stage not in {"round_of_32", "later_knockout"}:
+            return {"applied": False, "weight": 0.0, "probabilities": probabilities}
+
+        normalized = normalize_outcomes(probabilities)
+        home_under = float(home_profile.get("under25_stability", 0.5))
+        away_under = float(away_profile.get("under25_stability", 0.5))
+        under25_stability = self._clamp((home_under + away_under) / 2, 0.0, 1.0)
+        defensive_matchup = self._clamp(
+            (
+                float(home_profile.get("defensive_stability", 0.5))
+                + float(away_profile.get("defensive_stability", 0.5))
+            )
+            / 2,
+            0.0,
+            1.5,
+        )
+        strength_gap = abs(
+            float(home_profile.get("strength_rating") or home_profile.get("elo") or 1700)
+            - float(away_profile.get("strength_rating") or away_profile.get("elo") or 1700)
+        )
+        close_strength_factor = self._clamp(1.0 - strength_gap / 180.0, 0.0, 1.0)
+        low_score_knockout_factor = self._clamp(
+            0.45 * under25_stability + 0.35 * defensive_matchup + 0.20 * close_strength_factor,
+            0.0,
+            1.0,
+        )
+        market_probs = (
+            market_payload.get("market_probability_no_vig")
+            or market_payload.get("implied_probability_no_vig")
+            or {}
+            if market_payload.get("available")
+            else {}
+        )
+        market_draw = float(market_probs.get("draw", normalized["draw"])) if market_probs else normalized["draw"]
+        market_draw_calibration = self._clamp(market_draw - normalized["draw"], -0.04, 0.04)
+        r32_prior = 0.012 if stage == "round_of_32" else 0.008
+        draw_boost = self._clamp(
+            r32_prior + 0.022 * low_score_knockout_factor + market_draw_calibration,
+            0.0,
+            0.04 if stage == "round_of_32" else 0.03,
+        )
+        original_leader = max(normalized.items(), key=lambda item: item[1])[0]
+        adjusted = dict(normalized)
+        non_draw_total = adjusted["home"] + adjusted["away"]
+        if non_draw_total > 0:
+            adjusted["home"] -= draw_boost * (adjusted["home"] / non_draw_total)
+            adjusted["away"] -= draw_boost * (adjusted["away"] / non_draw_total)
+            adjusted["draw"] += draw_boost
+        adjusted = normalize_outcomes(adjusted)
+        adjusted_leader = max(adjusted.items(), key=lambda item: item[1])[0]
+        if adjusted_leader == "draw" and original_leader != "draw" and normalized[original_leader] - normalized["draw"] > 0.035:
+            excess = adjusted["draw"] - adjusted[original_leader] + 0.001
+            if excess > 0:
+                adjusted["draw"] -= excess
+                adjusted[original_leader] += excess
+                adjusted = normalize_outcomes(adjusted)
+        return {
+            "applied": draw_boost > 0,
+            "weight": 0.05 if stage == "round_of_32" else 0.03,
+            "probabilities": adjusted,
+            "draw_tendency": round(low_score_knockout_factor, 6),
+            "under25_stability": round(under25_stability, 6),
+            "low_score_knockout_factor": round(low_score_knockout_factor, 6),
+            "defensive_matchup_factor": round(defensive_matchup, 6),
+            "market_draw_calibration": round(market_draw_calibration, 6),
+            "draw_boost": round(draw_boost, 6),
+        }
 
     def _trained_xgboost_for_date(self, date: str) -> Any | None:
         if not date:
@@ -1920,13 +2647,17 @@ class WorldCupService:
     def _training_sample_weight(self, match: dict[str, Any]) -> float:
         source = str(match.get("source_name") or "")
         stage = str(match.get("stage") or match.get("tournament") or "")
-        if source == "historical_matches":
-            return 0.75
-        if self._is_knockout_stage(stage):
-            return 5.0
-        if "World Cup" in stage or "小组赛" in stage or "group" in stage.lower() or source:
+        date = str(match.get("date") or "")
+        is_wc2026 = date.startswith("2026-") and source != "historical_matches"
+        if is_wc2026 and ("1/16" in stage or "round of 32" in stage.lower()):
             return 4.0
-        return 1.0
+        if is_wc2026:
+            return 3.0
+        if source == "historical_matches":
+            return 1.2 if self._is_knockout_stage(stage) else 0.5
+        if self._is_knockout_stage(stage):
+            return 1.2
+        return 0.5
 
     def _fast_training_poisson_proxy(
         self,
@@ -2154,6 +2885,31 @@ class WorldCupService:
     def team_rankings(self) -> list[dict[str, Any]]:
         return self._team_profiles(compact=True)
 
+    def simulation_rankings(self) -> dict[str, Any]:
+        alive = self._current_bracket_alive_teams()
+        warnings: list[str] = []
+        profiles = self.team_rankings()
+        if alive:
+            filtered = []
+            for profile in profiles:
+                team = str(profile.get("team") or "")
+                if profile.get("eliminated") or team not in alive:
+                    if profile.get("eliminated"):
+                        warnings.append(f"{team} filtered because eliminated=true")
+                    elif team:
+                        warnings.append(f"{team} filtered because not in current bracket path")
+                    continue
+                filtered.append(profile)
+        else:
+            filtered = [profile for profile in profiles if not profile.get("eliminated")]
+            warnings.append("No current bracket path teams were found; filtered only by eliminated flag.")
+        return {
+            "teams": filtered,
+            "alive_teams": sorted(alive),
+            "warnings": warnings[:50],
+            "filtered_count": max(0, len(profiles) - len(filtered)),
+        }
+
     def lyihub_matches(self, date: str | None = None, stage: str | None = None) -> dict[str, Any]:
         rows = self.db.list_lyihub_matches(date=date, stage=stage)
         matches = [self._lyihub_match_response(row) for row in rows]
@@ -2179,12 +2935,14 @@ class WorldCupService:
         if not players and canonical != team:
             players = self._players_with_known_clubs(canonical, self.db.lyihub_team_players(team))
         power_rankings = self.db.list_player_power_rankings(canonical)
+        strength = self.get_team_strength(canonical, allow_empty=True)
         return {
             "team": canonical,
             "display": display_team(canonical),
             "matches": matches,
             "players": players,
             "power_rankings": power_rankings,
+            "squad_strength": strength,
             "coverage": {
                 "matches": len(matches),
                 "players": len(players),
@@ -2201,9 +2959,10 @@ class WorldCupService:
         }
 
     def knockout(self) -> dict[str, Any]:
-        teams = self.team_rankings()[:8]
+        ranking_payload = self.simulation_rankings()
+        teams = ranking_payload["teams"][:8]
         if not teams:
-            return {"champion_favorite": None, "nodes": []}
+            return {"champion_favorite": None, "nodes": [], "alive_teams": ranking_payload["alive_teams"], "warnings": ranking_payload["warnings"]}
         champion = teams[0]
         return {
             "champion_favorite": {
@@ -2226,7 +2985,32 @@ class WorldCupService:
                     ],
                 }
             ],
+            "alive_teams": ranking_payload["alive_teams"],
+            "warnings": ranking_payload["warnings"],
+            "filtered_count": ranking_payload["filtered_count"],
         }
+
+    def _current_bracket_alive_teams(self) -> set[str]:
+        bracket_teams: set[str] = set()
+        eliminated: set[str] = set()
+        for row in self.db.list_lyihub_matches():
+            stage = row.get("stage") or row.get("group")
+            if not self._is_knockout_stage(stage):
+                continue
+            for side in ("home_team", "away_team"):
+                team = str(row.get(side) or "")
+                if team and not team.lower().startswith(("winner ", "loser ", "tbd")):
+                    bracket_teams.add(team)
+            if self._is_final_row(row):
+                result = self._lyihub_finished_match_payload(row)
+                if result.get("loser"):
+                    eliminated.add(str(result["loser"]))
+                if result.get("winner"):
+                    bracket_teams.add(str(result["winner"]))
+        for profile in self.db.list_team_profiles():
+            if profile.get("eliminated") and profile.get("team"):
+                eliminated.add(str(profile["team"]))
+        return bracket_teams - eliminated
 
     def meta(self) -> dict[str, Any]:
         return {
@@ -2630,7 +3414,10 @@ class WorldCupService:
         away = roster_strength.get("away") or {}
         home_coverage = float(home.get("coverage") or 0)
         away_coverage = float(away.get("coverage") or 0)
-        coverage = min(home_coverage, away_coverage)
+        coverage = min(
+            max(home_coverage, float(home.get("model_confidence", 0.0) or 0.0)),
+            max(away_coverage, float(away.get("model_confidence", 0.0) or 0.0)),
+        )
         if coverage <= 0:
             return 1.0, 1.0, {
                 "available": False,
@@ -2639,14 +3426,14 @@ class WorldCupService:
                 "coverage": 0.0,
             }
         home_delta = (
-            (float(home.get("attack_strength", 70)) - float(away.get("defense_gk_strength", 70))) * 0.010
-            + (float(home.get("midfield_control_strength", 70)) - float(away.get("midfield_control_strength", 70)))
-            * 0.004
+            (float(home.get("attack_line_strength", home.get("attack_strength", 50))) - float(away.get("defense_line_strength", away.get("defense_gk_strength", 50)))) * 0.012
+            + (float(home.get("midfield_line_strength", home.get("midfield_control_strength", 50))) - float(away.get("midfield_line_strength", away.get("midfield_control_strength", 50))))
+            * 0.006
         )
         away_delta = (
-            (float(away.get("attack_strength", 70)) - float(home.get("defense_gk_strength", 70))) * 0.010
-            + (float(away.get("midfield_control_strength", 70)) - float(home.get("midfield_control_strength", 70)))
-            * 0.004
+            (float(away.get("attack_line_strength", away.get("attack_strength", 50))) - float(home.get("defense_line_strength", home.get("defense_gk_strength", 50)))) * 0.012
+            + (float(away.get("midfield_line_strength", away.get("midfield_control_strength", 50))) - float(home.get("midfield_line_strength", home.get("midfield_control_strength", 50))))
+            * 0.006
         )
         home_multiplier = self._clamp(1 + roster_weight * coverage * home_delta, 0.82, 1.24)
         away_multiplier = self._clamp(1 + roster_weight * coverage * away_delta, 0.82, 1.24)
@@ -2986,8 +3773,18 @@ class WorldCupService:
             "market_source": row.get("market_source"),
             "market_handicap": row.get("market_handicap"),
             "market_handicap_line": row.get("market_handicap_line"),
+            "sportmonks_features": json.loads(row.get("sportmonks_features") or "{}")
+            if isinstance(row.get("sportmonks_features"), str)
+            else row.get("sportmonks_features"),
         })
-        payload["odds_available"] = bool(payload.get("market_source") and payload.get("market_home"))
+        payload["odds_available"] = bool(
+            payload.get("market_source")
+            and (
+                payload.get("market_home")
+                or payload.get("market_handicap")
+                or payload.get("market_over_2_5")
+            )
+        )
         payload["odds_source"] = payload.get("market_source")
         payload["historical_without_odds"] = payload.get("status") == "final" and not payload["odds_available"]
         payload["has_prediction_record"] = self.db.get_prediction(str(payload["id"])) is not None

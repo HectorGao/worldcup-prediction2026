@@ -11,10 +11,12 @@ import httpx
 FIFA_WORLD_CUP_URL = "https://www.fifa.com/en/tournaments/mens/worldcup"
 SOURCE_PRIORITIES = {
     "FIFA": 1,
-    "FootballData.io": 2,
-    "ESPN": 3,
-    "sporttery": 4,
-    "other": 5,
+    "sportmonks": 2,
+    "SportMonks": 2,
+    "FootballData.io": 3,
+    "ESPN": 4,
+    "sporttery": 5,
+    "other": 9,
 }
 
 

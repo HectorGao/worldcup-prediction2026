@@ -161,7 +161,7 @@ def canonical_team(team_zh: str) -> str:
 
 
 def _score(match: dict[str, Any]) -> dict[str, int | None]:
-    for key in ("score_full", "score"):
+    for key in ("score_90min", "score_90", "score_full", "score"):
         score = match.get(key)
         if isinstance(score, dict) and isinstance(score.get("team_a"), int) and isinstance(score.get("team_b"), int):
             return {"team_a": score["team_a"], "team_b": score["team_b"]}

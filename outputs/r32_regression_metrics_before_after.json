@@ -1,0 +1,46 @@
+{
+  "stage": "round_of_32",
+  "generated_at": "2026-07-04T12:27:33.962479+00:00",
+  "blend_weights": {
+    "elo": 0.0,
+    "poisson": 0.25,
+    "monte_carlo": 0.25,
+    "xgboost": 0.3,
+    "market": 0.15,
+    "draw_adjustment": 0.05
+  },
+  "before": {
+    "stage": "round_of_32",
+    "match_count": 0,
+    "accuracy_90": 0.0,
+    "log_loss": 0.0,
+    "brier_score": 0.0,
+    "calibration_error": 0.0,
+    "draw_recall": null,
+    "draw_sample_count": 0,
+    "favorite_win_precision": null,
+    "favorite_prediction_count": 0,
+    "upset_recall": null,
+    "upset_sample_count": 0
+  },
+  "after": {
+    "stage": "round_of_32",
+    "match_count": 0,
+    "accuracy_90": 0.0,
+    "log_loss": 0.0,
+    "brier_score": 0.0,
+    "calibration_error": 0.0,
+    "draw_recall": null,
+    "draw_sample_count": 0,
+    "favorite_win_precision": null,
+    "favorite_prediction_count": 0,
+    "upset_recall": null,
+    "upset_sample_count": 0
+  },
+  "per_match_errors": [],
+  "notes": [
+    "before 使用旧版 full-score/row-score 口径，用于暴露点球或全场比分污染；after 使用修正后的90分钟比分口径。",
+    "90分钟胜平负只使用 home_goals_90 / away_goals_90；加时和点球只用于晋级字段。",
+    "draw_recall 仅统计真实90分钟平局样本；点球胜者不计为90分钟胜者。"
+  ]
+}

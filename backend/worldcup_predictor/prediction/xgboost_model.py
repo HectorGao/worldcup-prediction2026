@@ -34,6 +34,11 @@ FEATURE_NAMES = [
     "squad_depth_edge",
     "fifa_stats_xg_edge",
     "footballdata_shot_edge",
+    "sportmonks_shot_on_target_edge",
+    "sportmonks_possession_edge",
+    "sportmonks_corner_edge",
+    "sportmonks_lineup_depth",
+    "sportmonks_sidelined_edge",
     "lineup_missing_edge",
     "roster_coverage_edge",
     "over25_attack_edge",
@@ -42,6 +47,19 @@ FEATURE_NAMES = [
     "over25_adjusted_edge",
     "under25_stability_edge",
     "over25_market_edge",
+    "stage_encoded",
+    "knockout_stage_flag",
+    "round_of_32_flag",
+    "draw_tendency_edge",
+    "under25_combined",
+    "defensive_stability_combined",
+    "current_world_cup_form_edge",
+    "group_stage_performance_edge",
+    "team_strength_edge",
+    "attack_defense_matchup",
+    "market_implied_home_prob",
+    "market_implied_draw_prob",
+    "market_implied_away_prob",
 ]
 
 CLASS_ORDER = ("home", "draw", "away")
@@ -220,6 +238,12 @@ def deterministic_boosted_probabilities(
 
     home_logit += 0.20 * features["roster_attack_edge"] + 0.16 * features["form_home_edge"]
     away_logit -= 0.20 * features["roster_attack_edge"] + 0.16 * features["form_home_edge"]
+    home_logit += 0.12 * features.get("team_strength_edge", 0.0) + 0.10 * features.get("attack_defense_matchup", 0.0)
+    away_logit -= 0.12 * features.get("team_strength_edge", 0.0) + 0.10 * features.get("attack_defense_matchup", 0.0)
+    draw_logit += 0.12 * features.get("round_of_32_flag", 0.0)
+    draw_logit += 0.14 * features.get("draw_tendency_edge", 0.0)
+    draw_logit += 0.10 * features.get("under25_combined", 0.0)
+    draw_logit += 0.07 * features.get("defensive_stability_combined", 0.0)
     home_logit += 0.12 * (mc["home"] - base["home"])
     draw_logit += 0.10 * (mc["draw"] - base["draw"])
     away_logit += 0.12 * (mc["away"] - base["away"])
@@ -376,11 +400,13 @@ def build_features(
     )
     home_strength = roster_strength.get("home") or {}
     away_strength = roster_strength.get("away") or {}
+    stage_bucket = stage_bucket_for_fixture(fixture)
     form = learning_adjustment.get("team_form_adjustment") or {}
     home_form = float((form.get(fixture.get("home_team")) or {}).get("goal_delta", 0.0))
     away_form = float((form.get(fixture.get("away_team")) or {}).get("goal_delta", 0.0))
     fifa_stats = fixture.get("fifa_match_stats") or {}
     football_stats = fixture.get("footballdata_io_stats") or {}
+    sportmonks = fixture.get("sportmonks_features") or {}
     lineup_context = fixture.get("lineup_context") or {}
     features = {
         "elo_delta": clamp((home_elo - away_elo) / 450, -1.5, 1.5),
@@ -393,10 +419,10 @@ def build_features(
         "mc_goal_variance": float((monte_carlo.get("goal_variance") or {}).get("total", 0.0)),
         "roster_attack_edge": clamp(
             (
-                float(home_strength.get("attack_strength", 70)) - float(away_strength.get("defense_gk_strength", 70))
-                - float(away_strength.get("attack_strength", 70)) + float(home_strength.get("defense_gk_strength", 70))
+                strength_value(home_strength, "attack_line_strength", "attack_strength") - strength_value(away_strength, "defense_line_strength", "defense_gk_strength")
+                - strength_value(away_strength, "attack_line_strength", "attack_strength") + strength_value(home_strength, "defense_line_strength", "defense_gk_strength")
             )
-            / 60,
+            / 30,
             -1.5,
             1.5,
         ),
@@ -405,25 +431,30 @@ def build_features(
     features.update(
         {
             "attack_line_edge": clamp(
-                (strength_value(home_strength, "attack_line_strength", "attack_strength") - strength_value(away_strength, "attack_line_strength", "attack_strength")) / 35,
+                (strength_value(home_strength, "attack_line_strength", "attack_strength") - strength_value(away_strength, "attack_line_strength", "attack_strength")) / 20,
                 -1.5,
                 1.5,
             ),
             "midfield_line_edge": clamp(
-                (strength_value(home_strength, "midfield_line_strength", "midfield_control_strength") - strength_value(away_strength, "midfield_line_strength", "midfield_control_strength")) / 35,
+                (strength_value(home_strength, "midfield_line_strength", "midfield_control_strength") - strength_value(away_strength, "midfield_line_strength", "midfield_control_strength")) / 20,
                 -1.5,
                 1.5,
             ),
             "defense_line_edge": clamp(
-                (strength_value(home_strength, "defense_line_strength", "defense_gk_strength") - strength_value(away_strength, "defense_line_strength", "defense_gk_strength")) / 35,
+                (strength_value(home_strength, "defense_line_strength", "defense_gk_strength") - strength_value(away_strength, "defense_line_strength", "defense_gk_strength")) / 20,
                 -1.5,
                 1.5,
             ),
-            "starting_xi_edge": clamp((float(home_strength.get("starting_xi_strength", 70)) - float(away_strength.get("starting_xi_strength", 70))) / 35, -1.5, 1.5),
-            "bench_strength_edge": clamp((float(home_strength.get("bench_strength", 65)) - float(away_strength.get("bench_strength", 65))) / 35, -1.5, 1.5),
-            "squad_depth_edge": clamp((float(home_strength.get("squad_depth", 65)) - float(away_strength.get("squad_depth", 65))) / 35, -1.5, 1.5),
+            "starting_xi_edge": clamp((float(home_strength.get("starting_xi_strength", 50)) - float(away_strength.get("starting_xi_strength", 50))) / 20, -1.5, 1.5),
+            "bench_strength_edge": clamp((float(home_strength.get("bench_strength", 50)) - float(away_strength.get("bench_strength", 50))) / 20, -1.5, 1.5),
+            "squad_depth_edge": clamp((float(home_strength.get("squad_depth", 50)) - float(away_strength.get("squad_depth", 50))) / 20, -1.5, 1.5),
             "fifa_stats_xg_edge": clamp((float(fifa_stats.get("home_xg", 0) or 0) - float(fifa_stats.get("away_xg", 0) or 0)) / 2.5, -1.5, 1.5),
             "footballdata_shot_edge": clamp((float(football_stats.get("home_shots", 0) or 0) - float(football_stats.get("away_shots", 0) or 0)) / 20, -1.5, 1.5),
+            "sportmonks_shot_on_target_edge": clamp((float(sportmonks.get("shots_on_target_home", 0) or 0) - float(sportmonks.get("shots_on_target_away", 0) or 0)) / 12, -1.5, 1.5),
+            "sportmonks_possession_edge": clamp((float(sportmonks.get("possession_home", 50) or 50) - float(sportmonks.get("possession_away", 50) or 50)) / 50, -1.5, 1.5),
+            "sportmonks_corner_edge": clamp((float(sportmonks.get("corners_home", 0) or 0) - float(sportmonks.get("corners_away", 0) or 0)) / 12, -1.5, 1.5),
+            "sportmonks_lineup_depth": clamp(float(sportmonks.get("lineup_count", 0) or 0) / 22, 0.0, 1.5),
+            "sportmonks_sidelined_edge": clamp((float(sportmonks.get("sidelined_away", 0) or 0) - float(sportmonks.get("sidelined_home", 0) or 0)) / 6, -1.5, 1.5),
             "lineup_missing_edge": clamp((float(lineup_context.get("away_missing_starters", 0) or 0) - float(lineup_context.get("home_missing_starters", 0) or 0)) / 5, -1.5, 1.5),
             "roster_coverage_edge": clamp((float(home_strength.get("coverage", 0) or 0) - float(away_strength.get("coverage", 0) or 0)), -1.0, 1.0),
             "over25_attack_edge": clamp(float(home_profile.get("over25_attack_tendency", 0.5)) - float(away_profile.get("over25_attack_tendency", 0.5)), -1.0, 1.0),
@@ -432,13 +463,66 @@ def build_features(
             "over25_adjusted_edge": clamp(float(home_profile.get("over25_adjusted_rating", 0.5)) - float(away_profile.get("over25_adjusted_rating", 0.5)), -1.0, 1.0),
             "under25_stability_edge": clamp(float(home_profile.get("under25_stability", 0.5)) - float(away_profile.get("under25_stability", 0.5)), -1.0, 1.0),
             "over25_market_edge": float(totals_probs.get("over", 0.0)) - float(poisson.get("over_2_5", 0.0)),
+            "stage_encoded": {"group": 1.0, "round_of_32": 2.0, "later_knockout": 3.0}.get(stage_bucket, 0.0),
+            "knockout_stage_flag": 1.0 if stage_bucket in {"round_of_32", "later_knockout"} else 0.0,
+            "round_of_32_flag": 1.0 if stage_bucket == "round_of_32" else 0.0,
+            "draw_tendency_edge": draw_tendency_feature(home_profile, away_profile, home_lambda + away_lambda),
+            "under25_combined": clamp(
+                (float(home_profile.get("under25_stability", 0.5)) + float(away_profile.get("under25_stability", 0.5))) / 2,
+                0.0,
+                1.0,
+            ),
+            "defensive_stability_combined": clamp(
+                (float(home_profile.get("defensive_stability", 0.5)) + float(away_profile.get("defensive_stability", 0.5))) / 2,
+                0.0,
+                1.5,
+            ),
+            "current_world_cup_form_edge": clamp(float(home_profile.get("form_rating", 0.0)) - float(away_profile.get("form_rating", 0.0)), -1.0, 1.0),
+            "group_stage_performance_edge": clamp(float(home_profile.get("recent_goal_delta", home_form)) - float(away_profile.get("recent_goal_delta", away_form)), -2.0, 2.0),
+            "team_strength_edge": clamp(
+                (float(home_profile.get("strength_rating", home_elo)) - float(away_profile.get("strength_rating", away_elo))) / 450,
+                -1.5,
+                1.5,
+            ),
+            "attack_defense_matchup": clamp(
+                (
+                    float(home_profile.get("attack_rating", 1.32)) - float(away_profile.get("defensive_stability", 0.5))
+                    - float(away_profile.get("attack_rating", 1.32)) + float(home_profile.get("defensive_stability", 0.5))
+                )
+                / 2.5,
+                -1.5,
+                1.5,
+            ),
+            "market_implied_home_prob": float(market_probs.get("home", 0.0)),
+            "market_implied_draw_prob": float(market_probs.get("draw", 0.0)),
+            "market_implied_away_prob": float(market_probs.get("away", 0.0)),
         }
     )
     return features
 
 
+def stage_bucket_for_fixture(fixture: dict[str, Any]) -> str:
+    stage = str(fixture.get("stage") or fixture.get("group") or fixture.get("round") or "").lower()
+    if "1/16" in stage or "round of 32" in stage or "round 32" in stage:
+        return "round_of_32"
+    if any(token in stage for token in ("1/8", "1/4", "quarter", "semi", "final", "third place", "淘汰", "决赛")):
+        return "later_knockout"
+    if "group" in stage or "小组" in stage:
+        return "group"
+    return "unknown"
+
+
+def draw_tendency_feature(home_profile: dict[str, Any], away_profile: dict[str, Any], total_lambda: float) -> float:
+    home_under = float(home_profile.get("under25_stability", 0.5))
+    away_under = float(away_profile.get("under25_stability", 0.5))
+    home_defense = float(home_profile.get("defensive_stability", 0.5))
+    away_defense = float(away_profile.get("defensive_stability", 0.5))
+    low_total = 1.0 if total_lambda < 2.35 else 0.0
+    return clamp(0.35 * ((home_under + away_under) / 2) + 0.25 * ((home_defense + away_defense) / 2) + 0.40 * low_total, 0.0, 1.5)
+
+
 def strength_value(payload: dict[str, Any], primary: str, fallback: str) -> float:
-    return float(payload.get(primary, payload.get(fallback, 70)) or 70)
+    return float(payload.get(primary, payload.get(fallback, 50)) or 50)
 
 
 def logit(probability: float) -> float:

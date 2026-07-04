@@ -106,6 +106,8 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
         sync_fifa: bool = False,
         sync_fifa_rosters: bool = False,
         sync_footballdata_io: bool = False,
+        sync_sportmonks: bool = False,
+        use_sportmonks: bool = False,
         sync_sporttery_odds: bool = False,
         sync_sporttery_history: bool = False,
         backfill_historical_matches: bool = False,
@@ -119,6 +121,8 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
             sync_fifa=sync_fifa,
             sync_fifa_rosters=sync_fifa_rosters,
             sync_footballdata_io=sync_footballdata_io,
+            sync_sportmonks=sync_sportmonks,
+            use_sportmonks=use_sportmonks,
             sync_sporttery_odds=sync_sporttery_odds,
             sync_sporttery_history=sync_sporttery_history,
             backfill_historical_matches=backfill_historical_matches,
@@ -236,7 +240,9 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
         return service.team_world_cup_detail(team)
 
     @app.get("/api/teams/rankings")
-    def team_rankings():
+    def team_rankings(alive_only: bool = False):
+        if alive_only:
+            return service.simulation_rankings()
         return {"teams": service.team_rankings()}
 
     @app.get("/api/knockout")

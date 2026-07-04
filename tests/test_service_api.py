@@ -324,6 +324,59 @@ def test_model_weight_recalibration_uses_only_completed_predictions_before_date(
     assert service.db.get_model_weight_run("2026-06-27")["weights"] == run["weights"]
 
 
+def test_simulation_rankings_filter_eliminated_and_non_bracket_teams(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    for team, elo, eliminated in [
+        ("Nigeria", 1900, False),
+        ("France", 1800, False),
+        ("Sweden", 1750, True),
+        ("Paraguay", 1720, False),
+    ]:
+        service.db.save_team_profile(team, {"team": team, "elo": elo, "strength_rating": elo, "eliminated": eliminated})
+    service.db.upsert_lyihub_match(
+        {
+            "id": "lyihub-r32",
+            "match_id": "r32",
+            "date": "2026-07-01",
+            "kickoff": "2026-07-01T12:00:00+00:00",
+            "home_team": "France",
+            "away_team": "Sweden",
+            "group": "1/16决赛",
+            "stage": "1/16决赛",
+            "venue": "test",
+            "status": "final",
+            "home_score": 3,
+            "away_score": 0,
+            "has_predict": False,
+            "payload": {},
+        }
+    )
+    service.db.upsert_lyihub_match(
+        {
+            "id": "lyihub-qf",
+            "match_id": "qf",
+            "date": "2026-07-05",
+            "kickoff": "2026-07-05T12:00:00+00:00",
+            "home_team": "France",
+            "away_team": "Paraguay",
+            "group": "1/8决赛",
+            "stage": "1/8决赛",
+            "venue": "test",
+            "status": "scheduled",
+            "has_predict": False,
+            "payload": {},
+        }
+    )
+
+    payload = service.simulation_rankings()
+
+    teams = [team["team"] for team in payload["teams"]]
+    assert "Nigeria" not in teams
+    assert "Sweden" not in teams
+    assert {"France", "Paraguay"} <= set(teams)
+    assert any("Nigeria" in warning for warning in payload["warnings"])
+
+
 def test_sporttery_parser_normalizes_odds_without_live_fetch():
     provider = SportteryOddsProvider()
     events = provider.parse_events(

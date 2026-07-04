@@ -946,6 +946,29 @@ input[type="date"] {
   padding: 14px;
 }
 
+.score-match-title,
+.heatmap-axis-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin: 4px 14px 10px;
+  color: var(--text);
+}
+
+.score-match-title {
+  font-weight: 700;
+}
+
+.heatmap-axis-title {
+  margin: 0 0 2px;
+}
+
+.heatmap-axis-title span {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .compact-metrics {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   padding: 0;
@@ -1583,6 +1606,15 @@ input[type="date"] {
 
 .mini-meter.strength-weak .bar-fill {
   background: #bf3f3f;
+}
+
+.mini-meter.strength-very-weak .bar-fill {
+  background: #8f3333;
+}
+
+.strength-baseline {
+  display: block;
+  color: var(--muted);
 }
 
 .strength-card small {

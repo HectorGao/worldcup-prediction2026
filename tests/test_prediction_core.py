@@ -587,3 +587,51 @@ def test_model_weight_calibration_rewards_better_completed_models():
     assert isclose(sum(run["weights"].values()), 1.0, rel_tol=1e-9)
     assert run["weights"]["poisson"] > run["weights"]["market"]
     assert run["model_losses"]["poisson"]["brier_score"] < run["model_losses"]["market"]["brier_score"]
+
+
+def test_xgboost_features_include_round_of_32_stage_and_draw_under_context():
+    features = build_features(
+        fixture={"group": "1/16决赛", "home_team": "Home", "away_team": "Away", "home_elo": 1700, "away_elo": 1680},
+        home_profile={
+            "team": "Home",
+            "elo": 1700,
+            "strength_rating": 1700,
+            "attack_rating": 1.5,
+            "defensive_stability": 0.8,
+            "form_rating": 0.2,
+            "under25_stability": 0.7,
+        },
+        away_profile={
+            "team": "Away",
+            "elo": 1680,
+            "strength_rating": 1680,
+            "attack_rating": 1.2,
+            "defensive_stability": 0.9,
+            "form_rating": 0.1,
+            "under25_stability": 0.8,
+        },
+        poisson={"lambda_home": 1.1, "lambda_away": 0.9, "home_win": 0.42, "draw": 0.32, "away_win": 0.26, "over_2_5": 0.38},
+        monte_carlo={"home_win": 0.41, "draw": 0.33, "away_win": 0.26, "goal_variance": {"total": 2.0}},
+        market={"available": True, "market_probability_no_vig": {"home": 0.4, "draw": 0.34, "away": 0.26}},
+        roster_strength={
+            "home": {"attack_line_strength": 78, "midfield_line_strength": 74, "defense_line_strength": 75, "starting_xi_strength": 76, "bench_strength": 68, "squad_depth": 73},
+            "away": {"attack_line_strength": 72, "midfield_line_strength": 73, "defense_line_strength": 77, "starting_xi_strength": 74, "bench_strength": 67, "squad_depth": 72},
+        },
+        learning_adjustment={},
+    )
+
+    for name in {
+        "stage_encoded",
+        "knockout_stage_flag",
+        "round_of_32_flag",
+        "draw_tendency_edge",
+        "under25_combined",
+        "defensive_stability_combined",
+        "market_implied_draw_prob",
+    }:
+        assert name in FEATURE_NAMES
+        assert name in features
+    assert features["stage_encoded"] == 2.0
+    assert features["knockout_stage_flag"] == 1.0
+    assert features["round_of_32_flag"] == 1.0
+    assert features["under25_combined"] > 0.7

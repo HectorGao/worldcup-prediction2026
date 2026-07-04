@@ -186,7 +186,11 @@ def collect_world_cup_finished_matches(local_store: Any) -> list[dict[str, Any]]
         for row in local_store.list_lyihub_matches():
             if _row_is_final(row) and row.get("home_score") is not None and row.get("away_score") is not None:
                 key = (row["date"], row["home_team"], row["away_team"])
-                by_key.setdefault(key, _row_to_finished_match(row, source=row.get("source_name") or "lyihub_worldcup_static_json"))
+                payload = _row_to_finished_match(row, source=row.get("source_name") or "lyihub_worldcup_static_json")
+                if payload.get("score_source") == "score_90min":
+                    by_key[key] = payload
+                else:
+                    by_key.setdefault(key, payload)
 
     if hasattr(local_store, "available_dates"):
         for date in local_store.available_dates():
@@ -209,11 +213,29 @@ def _has_90_score(match: dict[str, Any]) -> bool:
 
 
 def _row_to_finished_match(row: dict[str, Any], source: str) -> dict[str, Any]:
-    home_score = row.get("home_score")
-    away_score = row.get("away_score")
+    score = _row_90_score(row)
+    home_score = score["home"]
+    away_score = score["away"]
+    full_score = _row_full_score(row)
     winner = None
     loser = None
-    if home_score is not None and away_score is not None and home_score != away_score:
+    decided_by_penalties = False
+    home_penalties = away_penalties = None
+    if (
+        home_score is not None
+        and away_score is not None
+        and home_score == away_score
+        and full_score["home"] is not None
+        and full_score["away"] is not None
+        and full_score["home"] != full_score["away"]
+        and max(int(full_score["home"]), int(full_score["away"])) >= 3
+    ):
+        decided_by_penalties = True
+        home_penalties = full_score["home"]
+        away_penalties = full_score["away"]
+        winner = row["home_team"] if home_penalties > away_penalties else row["away_team"]
+        loser = row["away_team"] if winner == row["home_team"] else row["home_team"]
+    elif home_score is not None and away_score is not None and home_score != away_score:
         winner = row["home_team"] if home_score > away_score else row["away_team"]
         loser = row["away_team"] if winner == row["home_team"] else row["home_team"]
     return {
@@ -226,17 +248,43 @@ def _row_to_finished_match(row: dict[str, Any], source: str) -> dict[str, Any]:
         "away_goals_90": away_score,
         "home_goals_extra_time": None,
         "away_goals_extra_time": None,
-        "home_penalties": None,
-        "away_penalties": None,
+        "home_penalties": home_penalties,
+        "away_penalties": away_penalties,
         "winner": winner,
         "loser": loser,
         "is_finished": True,
         "decided_by_extra_time": False,
-        "decided_by_penalties": False,
+        "decided_by_penalties": decided_by_penalties,
         "source": source,
+        "score_source": score["source"],
         "source_url": row.get("source_url"),
         "fetched_at": row.get("fetched_at") or row.get("synced_at"),
     }
+
+
+def _row_90_score(row: dict[str, Any]) -> dict[str, Any]:
+    nested = _nested_score(row, ("score_90min", "score_90"))
+    if nested["home"] is not None and nested["away"] is not None:
+        nested["source"] = "score_90min"
+        return nested
+    return {"home": row.get("home_score"), "away": row.get("away_score"), "source": "row_score"}
+
+
+def _row_full_score(row: dict[str, Any]) -> dict[str, Any]:
+    nested = _nested_score(row, ("score_full", "score"))
+    if nested["home"] is not None and nested["away"] is not None:
+        return nested
+    return {"home": row.get("home_score"), "away": row.get("away_score")}
+
+
+def _nested_score(row: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]:
+    candidates = [row.get("payload") if isinstance(row.get("payload"), dict) else {}, row.get("detail", {}).get("match", {}) if isinstance(row.get("detail"), dict) else {}]
+    for payload in candidates:
+        for key in keys:
+            score = payload.get(key)
+            if isinstance(score, dict) and score.get("team_a") is not None and score.get("team_b") is not None:
+                return {"home": score.get("team_a"), "away": score.get("team_b")}
+    return {"home": None, "away": None}
 
 
 def _finished_match_payload(match: dict[str, Any]) -> dict[str, Any]:
@@ -290,11 +338,13 @@ def update_team_ratings_from_finished_matches(
 def retrain_team_ratings_from_world_cup(
     matches: list[dict[str, Any]],
     prior_profiles: dict[str, dict[str, Any]] | None = None,
+    world_cup_weight_override: float | None = None,
 ) -> dict[str, Any]:
     prior_profiles = prior_profiles or {}
     ordered = sorted([match for match in matches if _has_90_score(match)], key=lambda item: (item["date"], item["match_id"]))
     has_knockout = any(_is_knockout_stage(match.get("stage")) for match in ordered)
-    world_cup_weight = 0.80 if has_knockout else 0.75
+    world_cup_weight = float(world_cup_weight_override) if world_cup_weight_override is not None else (0.80 if has_knockout else 0.75)
+    world_cup_weight = max(0.0, min(1.0, world_cup_weight))
     prior_weight = 1.0 - world_cup_weight
     teams = {team: dict(profile) for team, profile in prior_profiles.items()}
     for team, profile in teams.items():
@@ -527,9 +577,12 @@ def evaluate_world_cup_regression(
     correct = 0
     advance_correct = 0
     advance_count = 0
+    over25_correct = 0
+    over25_count = 0
     log_losses = []
     briers = []
     goal_errors = []
+    calibration_errors = []
     for match in matches:
         match_id = str(match.get("match_id") or _match_key(match))
         prediction = predictions_by_match_id.get(match_id)
@@ -547,8 +600,16 @@ def evaluate_world_cup_regression(
         home_error = home_xg - float(match["home_goals_90"])
         away_error = away_xg - float(match["away_goals_90"])
         goal_errors.extend([home_error, away_error])
+        actual_over25 = int(match["home_goals_90"]) + int(match["away_goals_90"]) > 2.5
+        over25_prob = _prediction_over25_probability(prediction)
+        predicted_over25 = over25_prob >= 0.5 if over25_prob is not None else None
+        if predicted_over25 is not None:
+            over25_count += 1
+            if predicted_over25 == actual_over25:
+                over25_correct += 1
         if predicted == actual:
             correct += 1
+        calibration_errors.append(abs(probabilities[predicted] - (1.0 if predicted == actual else 0.0)))
         if match.get("winner"):
             advance_count += 1
             predicted_advancer = match["home_team"] if probabilities["home"] >= probabilities["away"] else match["away_team"]
@@ -568,6 +629,9 @@ def evaluate_world_cup_regression(
                 "brier_score": round(brier, 6),
                 "log_loss": round(log_loss, 6),
                 "winner": match.get("winner"),
+                "actual_over25": actual_over25,
+                "predicted_over25": predicted_over25,
+                "over25_prob": round(over25_prob, 6) if over25_prob is not None else None,
             }
         )
     count = len(rows)
@@ -578,12 +642,126 @@ def evaluate_world_cup_regression(
         "accuracy_90": round(correct / count, 6) if count else 0.0,
         "log_loss": round(sum(log_losses) / count, 6) if count else 0.0,
         "brier_score": round(sum(briers) / count, 6) if count else 0.0,
+        "calibration_error": round(sum(calibration_errors) / count, 6) if count else 0.0,
         "goals_mae": round(mae, 6),
         "goals_rmse": round(rmse, 6),
+        "over25_accuracy": round(over25_correct / over25_count, 6) if over25_count else None,
+        "over25_sample_count": over25_count,
         "advance_accuracy": round(advance_correct / advance_count, 6) if advance_count else None,
         "advance_sample_count": advance_count,
         "per_match_errors": rows,
     }
+
+
+def evaluate_round_of_32_regression(
+    matches: list[dict[str, Any]],
+    predictions_by_match_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    r32_matches = [
+        match
+        for match in matches
+        if _is_round_of_32_stage(match.get("stage") or match.get("group") or match.get("tournament"))
+    ]
+    rows: list[dict[str, Any]] = []
+    correct = 0
+    log_losses: list[float] = []
+    briers: list[float] = []
+    calibration_errors: list[float] = []
+    draw_total = 0
+    draw_correct = 0
+    favorite_predictions = 0
+    favorite_prediction_correct = 0
+    upset_total = 0
+    upset_correct = 0
+    for match in r32_matches:
+        match_id = str(match.get("match_id") or _match_key(match))
+        prediction = predictions_by_match_id.get(match_id)
+        if not prediction or not _has_90_score(match):
+            continue
+        probabilities = _prediction_probabilities(prediction)
+        actual = _actual_outcome(int(match["home_goals_90"]), int(match["away_goals_90"]))
+        predicted = max(probabilities.items(), key=lambda item: item[1])[0]
+        confidence = probabilities[predicted]
+        targets = {key: 1.0 if key == actual else 0.0 for key in ("home", "draw", "away")}
+        brier = sum((probabilities[key] - targets[key]) ** 2 for key in targets) / 3
+        log_loss = -math.log(max(1e-15, min(1 - 1e-15, probabilities[actual])))
+        is_correct = predicted == actual
+        correct += 1 if is_correct else 0
+        log_losses.append(log_loss)
+        briers.append(brier)
+        calibration_errors.append(abs(confidence - (1.0 if is_correct else 0.0)))
+        if actual == "draw":
+            draw_total += 1
+            if predicted == "draw":
+                draw_correct += 1
+        side_probs = {"home": probabilities["home"], "away": probabilities["away"]}
+        favorite_side = max(side_probs.items(), key=lambda item: item[1])[0]
+        underdog_side = "away" if favorite_side == "home" else "home"
+        if predicted == favorite_side:
+            favorite_predictions += 1
+            if actual == favorite_side:
+                favorite_prediction_correct += 1
+        if actual == underdog_side:
+            upset_total += 1
+            if predicted == underdog_side:
+                upset_correct += 1
+        rows.append(
+            {
+                "match_id": match_id,
+                "date": match.get("date"),
+                "stage": match.get("stage") or match.get("group"),
+                "home_team": match.get("home_team"),
+                "away_team": match.get("away_team"),
+                "score_90": f"{match.get('home_goals_90')}-{match.get('away_goals_90')}",
+                "actual_result_90": actual,
+                "probabilities": {key: round(value, 6) for key, value in probabilities.items()},
+                "predicted_result_90": predicted,
+                "correct": is_correct,
+                "error_type": None if is_correct else _r32_error_type(match, probabilities, predicted, actual),
+                "log_loss": round(log_loss, 6),
+                "brier_score": round(brier, 6),
+                "decided_by_penalties": bool(match.get("decided_by_penalties")),
+                "winner": match.get("winner"),
+                "loser": match.get("loser"),
+            }
+        )
+    count = len(rows)
+    return {
+        "stage": "round_of_32",
+        "match_count": count,
+        "accuracy_90": round(correct / count, 6) if count else 0.0,
+        "log_loss": round(sum(log_losses) / count, 6) if count else 0.0,
+        "brier_score": round(sum(briers) / count, 6) if count else 0.0,
+        "calibration_error": round(sum(calibration_errors) / count, 6) if count else 0.0,
+        "draw_recall": round(draw_correct / draw_total, 6) if draw_total else None,
+        "draw_sample_count": draw_total,
+        "favorite_win_precision": round(favorite_prediction_correct / favorite_predictions, 6) if favorite_predictions else None,
+        "favorite_prediction_count": favorite_predictions,
+        "upset_recall": round(upset_correct / upset_total, 6) if upset_total else None,
+        "upset_sample_count": upset_total,
+        "per_match_errors": rows,
+    }
+
+
+def _is_round_of_32_stage(stage: Any) -> bool:
+    value = str(stage or "").lower()
+    return "1/16" in value or "round of 32" in value or "round 32" in value
+
+
+def _r32_error_type(match: dict[str, Any], probabilities: dict[str, float], predicted: str, actual: str) -> str:
+    if actual == "draw" and bool(match.get("decided_by_penalties")):
+        return "点球晋级被错误影响到90分钟模型"
+    if actual == "draw":
+        return "平局被预测成胜负"
+    side_probs = {"home": probabilities["home"], "away": probabilities["away"]}
+    favorite_side = max(side_probs.items(), key=lambda item: item[1])[0]
+    if predicted == "draw":
+        return "强队胜被预测成平" if actual == favorite_side else "本届世界杯状态权重不足"
+    if actual != favorite_side:
+        return "弱队爆冷未识别"
+    if probabilities[predicted] >= 0.62:
+        return "赔率/历史强度权重过高"
+    return "本届世界杯状态权重不足"
 
 
 def _prediction_probabilities(prediction: dict[str, Any]) -> dict[str, float]:
@@ -597,6 +775,31 @@ def _prediction_probabilities(prediction: dict[str, Any]) -> dict[str, float]:
     if total <= 0:
         return {"home": 1 / 3, "draw": 1 / 3, "away": 1 / 3}
     return {key: max(0.0, value) / total for key, value in values.items()}
+
+
+def _prediction_over25_probability(prediction: dict[str, Any]) -> float | None:
+    over_summary = prediction.get("over25_summary") if isinstance(prediction.get("over25_summary"), dict) else {}
+    totals_25 = (prediction.get("totals") or {}).get("2.5") if isinstance(prediction.get("totals"), dict) else {}
+    candidates = [
+        prediction.get("final_over25_prob"),
+        prediction.get("over25_prob"),
+        over_summary.get("final_over25_prob"),
+        totals_25.get("over") if isinstance(totals_25, dict) else None,
+    ]
+    for value in candidates:
+        if value is None:
+            continue
+        try:
+            return max(0.0, min(1.0, float(value)))
+        except (TypeError, ValueError):
+            continue
+    expected = prediction.get("expected_goals") or {}
+    if isinstance(expected, dict) and {"home", "away"} <= set(expected):
+        try:
+            return 1.0 if float(expected["home"]) + float(expected["away"]) > 2.5 else 0.0
+        except (TypeError, ValueError):
+            return None
+    return None
 
 
 def _actual_outcome(home_goals: int, away_goals: int) -> str:

@@ -4,8 +4,10 @@ import httpx
 
 from worldcup_predictor.prediction.ensemble import blend_model_probabilities
 from worldcup_predictor.prediction.xgboost_model import validate_probabilities
+from worldcup_predictor.data.lyihub import LyihubWorldCupScraper
 from worldcup_predictor.result_sync import (
     collect_world_cup_finished_matches,
+    evaluate_round_of_32_regression,
     evaluate_world_cup_regression,
     fetch_latest_finished_matches,
     retrain_team_ratings_from_world_cup,
@@ -314,6 +316,7 @@ def test_regression_evaluation_outputs_core_metrics():
         "eval-1": {
             "probabilities": {"home": 0.7, "draw": 0.2, "away": 0.1},
             "expected_goals": {"home": 1.5, "away": 1.2},
+            "final_over25_prob": 0.62,
             "fixture": {"home_team": "Home", "away_team": "Away"},
         }
     }
@@ -326,8 +329,112 @@ def test_regression_evaluation_outputs_core_metrics():
     assert evaluation["brier_score"] > 0
     assert evaluation["goals_mae"] == 0.35
     assert evaluation["goals_rmse"] > 0
+    assert evaluation["over25_accuracy"] == 1.0
     assert evaluation["advance_accuracy"] == 1.0
     assert evaluation["per_match_errors"][0]["match_id"] == "eval-1"
+    assert evaluation["per_match_errors"][0]["actual_over25"] is True
+    assert evaluation["per_match_errors"][0]["predicted_over25"] is True
+
+
+def test_round_of_32_regression_uses_90_minute_draw_not_penalty_winner():
+    match = penalty_match()
+    predictions = {
+        match["match_id"]: {
+            "probabilities": {"home": 0.2, "draw": 0.6, "away": 0.2},
+            "expected_goals": {"home": 1.0, "away": 1.0},
+        }
+    }
+
+    evaluation = evaluate_round_of_32_regression([match], predictions)
+
+    assert evaluation["match_count"] == 1
+    assert evaluation["accuracy_90"] == 1.0
+    assert evaluation["draw_recall"] == 1.0
+    row = evaluation["per_match_errors"][0]
+    assert row["actual_result_90"] == "draw"
+    assert row["winner"] == "Paraguay"
+    assert row["error_type"] is None
+
+
+def test_round_of_32_penalty_draw_predicted_as_win_reports_penalty_pollution():
+    match = penalty_match()
+    predictions = {
+        match["match_id"]: {
+            "probabilities": {"home": 0.55, "draw": 0.25, "away": 0.20},
+            "expected_goals": {"home": 1.2, "away": 0.8},
+        }
+    }
+
+    evaluation = evaluate_round_of_32_regression([match], predictions)
+
+    row = evaluation["per_match_errors"][0]
+    assert row["actual_result_90"] == "draw"
+    assert row["predicted_result_90"] == "home"
+    assert row["error_type"] == "点球晋级被错误影响到90分钟模型"
+
+
+def test_lyihub_score_90min_overrides_penalty_full_score_for_regression():
+    scraper = LyihubWorldCupScraper()
+    normalized = scraper.normalize_index_match(
+        {
+            "match_id": "54327933",
+            "kickoff_at": "2026-06-29T20:30:00+00:00",
+            "stage": "1/16决赛",
+            "team_a": "德国",
+            "team_b": "巴拉圭",
+            "team_a_id": "ger",
+            "team_b_id": "par",
+            "venue": "test",
+            "score_full": {"team_a": 4, "team_b": 5},
+            "score_90min": {"team_a": 1, "team_b": 1},
+        }
+    )
+
+    assert normalized["home_score"] == 1
+    assert normalized["away_score"] == 1
+
+
+def test_collect_world_cup_finished_matches_prefers_lyihub_score_90min_payload(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    stale_finished = {
+        **penalty_match(),
+        "match_id": "lyihub-54327933",
+        "date": "2026-06-30",
+        "home_goals_90": 4,
+        "away_goals_90": 5,
+    }
+    sync_finished_matches_to_local_store([stale_finished], service.db)
+    service.db.upsert_lyihub_match(
+        {
+            "id": "lyihub-54327933",
+            "match_id": "54327933",
+            "date": "2026-06-30",
+            "kickoff": "2026-06-29T20:30:00+00:00",
+            "home_team": "Germany",
+            "away_team": "Paraguay",
+            "group": "1/16决赛",
+            "stage": "1/16决赛",
+            "venue": "test",
+            "status": "final",
+            "home_score": 4,
+            "away_score": 5,
+            "has_predict": False,
+            "source_url": "https://example.test",
+            "source_name": "lyihub_worldcup_static_json",
+            "payload": {
+                "score_full": {"team_a": 4, "team_b": 5},
+                "score_90min": {"team_a": 1, "team_b": 1},
+            },
+        }
+    )
+
+    matches = collect_world_cup_finished_matches(service.db)
+    target = next(match for match in matches if match["home_team"] == "Germany")
+
+    assert target["home_goals_90"] == 1
+    assert target["away_goals_90"] == 1
+    assert target["decided_by_penalties"] is True
+    assert target["winner"] == "Paraguay"
 
 
 def test_update_after_results_returns_today_retraining_and_regression_fields(tmp_path: Path, monkeypatch):
@@ -377,7 +484,8 @@ def test_update_after_results_returns_today_retraining_and_regression_fields(tmp
 
     assert result["today_finished_matches"] == [today]
     assert result["world_cup_finished_match_count"] == 2
-    assert result["retraining"]["world_cup_data_weight"] == 0.75
+    assert result["retraining"]["world_cup_data_weight"] in {0.70, 0.75, 0.80, 0.85}
+    assert result["weight_scheme_comparison"]["selected_scheme"]["current_world_cup"] == result["retraining"]["world_cup_data_weight"]
     assert result["regression_evaluation"]["match_count"] == 2
     assert (tmp_path / "outputs" / "regression_evaluation.json").exists()
     assert (tmp_path / "outputs" / "model_retraining_report.json").exists()

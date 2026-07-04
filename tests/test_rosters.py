@@ -1,4 +1,6 @@
 from pathlib import Path
+import json
+from statistics import mean
 
 import httpx
 from fastapi.testclient import TestClient
@@ -324,8 +326,9 @@ def test_service_strength_fallback_uses_team_profile_not_default_seventy(tmp_pat
 
     strength = service.get_team_strength("Brazil", allow_empty=True)
 
-    assert strength["model_version"] == "team-performance-fallback-v1"
+    assert strength["model_version"] == "world-cup-line-strength-v1"
     assert strength["paper_strength_source"] == "本届世界杯表现 fallback"
+    assert strength["strength_baseline"] == "50 = 本届世界杯48队平均水平"
     assert {
         strength["attack_line_strength"],
         strength["midfield_line_strength"],
@@ -344,10 +347,45 @@ def test_service_strength_uses_team_level_fifa_power_rankings_without_exact_play
 
     strength = service.get_team_strength("Brazil", allow_empty=True)
 
+    assert strength["model_version"] == "world-cup-line-strength-v1"
     assert strength["paper_strength_source"] == "FIFA power rankings"
-    assert strength["attack_line_strength"] == 91
-    assert strength["midfield_line_strength"] == 84
-    assert strength["defense_line_strength"] == 82
+    assert strength["attack_line_strength_raw"] == 91
+    assert strength["midfield_line_strength_raw"] == 84
+    assert strength["defense_line_strength_raw"] == 82
+    assert strength["strength_baseline"] == "50 = 本届世界杯48队平均水平"
+
+
+def test_squad_strength_standardizes_48_team_pool_around_fifty(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    for index in range(48):
+        team = f"Team {index:02d}"
+        service.db.save_team_profile(
+            team,
+            {
+                "team": team,
+                "attack_rating": 0.75 + index * 0.035,
+                "midfield_rating": 52 + index * 0.75,
+                "defensive_stability": 0.75 + index * 0.025,
+                "defense_rating": 1.5 - index * 0.015,
+                "world_cup_data_weight": 0.8,
+            },
+        )
+
+    summary = service.recompute_all_squad_strengths(force=True)
+    strengths = [service.get_team_strength(f"Team {index:02d}", allow_empty=True) for index in range(48)]
+
+    assert summary["standardization"]["team_count"] == 48
+    for field in ("attack_line_strength", "midfield_line_strength", "defense_line_strength"):
+        values = [strength[field] for strength in strengths]
+        assert abs(mean(values) - 50) < 0.2
+        assert values.count(70.0) < 3
+    assert strengths[47]["squad_overall_strength"] > 50
+    assert strengths[0]["squad_overall_strength"] < 50
+    assert all(strength["strength_baseline"] == "50 = 本届世界杯48队平均水平" for strength in strengths)
+    output_paths = service._write_squad_strength_outputs(tmp_path)
+    payload = json.loads(Path(output_paths["squad_strengths_updated_json"]).read_text(encoding="utf-8"))
+    assert payload["baseline_note"] == "50 = 本届世界杯48队平均水平"
+    assert payload["standardization"]["team_count"] == 48
 
 
 def test_fifa_parser_extracts_roster_lineup_and_substitutes():
@@ -470,7 +508,7 @@ def test_service_recomputes_legacy_squad_strength_cache_missing_line_fields(tmp_
 
     strength = service.get_team_strength("Netherlands", allow_empty=True)
 
-    assert strength["model_version"] == "roster-strength-v2"
+    assert strength["model_version"] == "world-cup-line-strength-v1"
     assert "attack_line_strength" in strength
 
 
@@ -626,33 +664,54 @@ def test_roster_weight_changes_prediction_when_strengths_are_available(tmp_path:
     )
     service.db.save_squad_strength(
         "England",
-        {
-            "team": "England",
-            "attack_strength": 88,
-            "midfield_control_strength": 86,
-            "defense_gk_strength": 83,
-            "coverage": 1.0,
-            "missing_player_stats": 0,
-            "model_version": "test",
-        },
-    )
+            {
+                "team": "England",
+                "attack_strength": 66,
+                "midfield_control_strength": 62,
+                "defense_gk_strength": 61,
+                "attack_line_strength": 66,
+                "midfield_line_strength": 62,
+                "defense_line_strength": 60,
+                "goalkeeper_strength": 62,
+                "starting_xi_strength": 63,
+                "bench_strength": 57,
+                "squad_overall_strength": 62,
+                "coverage": 1.0,
+                "missing_player_stats": 0,
+                "paper_strength_source": "test normalized strength",
+                "fallback_fields": [],
+                "strength_baseline": "50 = 本届世界杯48队平均水平",
+                "model_version": "world-cup-line-strength-v1",
+            },
+        )
     service.db.save_squad_strength(
         "Ghana",
-        {
-            "team": "Ghana",
-            "attack_strength": 67,
-            "midfield_control_strength": 66,
-            "defense_gk_strength": 61,
-            "coverage": 1.0,
-            "missing_player_stats": 0,
-            "model_version": "test",
-        },
-    )
+            {
+                "team": "Ghana",
+                "attack_strength": 43,
+                "midfield_control_strength": 45,
+                "defense_gk_strength": 44,
+                "attack_line_strength": 43,
+                "midfield_line_strength": 45,
+                "defense_line_strength": 44,
+                "goalkeeper_strength": 44,
+                "starting_xi_strength": 44,
+                "bench_strength": 41,
+                "squad_overall_strength": 43,
+                "coverage": 1.0,
+                "missing_player_stats": 0,
+                "paper_strength_source": "test normalized strength",
+                "fallback_fields": [],
+                "strength_baseline": "50 = 本届世界杯48队平均水平",
+                "model_version": "world-cup-line-strength-v1",
+            },
+        )
 
     baseline = service.predict_fixture("roster-fixture", roster_weight=0.0)
     rostered = service.predict_fixture("roster-fixture", roster_weight=0.25)
 
     assert rostered["roster_weight"] == 0.25
-    assert rostered["roster_strength"]["home"]["attack_strength"] == 88
+    assert rostered["roster_strength"]["home"]["attack_strength"] == 66
+    assert rostered["roster_strength"]["home"]["strength_baseline"] == "50 = 本届世界杯48队平均水平"
     assert rostered["expected_goals"]["home"] > baseline["expected_goals"]["home"]
     assert rostered["model_inputs"]["roster_adjustment"]["home_xg_multiplier"] > 1.0

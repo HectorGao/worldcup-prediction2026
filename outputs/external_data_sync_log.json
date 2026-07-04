@@ -1,319 +1,1093 @@
 {
-  "fifa": {
-    "source": "FIFA",
-    "source_priority": 1,
-    "matches": [],
-    "match_count": 0,
-    "power_rankings": [],
-    "power_ranking_count": 0,
-    "power_ranking_matched_players": 0,
-    "rosters": [],
-    "roster_count": 0,
-    "news": [],
-    "warnings": [
-      "No embedded FIFA JSON payload found; dynamic API discovery may be required."
-    ]
-  },
-  "footballdata_io": {
-    "source": "FootballData.io",
-    "configured": true,
-    "fixtures": [
-      {
-        "id": "footballdata-io-500498428",
-        "source_id": "500498428",
-        "source": "FootballData.io",
-        "source_priority": 2,
-        "date": "2026-07-01",
-        "kickoff": "2026-07-01T00:00:00Z",
-        "home_team": "Home",
-        "away_team": "Away",
-        "group": null,
-        "venue": "Estadio Banorte",
-        "status": "final",
-        "home_score": 2,
-        "away_score": 0,
-        "home_elo": 1700,
-        "away_elo": 1700,
-        "market_home": null,
-        "market_draw": null,
-        "market_away": null,
-        "footballdata_io_stats": {},
-        "payload": {
-          "match_id": 500498428,
-          "match_date": "2026-07-01 02:00:00",
-          "date_unix": 1782871200,
-          "status": "complete",
-          "status_localized": "Finished",
-          "round_id": 122062,
-          "game_week": 0,
-          "league": {
-            "league_id": 50,
-            "league_name": "World Cup",
-            "country": "International",
-            "league_image": "https://footballdata.io/img/league/international-world-cup.png"
-          },
-          "season": {
-            "season_id": 618,
-            "year": 2026
-          },
-          "home_team": {
-            "team_id": 2197,
-            "team_name": "Mexico National Team",
-            "seo_slug": "mexico-national-team",
-            "team_logo": "https://footballdata.io/img/team/mexico-mexico-national-team.png",
-            "country": "Mexico"
-          },
-          "away_team": {
-            "team_id": 2190,
-            "team_name": "Ecuador National Team",
-            "seo_slug": "ecuador-national-team",
-            "team_logo": "https://footballdata.io/img/team/ecuador-ecuador-national-team.png",
-            "country": "Ecuador"
-          },
-          "score": {
-            "home": 2,
-            "away": 0,
-            "total": 2,
-            "halftime_home": 2,
-            "halftime_away": 0,
-            "halftime_total": 2,
-            "second_half_home": 0,
-            "second_half_away": 0,
-            "second_half_total": 0
-          },
-          "xg": {
-            "home": 1.34,
-            "away": 0.93,
-            "total": 2.27,
-            "prematch_home": 1.23,
-            "prematch_away": 1.85,
-            "prematch_total": 3.08
-          },
-          "form": {
-            "home_ppg": 3,
-            "away_ppg": 1,
-            "pre_match_home_ppg": 3,
-            "pre_match_away_ppg": 1.33
-          },
-          "venue": {
-            "name": "Estadio Banorte",
-            "location": "Calzada de Tlalpan 3665, CoyoacÃ¡n",
-            "attendance": 80824
-          },
-          "winner_text": "Mexico National Team won the match"
-        }
-      },
-      {
-        "id": "footballdata-io-690940473",
-        "source_id": "690940473",
-        "source": "FootballData.io",
-        "source_priority": 2,
-        "date": "2026-07-01",
-        "kickoff": "2026-07-01T00:00:00Z",
-        "home_team": "Home",
-        "away_team": "Away",
-        "group": null,
-        "venue": "Mercedes-Benz Stadium",
-        "status": "scheduled",
-        "home_score": 0,
-        "away_score": 0,
-        "home_elo": 1700,
-        "away_elo": 1700,
-        "market_home": null,
-        "market_draw": null,
-        "market_away": null,
-        "footballdata_io_stats": {},
-        "payload": {
-          "match_id": 690940473,
-          "match_date": "2026-07-01 16:00:00",
-          "date_unix": 1782921600,
-          "status": "incomplete",
-          "status_localized": "Scheduled",
-          "round_id": 122062,
-          "game_week": 0,
-          "league": {
-            "league_id": 50,
-            "league_name": "World Cup",
-            "country": "International",
-            "league_image": "https://footballdata.io/img/league/international-world-cup.png"
-          },
-          "season": {
-            "season_id": 618,
-            "year": 2026
-          },
-          "home_team": {
-            "team_id": 2064,
-            "team_name": "England National Team",
-            "seo_slug": "england-national-team",
-            "team_logo": "https://footballdata.io/img/team/england-england-national-team.png",
-            "country": "England"
-          },
-          "away_team": {
-            "team_id": 2237,
-            "team_name": "Congo DR National Team",
-            "seo_slug": "congo-dr-national-team",
-            "team_logo": "https://footballdata.io/img/team/congo-dr-congo-dr-national-team.png",
-            "country": "Congo DR"
-          },
-          "score": {
-            "home": 0,
-            "away": 0,
-            "total": 0,
-            "halftime_home": 0,
-            "halftime_away": 0,
-            "halftime_total": 0,
-            "second_half_home": 0,
-            "second_half_away": 0,
-            "second_half_total": 0
-          },
-          "xg": {
-            "home": 0,
-            "away": 0,
-            "total": 0,
-            "prematch_home": 2.12,
-            "prematch_away": 1.14,
-            "prematch_total": 3.26
-          },
-          "form": {
-            "home_ppg": 2.33,
-            "away_ppg": 1.33,
-            "pre_match_home_ppg": 2.33,
-            "pre_match_away_ppg": 1.33
-          },
-          "venue": {
-            "name": "Mercedes-Benz Stadium",
-            "location": "1 AMB Drive North West",
-            "attendance": -1
-          }
-        }
-      },
-      {
-        "id": "footballdata-io-683454200",
-        "source_id": "683454200",
-        "source": "FootballData.io",
-        "source_priority": 2,
-        "date": "2026-07-01",
-        "kickoff": "2026-07-01T00:00:00Z",
-        "home_team": "Home",
-        "away_team": "Away",
-        "group": null,
-        "venue": "Lumen Field",
-        "status": "scheduled",
-        "home_score": 0,
-        "away_score": 0,
-        "home_elo": 1700,
-        "away_elo": 1700,
-        "market_home": null,
-        "market_draw": null,
-        "market_away": null,
-        "footballdata_io_stats": {},
-        "payload": {
-          "match_id": 683454200,
-          "match_date": "2026-07-01 20:00:00",
-          "date_unix": 1782936000,
-          "status": "incomplete",
-          "status_localized": "Scheduled",
-          "round_id": 122062,
-          "game_week": 0,
-          "league": {
-            "league_id": 50,
-            "league_name": "World Cup",
-            "country": "International",
-            "league_image": "https://footballdata.io/img/league/international-world-cup.png"
-          },
-          "season": {
-            "season_id": 618,
-            "year": 2026
-          },
-          "home_team": {
-            "team_id": 2073,
-            "team_name": "Belgium National Team",
-            "seo_slug": "belgium-national-team",
-            "team_logo": "https://footballdata.io/img/team/belgium-belgium-national-team.png",
-            "country": "Belgium"
-          },
-          "away_team": {
-            "team_id": 2202,
-            "team_name": "Senegal National Team",
-            "seo_slug": "senegal-national-team",
-            "team_logo": "https://footballdata.io/img/team/senegal-senegal-national-team.png",
-            "country": "Senegal"
-          },
-          "score": {
-            "home": 0,
-            "away": 0,
-            "total": 0,
-            "halftime_home": 0,
-            "halftime_away": 0,
-            "halftime_total": 0,
-            "second_half_home": 0,
-            "second_half_away": 0,
-            "second_half_total": 0
-          },
-          "xg": {
-            "home": 0,
-            "away": 0,
-            "total": 0,
-            "prematch_home": 2.55,
-            "prematch_away": 1.9,
-            "prematch_total": 4.45
-          },
-          "form": {
-            "home_ppg": 1.67,
-            "away_ppg": 1,
-            "pre_match_home_ppg": 1.67,
-            "pre_match_away_ppg": 1
-          },
-          "venue": {
-            "name": "Lumen Field",
-            "location": "800 Occidental Avenue South",
-            "attendance": -1
-          }
-        }
-      }
-    ],
-    "fixture_count": 3,
-    "meta": {
-      "plan": "free",
-      "requests_used": 3,
-      "requests_limit": 1000,
-      "requests_remaining": 997,
-      "coverage_note": "Coverage varies by league and season.",
-      "league_limit": 5,
-      "language": "en",
-      "page": 1,
-      "limit": 50,
-      "count": 3,
-      "total": 3,
-      "total_pages": 1
-    },
-    "warnings": []
-  },
+  "fifa": null,
+  "sportmonks": null,
+  "footballdata_io": null,
   "sporttery": {
     "source": "https://m.sporttery.cn/mjc/jsq/zqspf/",
-    "mode": "snapshot_fallback",
-    "updated": 9,
+    "mode": "live",
+    "updated": 6,
     "cleared_non_sporttery_markets": 0,
-    "match_numbers": [
-      "周一074",
-      "周一075",
-      "周一076",
-      "周二077",
-      "周二078",
-      "周二079",
-      "周三080",
-      "周三081",
-      "周三082"
+    "sample_count": 23,
+    "last_updated": "2026-07-04T08:44:17.112180+00:00",
+    "grouped_by_date": {
+      "2026-07-05": [
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周六089",
+          "match_num_date": "260704",
+          "league": "世界杯",
+          "home_team": "加拿大",
+          "away_team": "摩洛哥",
+          "h2h": {
+            "home": 5.5,
+            "draw": 3.5,
+            "away": 1.51
+          },
+          "handicap": {
+            "home": 2.17,
+            "draw": 2.87,
+            "away": 3.12
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629261+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周六090",
+          "match_num_date": "260704",
+          "league": "世界杯",
+          "home_team": "巴拉圭",
+          "away_team": "法国",
+          "h2h": {},
+          "handicap": {
+            "home": 2.39,
+            "draw": 3.44,
+            "away": 2.38
+          },
+          "handicap_line": "+2",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629298+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周日201",
+          "match_num_date": "260705",
+          "league": "韩国职业联赛",
+          "home_team": "首尔FC",
+          "away_team": "仁川联",
+          "h2h": {
+            "home": 1.68,
+            "draw": 3.3,
+            "away": 4.35
+          },
+          "handicap": {
+            "home": 3.35,
+            "draw": 3.28,
+            "away": 1.9
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629434+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周日202",
+          "match_num_date": "260705",
+          "league": "韩国职业联赛",
+          "home_team": "光州FC",
+          "away_team": "蔚山现代",
+          "h2h": {
+            "home": 5.95,
+            "draw": 3.9,
+            "away": 1.42
+          },
+          "handicap": {
+            "home": 2.45,
+            "draw": 3.25,
+            "away": 2.42
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629444+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周日203",
+          "match_num_date": "260705",
+          "league": "韩国职业联赛",
+          "home_team": "金泉尚武",
+          "away_team": "济州SK",
+          "h2h": {
+            "home": 2.38,
+            "draw": 3.05,
+            "away": 2.62
+          },
+          "handicap": {
+            "home": 5.6,
+            "draw": 3.9,
+            "away": 1.44
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629545+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周日204",
+          "match_num_date": "260705",
+          "league": "瑞典超级联赛",
+          "home_team": "卡尔马",
+          "away_team": "厄尔格里特",
+          "h2h": {
+            "home": 1.38,
+            "draw": 4.4,
+            "away": 5.65
+          },
+          "handicap": {
+            "home": 2.2,
+            "draw": 3.55,
+            "away": 2.55
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629558+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周日205",
+          "match_num_date": "260705",
+          "league": "瑞典超级联赛",
+          "home_team": "IFK哥德堡",
+          "away_team": "AIK索尔纳",
+          "h2h": {
+            "home": 2.14,
+            "draw": 3.35,
+            "away": 2.75
+          },
+          "handicap": {
+            "home": 4.4,
+            "draw": 3.9,
+            "away": 1.55
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629568+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-05",
+          "match_num": "周日206",
+          "match_num_date": "260705",
+          "league": "瑞典超级联赛",
+          "home_team": "埃尔夫斯堡",
+          "away_team": "哈马比",
+          "h2h": {
+            "home": 3.7,
+            "draw": 3.6,
+            "away": 1.72
+          },
+          "handicap": {
+            "home": 1.85,
+            "draw": 3.55,
+            "away": 3.25
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629579+00:00"
+        }
+      ],
+      "2026-07-04": [
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六201",
+          "match_num_date": "260704",
+          "league": "韩国职业联赛",
+          "home_team": "安养FC",
+          "away_team": "浦项制铁",
+          "h2h": {
+            "home": 2.92,
+            "draw": 2.64,
+            "away": 2.45
+          },
+          "handicap": {
+            "home": 1.42,
+            "draw": 3.75,
+            "away": 6.3
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629311+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六202",
+          "match_num_date": "260704",
+          "league": "韩国职业联赛",
+          "home_team": "大田市民",
+          "away_team": "富川FC",
+          "h2h": {
+            "home": 1.62,
+            "draw": 3.3,
+            "away": 4.8
+          },
+          "handicap": {
+            "home": 3.32,
+            "draw": 3.0,
+            "away": 2.02
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629322+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六203",
+          "match_num_date": "260704",
+          "league": "韩国职业联赛",
+          "home_team": "全北现代",
+          "away_team": "江原FC",
+          "h2h": {
+            "home": 2.16,
+            "draw": 2.88,
+            "away": 3.14
+          },
+          "handicap": {
+            "home": 5.1,
+            "draw": 3.58,
+            "away": 1.53
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629333+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六204",
+          "match_num_date": "260704",
+          "league": "芬兰超级联赛",
+          "home_team": "拉赫蒂",
+          "away_team": "赫尔辛基火花",
+          "h2h": {
+            "home": 2.17,
+            "draw": 3.15,
+            "away": 2.85
+          },
+          "handicap": {
+            "home": 4.75,
+            "draw": 3.85,
+            "away": 1.52
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629344+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六205",
+          "match_num_date": "260704",
+          "league": "瑞典超级联赛",
+          "home_team": "哈尔姆斯塔德",
+          "away_team": "韦斯特罗斯",
+          "h2h": {
+            "home": 2.8,
+            "draw": 3.03,
+            "away": 2.26
+          },
+          "handicap": {
+            "home": 1.49,
+            "draw": 3.9,
+            "away": 4.95
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629355+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六206",
+          "match_num_date": "260704",
+          "league": "瑞典超级联赛",
+          "home_team": "代格福什",
+          "away_team": "马尔默",
+          "h2h": {
+            "home": 3.14,
+            "draw": 3.35,
+            "away": 1.95
+          },
+          "handicap": {
+            "home": 1.66,
+            "draw": 3.65,
+            "away": 3.95
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629369+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六207",
+          "match_num_date": "260704",
+          "league": "芬兰超级联赛",
+          "home_team": "塞伊奈约基",
+          "away_team": "TPS图尔库",
+          "h2h": {
+            "home": 1.61,
+            "draw": 3.75,
+            "away": 4.15
+          },
+          "handicap": {
+            "home": 2.88,
+            "draw": 3.42,
+            "away": 2.04
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629380+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六208",
+          "match_num_date": "260704",
+          "league": "芬兰超级联赛",
+          "home_team": "雅罗",
+          "away_team": "坦佩雷山猫",
+          "h2h": {
+            "home": 3.43,
+            "draw": 3.66,
+            "away": 1.77
+          },
+          "handicap": {
+            "home": 1.8,
+            "draw": 3.63,
+            "away": 3.35
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629391+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-04",
+          "match_num": "周六209",
+          "match_num_date": "260704",
+          "league": "芬兰超级联赛",
+          "home_team": "瓦萨",
+          "away_team": "玛丽港",
+          "h2h": {
+            "home": 1.2,
+            "draw": 5.15,
+            "away": 9.85
+          },
+          "handicap": {
+            "home": 1.71,
+            "draw": 3.75,
+            "away": 3.6
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629402+00:00"
+        }
+      ],
+      "2026-07-06": [
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-06",
+          "match_num": "周日091",
+          "match_num_date": "260705",
+          "league": "世界杯",
+          "home_team": "巴西",
+          "away_team": "挪威",
+          "h2h": {
+            "home": 1.6,
+            "draw": 3.55,
+            "away": 4.5
+          },
+          "handicap": {
+            "home": 3.05,
+            "draw": 3.16,
+            "away": 2.06
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629412+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-06",
+          "match_num": "周日092",
+          "match_num_date": "260705",
+          "league": "世界杯",
+          "home_team": "墨西哥",
+          "away_team": "英格兰",
+          "h2h": {
+            "home": 3.3,
+            "draw": 2.95,
+            "away": 2.05
+          },
+          "handicap": {
+            "home": 1.57,
+            "draw": 3.45,
+            "away": 4.95
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629423+00:00"
+        }
+      ],
+      "2026-07-07": [
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-07",
+          "match_num": "周一093",
+          "match_num_date": "260706",
+          "league": "世界杯",
+          "home_team": "葡萄牙",
+          "away_team": "西班牙",
+          "h2h": {
+            "home": 3.6,
+            "draw": 3.28,
+            "away": 1.83
+          },
+          "handicap": {
+            "home": 1.76,
+            "draw": 3.6,
+            "away": 3.53
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629590+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-07",
+          "match_num": "周一094",
+          "match_num_date": "260706",
+          "league": "世界杯",
+          "home_team": "美国",
+          "away_team": "比利时",
+          "h2h": {
+            "home": 2.5,
+            "draw": 3.22,
+            "away": 2.39
+          },
+          "handicap": {
+            "home": 1.44,
+            "draw": 4.3,
+            "away": 4.95
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629603+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-07",
+          "match_num": "周一201",
+          "match_num_date": "260706",
+          "league": "瑞典超级联赛",
+          "home_team": "赫根",
+          "away_team": "佐加顿斯",
+          "h2h": {
+            "home": 2.28,
+            "draw": 3.5,
+            "away": 2.47
+          },
+          "handicap": {
+            "home": 4.65,
+            "draw": 4.2,
+            "away": 1.48
+          },
+          "handicap_line": "-1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629613+00:00"
+        },
+        {
+          "source": "China Sporttery",
+          "date": "2026-07-07",
+          "match_num": "周一202",
+          "match_num_date": "260706",
+          "league": "瑞典超级联赛",
+          "home_team": "布鲁马波卡纳",
+          "away_team": "哥德堡盖斯",
+          "h2h": {
+            "home": 3.02,
+            "draw": 3.25,
+            "away": 2.04
+          },
+          "handicap": {
+            "home": 1.6,
+            "draw": 3.7,
+            "away": 4.27
+          },
+          "handicap_line": "+1",
+          "totals": {},
+          "updated_at": "2026-07-04T08:44:17.629623+00:00"
+        }
+      ]
+    },
+    "unmatched_matches": [
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六201",
+        "match_num_date": "260704",
+        "league": "韩国职业联赛",
+        "home_team": "安养FC",
+        "away_team": "浦项制铁",
+        "h2h": {
+          "home": 2.92,
+          "draw": 2.64,
+          "away": 2.45
+        },
+        "handicap": {
+          "home": 1.42,
+          "draw": 3.75,
+          "away": 6.3
+        },
+        "handicap_line": "+1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629311+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六202",
+        "match_num_date": "260704",
+        "league": "韩国职业联赛",
+        "home_team": "大田市民",
+        "away_team": "富川FC",
+        "h2h": {
+          "home": 1.62,
+          "draw": 3.3,
+          "away": 4.8
+        },
+        "handicap": {
+          "home": 3.32,
+          "draw": 3.0,
+          "away": 2.02
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629322+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六203",
+        "match_num_date": "260704",
+        "league": "韩国职业联赛",
+        "home_team": "全北现代",
+        "away_team": "江原FC",
+        "h2h": {
+          "home": 2.16,
+          "draw": 2.88,
+          "away": 3.14
+        },
+        "handicap": {
+          "home": 5.1,
+          "draw": 3.58,
+          "away": 1.53
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629333+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六204",
+        "match_num_date": "260704",
+        "league": "芬兰超级联赛",
+        "home_team": "拉赫蒂",
+        "away_team": "赫尔辛基火花",
+        "h2h": {
+          "home": 2.17,
+          "draw": 3.15,
+          "away": 2.85
+        },
+        "handicap": {
+          "home": 4.75,
+          "draw": 3.85,
+          "away": 1.52
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629344+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六205",
+        "match_num_date": "260704",
+        "league": "瑞典超级联赛",
+        "home_team": "哈尔姆斯塔德",
+        "away_team": "韦斯特罗斯",
+        "h2h": {
+          "home": 2.8,
+          "draw": 3.03,
+          "away": 2.26
+        },
+        "handicap": {
+          "home": 1.49,
+          "draw": 3.9,
+          "away": 4.95
+        },
+        "handicap_line": "+1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629355+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六206",
+        "match_num_date": "260704",
+        "league": "瑞典超级联赛",
+        "home_team": "代格福什",
+        "away_team": "马尔默",
+        "h2h": {
+          "home": 3.14,
+          "draw": 3.35,
+          "away": 1.95
+        },
+        "handicap": {
+          "home": 1.66,
+          "draw": 3.65,
+          "away": 3.95
+        },
+        "handicap_line": "+1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629369+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六207",
+        "match_num_date": "260704",
+        "league": "芬兰超级联赛",
+        "home_team": "塞伊奈约基",
+        "away_team": "TPS图尔库",
+        "h2h": {
+          "home": 1.61,
+          "draw": 3.75,
+          "away": 4.15
+        },
+        "handicap": {
+          "home": 2.88,
+          "draw": 3.42,
+          "away": 2.04
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629380+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六208",
+        "match_num_date": "260704",
+        "league": "芬兰超级联赛",
+        "home_team": "雅罗",
+        "away_team": "坦佩雷山猫",
+        "h2h": {
+          "home": 3.43,
+          "draw": 3.66,
+          "away": 1.77
+        },
+        "handicap": {
+          "home": 1.8,
+          "draw": 3.63,
+          "away": 3.35
+        },
+        "handicap_line": "+1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629391+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-04",
+        "match_num": "周六209",
+        "match_num_date": "260704",
+        "league": "芬兰超级联赛",
+        "home_team": "瓦萨",
+        "away_team": "玛丽港",
+        "h2h": {
+          "home": 1.2,
+          "draw": 5.15,
+          "away": 9.85
+        },
+        "handicap": {
+          "home": 1.71,
+          "draw": 3.75,
+          "away": 3.6
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629402+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-05",
+        "match_num": "周日201",
+        "match_num_date": "260705",
+        "league": "韩国职业联赛",
+        "home_team": "首尔FC",
+        "away_team": "仁川联",
+        "h2h": {
+          "home": 1.68,
+          "draw": 3.3,
+          "away": 4.35
+        },
+        "handicap": {
+          "home": 3.35,
+          "draw": 3.28,
+          "away": 1.9
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629434+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-05",
+        "match_num": "周日202",
+        "match_num_date": "260705",
+        "league": "韩国职业联赛",
+        "home_team": "光州FC",
+        "away_team": "蔚山现代",
+        "h2h": {
+          "home": 5.95,
+          "draw": 3.9,
+          "away": 1.42
+        },
+        "handicap": {
+          "home": 2.45,
+          "draw": 3.25,
+          "away": 2.42
+        },
+        "handicap_line": "+1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629444+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-05",
+        "match_num": "周日203",
+        "match_num_date": "260705",
+        "league": "韩国职业联赛",
+        "home_team": "金泉尚武",
+        "away_team": "济州SK",
+        "h2h": {
+          "home": 2.38,
+          "draw": 3.05,
+          "away": 2.62
+        },
+        "handicap": {
+          "home": 5.6,
+          "draw": 3.9,
+          "away": 1.44
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629545+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-05",
+        "match_num": "周日204",
+        "match_num_date": "260705",
+        "league": "瑞典超级联赛",
+        "home_team": "卡尔马",
+        "away_team": "厄尔格里特",
+        "h2h": {
+          "home": 1.38,
+          "draw": 4.4,
+          "away": 5.65
+        },
+        "handicap": {
+          "home": 2.2,
+          "draw": 3.55,
+          "away": 2.55
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629558+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-05",
+        "match_num": "周日205",
+        "match_num_date": "260705",
+        "league": "瑞典超级联赛",
+        "home_team": "IFK哥德堡",
+        "away_team": "AIK索尔纳",
+        "h2h": {
+          "home": 2.14,
+          "draw": 3.35,
+          "away": 2.75
+        },
+        "handicap": {
+          "home": 4.4,
+          "draw": 3.9,
+          "away": 1.55
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629568+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-05",
+        "match_num": "周日206",
+        "match_num_date": "260705",
+        "league": "瑞典超级联赛",
+        "home_team": "埃尔夫斯堡",
+        "away_team": "哈马比",
+        "h2h": {
+          "home": 3.7,
+          "draw": 3.6,
+          "away": 1.72
+        },
+        "handicap": {
+          "home": 1.85,
+          "draw": 3.55,
+          "away": 3.25
+        },
+        "handicap_line": "+1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629579+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-07",
+        "match_num": "周一201",
+        "match_num_date": "260706",
+        "league": "瑞典超级联赛",
+        "home_team": "赫根",
+        "away_team": "佐加顿斯",
+        "h2h": {
+          "home": 2.28,
+          "draw": 3.5,
+          "away": 2.47
+        },
+        "handicap": {
+          "home": 4.65,
+          "draw": 4.2,
+          "away": 1.48
+        },
+        "handicap_line": "-1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629613+00:00"
+      },
+      {
+        "source": "China Sporttery",
+        "date": "2026-07-07",
+        "match_num": "周一202",
+        "match_num_date": "260706",
+        "league": "瑞典超级联赛",
+        "home_team": "布鲁马波卡纳",
+        "away_team": "哥德堡盖斯",
+        "h2h": {
+          "home": 3.02,
+          "draw": 3.25,
+          "away": 2.04
+        },
+        "handicap": {
+          "home": 1.6,
+          "draw": 3.7,
+          "away": 4.27
+        },
+        "handicap_line": "+1",
+        "totals": {},
+        "updated_at": "2026-07-04T08:44:17.629623+00:00"
+      }
     ],
-    "last_error": "Client error '403 Forbidden' for url 'https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry?channel=m&poolCode=hhad%2Chad'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403",
-    "last_updated": "2026-07-01T13:19:42.087390+00:00",
-    "grouped_by_date": {},
-    "unmatched_matches": [],
-    "history": {
-      "history_available": false,
-      "updated": 0,
-      "covered_dates": [],
-      "reason": "No sporttery historical odds were returned; keeping historical matches without odds."
-    }
+    "matched_count": 6,
+    "failed_count": 0,
+    "filtered_matches": [],
+    "match_results": [
+      {
+        "match_num": "周六089",
+        "fixture_id": "lyihub-54328018",
+        "home_team": "加拿大",
+        "away_team": "摩洛哥",
+        "status": "updated",
+        "reason": "full_market",
+        "has_h2h": true,
+        "has_handicap": true,
+        "has_totals": false
+      },
+      {
+        "match_num": "周六090",
+        "fixture_id": "lyihub-54328017",
+        "home_team": "巴拉圭",
+        "away_team": "法国",
+        "status": "updated",
+        "reason": "handicap_only",
+        "has_h2h": false,
+        "has_handicap": true,
+        "has_totals": false
+      },
+      {
+        "match_num": "周六201",
+        "home_team": "安养FC",
+        "away_team": "浦项制铁",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六202",
+        "home_team": "大田市民",
+        "away_team": "富川FC",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六203",
+        "home_team": "全北现代",
+        "away_team": "江原FC",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六204",
+        "home_team": "拉赫蒂",
+        "away_team": "赫尔辛基火花",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六205",
+        "home_team": "哈尔姆斯塔德",
+        "away_team": "韦斯特罗斯",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六206",
+        "home_team": "代格福什",
+        "away_team": "马尔默",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六207",
+        "home_team": "塞伊奈约基",
+        "away_team": "TPS图尔库",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六208",
+        "home_team": "雅罗",
+        "away_team": "坦佩雷山猫",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周六209",
+        "home_team": "瓦萨",
+        "away_team": "玛丽港",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周日091",
+        "fixture_id": "lyihub-54328019",
+        "home_team": "巴西",
+        "away_team": "挪威",
+        "status": "updated",
+        "reason": "full_market",
+        "has_h2h": true,
+        "has_handicap": true,
+        "has_totals": false
+      },
+      {
+        "match_num": "周日092",
+        "fixture_id": "lyihub-54328020",
+        "home_team": "墨西哥",
+        "away_team": "英格兰",
+        "status": "updated",
+        "reason": "full_market",
+        "has_h2h": true,
+        "has_handicap": true,
+        "has_totals": false
+      },
+      {
+        "match_num": "周日201",
+        "home_team": "首尔FC",
+        "away_team": "仁川联",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周日202",
+        "home_team": "光州FC",
+        "away_team": "蔚山现代",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周日203",
+        "home_team": "金泉尚武",
+        "away_team": "济州SK",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周日204",
+        "home_team": "卡尔马",
+        "away_team": "厄尔格里特",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周日205",
+        "home_team": "IFK哥德堡",
+        "away_team": "AIK索尔纳",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周日206",
+        "home_team": "埃尔夫斯堡",
+        "away_team": "哈马比",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周一093",
+        "fixture_id": "lyihub-54328021",
+        "home_team": "葡萄牙",
+        "away_team": "西班牙",
+        "status": "updated",
+        "reason": "full_market",
+        "has_h2h": true,
+        "has_handicap": true,
+        "has_totals": false
+      },
+      {
+        "match_num": "周一094",
+        "fixture_id": "lyihub-54328022",
+        "home_team": "美国",
+        "away_team": "比利时",
+        "status": "updated",
+        "reason": "full_market",
+        "has_h2h": true,
+        "has_handicap": true,
+        "has_totals": false
+      },
+      {
+        "match_num": "周一201",
+        "home_team": "赫根",
+        "away_team": "佐加顿斯",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      },
+      {
+        "match_num": "周一202",
+        "home_team": "布鲁马波卡纳",
+        "away_team": "哥德堡盖斯",
+        "status": "unmatched",
+        "reason": "no_local_fixture_match"
+      }
+    ],
+    "empty_reason": null,
+    "history": null
   }
 }

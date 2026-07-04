@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS fixtures (
   market_source TEXT,
   market_handicap TEXT,
   market_handicap_line TEXT,
+  sportmonks_features TEXT,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -313,6 +314,7 @@ class Database:
             self._ensure_column(connection, "fixtures", "market_source", "TEXT")
             self._ensure_column(connection, "fixtures", "market_handicap", "TEXT")
             self._ensure_column(connection, "fixtures", "market_handicap_line", "TEXT")
+            self._ensure_column(connection, "fixtures", "sportmonks_features", "TEXT")
             self._ensure_column(connection, "squad_players", "fifa_power_rating", "REAL")
             self._ensure_column(connection, "squad_players", "power_ranking_source", "TEXT")
             self._ensure_column(connection, "team_squads", "source_priority", "INTEGER NOT NULL DEFAULT 5")
@@ -661,8 +663,9 @@ class Database:
                 INSERT INTO fixtures (
                   id, date, kickoff, home_team, away_team, group_name, venue, status,
                   home_score, away_score, home_elo, away_elo, market_home, market_draw, market_away,
-                  market_over_2_5, market_under_2_5, market_source, market_handicap, market_handicap_line
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  market_over_2_5, market_under_2_5, market_source, market_handicap, market_handicap_line,
+                  sportmonks_features
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                   date=excluded.date,
                   kickoff=excluded.kickoff,
@@ -683,6 +686,7 @@ class Database:
                   market_source=excluded.market_source,
                   market_handicap=excluded.market_handicap,
                   market_handicap_line=excluded.market_handicap_line,
+                  sportmonks_features=COALESCE(excluded.sportmonks_features, fixtures.sportmonks_features),
                   updated_at=CURRENT_TIMESTAMP
                 """,
                 (
@@ -708,6 +712,9 @@ class Database:
                     if fixture.get("market_handicap") is not None
                     else None,
                     fixture.get("market_handicap_line"),
+                    json.dumps(fixture.get("sportmonks_features"), ensure_ascii=False)
+                    if fixture.get("sportmonks_features") is not None
+                    else None,
                 ),
             )
 

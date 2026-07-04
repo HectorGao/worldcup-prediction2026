@@ -72,31 +72,121 @@ class SampleFixtureProvider:
 
 
 class SportmonksProvider:
-    name = "Sportmonks"
-    role = "premium_optional_no_free_quota"
+    name = "SportMonks"
+    role = "supplemental_fixtures_stats_lineups"
+    base_url = "https://api.sportmonks.com/v3/football"
+    source_priority = 2
+    rich_fixture_includes = "participants;scores;state;lineups;statistics;formations;sidelined;odds;standings"
+    fallback_fixture_includes = "participants;scores;state;lineups;statistics;formations;sidelined;standings"
 
     def __init__(self, token: str | None = None):
-        self.token = token or os.getenv("SPORTMONKS_API_TOKEN")
+        self.token = token or os.getenv("SPORTMONKS_API_KEY") or os.getenv("SPORTMONKS_API_TOKEN")
+        self.capability_warnings: list[str] = []
+        self.last_rate_limit: dict[str, Any] = {}
 
     def configured(self) -> bool:
         return bool(self.token)
 
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Authorization": str(self.token or ""),
+            "Accept": "application/json",
+            "User-Agent": "world-cup-prediction-local/0.1",
+        }
+
+    def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        response = httpx.get(f"{self.base_url}{path}", params=params or {}, headers=self._headers(), timeout=20)
+        if response.status_code in {400, 403} and params and params.get("include") == self.rich_fixture_includes:
+            self.capability_warnings.append(
+                f"SportMonks rich fixture include unavailable HTTP {response.status_code}; retried without odds."
+            )
+            fallback_params = dict(params)
+            fallback_params["include"] = self.fallback_fixture_includes
+            response = httpx.get(f"{self.base_url}{path}", params=fallback_params, headers=self._headers(), timeout=20)
+        response.raise_for_status()
+        self.last_rate_limit = self._rate_limit_meta(response)
+        return response.json()
+
+    def _rate_limit_meta(self, response: Any) -> dict[str, Any]:
+        headers = getattr(response, "headers", {}) or {}
+        meta: dict[str, Any] = {}
+        for key in ("x-ratelimit-limit", "x-ratelimit-remaining", "x-ratelimit-reset"):
+            value = headers.get(key)
+            if value is not None:
+                clean_key = key.replace("x-ratelimit-", "").replace("-", "_")
+                try:
+                    meta[clean_key] = int(value)
+                except (TypeError, ValueError):
+                    meta[clean_key] = value
+        try:
+            payload = response.json()
+        except Exception:
+            payload = {}
+        for container_key in ("rate_limit", "meta"):
+            value = payload.get(container_key) if isinstance(payload, dict) else None
+            if isinstance(value, dict):
+                meta.update({k: v for k, v in value.items() if "key" not in str(k).lower() and "token" not in str(k).lower()})
+        return meta
+
     def fetch_fixtures(self, date: str) -> list[dict[str, Any]]:
         if not self.configured():
             return []
-        url = f"https://api.sportmonks.com/v3/football/fixtures/date/{date}"
-        params = {"api_token": self.token, "include": "participants;scores;venue;state"}
-        response = httpx.get(url, params=params, timeout=20)
-        response.raise_for_status()
-        payload = response.json()
+        try:
+            payload = self._get(
+                f"/fixtures/date/{date}",
+                params={"include": self.rich_fixture_includes, "per_page": 50, "page": 1},
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                self.capability_warnings.append(f"SportMonks returned no fixture route coverage for date {date}.")
+                return []
+            raise
         return [self._normalize(item, date) for item in payload.get("data", [])]
+
+    def fetch_fixture_detail(self, source_id: str) -> dict[str, Any]:
+        if not self.configured():
+            return {}
+        return self._get(f"/fixtures/{source_id}", params={"include": self.rich_fixture_includes})
+
+    def fetch_teams(self, season_id: int | str | None = None) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        path = f"/teams/seasons/{season_id}" if season_id else "/teams"
+        return self._get(path, params={"per_page": 50}).get("data") or []
+
+    def fetch_players(self, country_id: int | str | None = None) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        path = f"/players/countries/{country_id}" if country_id else "/players"
+        return self._get(path, params={"per_page": 50}).get("data") or []
+
+    def fetch_team_squad(self, team_id: int | str) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        return self._get(f"/squads/teams/{team_id}", params={"include": "player;position", "per_page": 50}).get("data") or []
+
+    def fetch_livescores(self) -> list[dict[str, Any]]:
+        if not self.configured():
+            return []
+        return self._get("/livescores", params={"include": "participants;scores;state", "per_page": 50}).get("data") or []
+
+    def fetch_standings(self, season_id: int | str | None = None) -> list[dict[str, Any]]:
+        if not self.configured() or not season_id:
+            return []
+        return self._get(f"/standings/seasons/{season_id}", params={"include": "participant", "per_page": 50}).get("data") or []
 
     def _normalize(self, item: dict[str, Any], date: str) -> dict[str, Any]:
         participants = item.get("participants") or []
         home = next((team for team in participants if team.get("meta", {}).get("location") == "home"), {})
         away = next((team for team in participants if team.get("meta", {}).get("location") == "away"), {})
+        home_score, away_score = self._scores(item, home.get("id"), away.get("id"))
+        features = self._features(item, home.get("id"), away.get("id"))
         return {
             "id": f"sportmonks-{item.get('id')}",
+            "source": "sportmonks",
+            "source_priority": self.source_priority,
+            "source_id": str(item.get("id") or ""),
+            "updated_at": _checked_at(),
             "date": date,
             "kickoff": item.get("starting_at") or f"{date}T00:00:00+08:00",
             "home_team": home.get("name") or "Home",
@@ -104,40 +194,173 @@ class SportmonksProvider:
             "group": item.get("group", {}).get("name") if isinstance(item.get("group"), dict) else None,
             "venue": (item.get("venue") or {}).get("name"),
             "status": self._status(item),
-            "home_score": None,
-            "away_score": None,
+            "home_score": home_score,
+            "away_score": away_score,
             "home_elo": 1700,
             "away_elo": 1700,
             "market_home": None,
             "market_draw": None,
             "market_away": None,
+            "sportmonks_features": features,
+            "sportmonks_lineups": item.get("lineups") or [],
+            "sportmonks_statistics": item.get("statistics") or [],
+            "sportmonks_sidelined": item.get("sidelined") or [],
+            "sportmonks_standings": item.get("standings") or [],
+            "payload": item,
         }
 
     def _status(self, item: dict[str, Any]) -> str:
         state = item.get("state")
-        if isinstance(state, dict) and str(state.get("name", "")).lower() in {"finished", "ended"}:
+        state_name = str((state or {}).get("name") if isinstance(state, dict) else item.get("state_name") or "").lower()
+        result_info = str(item.get("result_info") or "").lower()
+        if state_name in {"finished", "ended", "full-time", "ft"} or "after full-time" in result_info:
             return "final"
         return "scheduled"
 
+    def _scores(self, item: dict[str, Any], home_id: Any, away_id: Any) -> tuple[int | None, int | None]:
+        home_score = away_score = None
+        for score in item.get("scores") or []:
+            participant_id = score.get("participant_id") or score.get("team_id")
+            value = score.get("score")
+            if isinstance(value, dict):
+                value = first_present(value, ["goals", "score", "total"])
+            try:
+                parsed = int(value) if value not in (None, "") else None
+            except (TypeError, ValueError):
+                parsed = None
+            if str(participant_id) == str(home_id):
+                home_score = parsed
+            elif str(participant_id) == str(away_id):
+                away_score = parsed
+        return home_score, away_score
+
+    def _features(self, item: dict[str, Any], home_id: Any, away_id: Any) -> dict[str, Any]:
+        features: dict[str, Any] = {
+            "lineup_count": len(item.get("lineups") or []),
+            "sidelined_home": 0,
+            "sidelined_away": 0,
+            "standing_home_position": None,
+            "standing_away_position": None,
+            "has_odds": bool(item.get("has_odds") or item.get("odds")),
+        }
+        for row in item.get("sidelined") or []:
+            participant_id = row.get("participant_id") or row.get("team_id")
+            if str(participant_id) == str(home_id):
+                features["sidelined_home"] += 1
+            elif str(participant_id) == str(away_id):
+                features["sidelined_away"] += 1
+        for row in item.get("standings") or []:
+            participant_id = row.get("participant_id") or row.get("team_id")
+            position = row.get("position") or row.get("rank")
+            if str(participant_id) == str(home_id):
+                features["standing_home_position"] = position
+            elif str(participant_id) == str(away_id):
+                features["standing_away_position"] = position
+        for stat in item.get("statistics") or []:
+            participant_id = stat.get("participant_id") or stat.get("team_id")
+            raw_name = (stat.get("type") or {}).get("name") if isinstance(stat.get("type"), dict) else stat.get("type")
+            key = self._stat_key(raw_name)
+            if not key:
+                continue
+            value = stat.get("data")
+            if isinstance(value, dict):
+                value = first_present(value, ["value", "count", "total"])
+            suffix = "home" if str(participant_id) == str(home_id) else "away" if str(participant_id) == str(away_id) else None
+            if suffix:
+                features[f"{key}_{suffix}"] = value
+        return features
+
+    def _stat_key(self, name: Any) -> str | None:
+        normalized = str(name or "").strip().lower().replace("%", "pct")
+        if not normalized:
+            return None
+        aliases = {
+            "shots on target": "shots_on_target",
+            "shots": "shots",
+            "ball possession": "possession",
+            "possession": "possession",
+            "passes": "passes",
+            "corners": "corners",
+            "corner kicks": "corners",
+            "goals": "goals",
+        }
+        return aliases.get(normalized, normalized.replace(" ", "_").replace("-", "_"))
+
     def validate(self) -> dict[str, Any]:
         if not self.configured():
-            return _validation_result(self.name, configured=False, last_error="SPORTMONKS_API_TOKEN not set")
+            return _validation_result(self.name, configured=False, last_error="SPORTMONKS_API_KEY not set")
         try:
-            response = httpx.get(
-                "https://api.sportmonks.com/v3/football/fixtures/date/2026-06-23",
-                params={"api_token": self.token, "per_page": 1},
-                timeout=20,
-            )
+            fixtures = self.fetch_fixtures("2026-07-02")
+            if not fixtures:
+                probe = self._get("/fixtures", params={"per_page": 1})
+                fixtures = [self._normalize(item, str(item.get("starting_at") or "")[:10] or "unknown") for item in probe.get("data", [])]
+            teams_status = self._probe_collection("/teams")
+            players_status = self._probe_collection("/players")
+            livescores_status = self._probe_collection("/livescores")
+            detail_status = "SKIPPED"
+            if fixtures and fixtures[0].get("source_id"):
+                try:
+                    detail = self.fetch_fixture_detail(str(fixtures[0]["source_id"]))
+                    detail_data = detail.get("data") or {}
+                    if isinstance(detail_data, list):
+                        detail_data = detail_data[0] if detail_data else {}
+                    normalized_detail = self._normalize(detail_data, str(detail_data.get("starting_at") or "")[:10] or "unknown") if detail_data else {}
+                    detail_features = normalized_detail.get("sportmonks_features") or {}
+                    detail_status = "OK"
+                    if normalized_detail:
+                        fixtures[0].update(
+                            {
+                                "sportmonks_lineups": normalized_detail.get("sportmonks_lineups") or fixtures[0].get("sportmonks_lineups"),
+                                "sportmonks_statistics": normalized_detail.get("sportmonks_statistics") or fixtures[0].get("sportmonks_statistics"),
+                                "sportmonks_sidelined": normalized_detail.get("sportmonks_sidelined") or fixtures[0].get("sportmonks_sidelined"),
+                                "sportmonks_standings": normalized_detail.get("sportmonks_standings") or fixtures[0].get("sportmonks_standings"),
+                                "sportmonks_features": {**(fixtures[0].get("sportmonks_features") or {}), **detail_features},
+                            }
+                        )
+                except httpx.HTTPStatusError as exc:
+                    detail_status = "SKIPPED"
+                    self.capability_warnings.append(f"SportMonks fixture detail include skipped: HTTP {exc.response.status_code}.")
+                except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                    detail_status = "SKIPPED"
+                    self.capability_warnings.append(f"SportMonks fixture detail include skipped: {exc}.")
+            capabilities = {
+                "fixtures": "OK",
+                "results": "OK" if any(item.get("home_score") is not None for item in fixtures) else "SKIPPED",
+                "teams": teams_status,
+                "players": players_status,
+                "fixture_detail": detail_status,
+                "livescores": livescores_status,
+                "lineups": "OK" if any(item.get("sportmonks_lineups") for item in fixtures) else "SKIPPED",
+                "statistics": "OK" if any(item.get("sportmonks_statistics") for item in fixtures) else "SKIPPED",
+                "odds": "OK" if any((item.get("sportmonks_features") or {}).get("has_odds") for item in fixtures) else "SKIPPED",
+                "standings": "OK" if any(item.get("sportmonks_standings") for item in fixtures) else "SKIPPED",
+                "sidelined": "OK" if any(item.get("sportmonks_sidelined") for item in fixtures) else "SKIPPED",
+            }
+            remaining = self.last_rate_limit.get("remaining")
             return _validation_result(
                 self.name,
                 configured=True,
                 reachable=True,
-                auth_valid=response.status_code < 400,
-                sample_count=len(response.json().get("data", [])) if response.status_code < 400 else 0,
-                last_error=None if response.status_code < 400 else f"HTTP {response.status_code}",
+                auth_valid=True,
+                quota_remaining=int(remaining) if isinstance(remaining, int) else None,
+                sample_count=len(fixtures),
+                capabilities=capabilities,
+                warnings=list(self.capability_warnings),
+                rate_limit=self.last_rate_limit,
             )
         except httpx.HTTPError as exc:
             return _validation_result(self.name, configured=True, last_error=str(exc))
+
+    def _probe_collection(self, path: str) -> str:
+        try:
+            payload = self._get(path, params={"per_page": 1})
+            return "OK" if payload.get("data") is not None else "SKIPPED"
+        except httpx.HTTPStatusError as exc:
+            self.capability_warnings.append(f"SportMonks {path} skipped: HTTP {exc.response.status_code}.")
+            return "SKIPPED"
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            self.capability_warnings.append(f"SportMonks {path} skipped: {exc}.")
+            return "SKIPPED"
 
 
 class ApiFootballProvider:
@@ -660,6 +883,7 @@ class OddsApiProvider:
 class SportteryOddsProvider:
     name = "China Sporttery"
     role = "official_cn_odds_public_web_fallback"
+    page_url = "https://m.sporttery.cn/mjc/jsq/zqspf/"
     endpoint = "https://webapi.sporttery.cn/gateway/uniform/football/getMatchCalculatorV1.qry"
 
     def configured(self) -> bool:
@@ -685,21 +909,58 @@ class SportteryOddsProvider:
             return _validation_result(self.name, configured=True, last_error=str(exc))
 
     def fetch_odds(self) -> list[dict[str, Any]]:
-        response = httpx.get(
-            self.endpoint,
-            params={"channel": "m", "poolCode": "hhad,had"},
-            headers={
-                "Referer": "https://m.sporttery.cn/mjc/jsq/zqspf/",
-                "User-Agent": "Mozilla/5.0",
-                "Accept": "application/json,text/plain,*/*",
-            },
-            timeout=12,
-        )
-        response.raise_for_status()
-        text = response.text.strip()
-        if "WAF" in text or "禁止访问" in text or text.startswith("<"):
-            raise ValueError("China Sporttery gateway blocked this request or returned non-JSON HTML")
-        return self.parse_events(response.json())
+        headers = self._headers()
+        with httpx.Client(timeout=12, follow_redirects=True, headers=headers) as client:
+            page_response = client.get(self.page_url, headers=headers)
+            page_response.raise_for_status()
+            page_text = page_response.text or ""
+            endpoints = self._candidate_endpoints(page_text)
+            last_error: Exception | None = None
+            for endpoint in endpoints:
+                for pool_code in ("hhad,had", "had,hhad"):
+                    try:
+                        response = client.get(
+                            endpoint,
+                            params={"channel": "m", "poolCode": pool_code},
+                            headers=headers,
+                        )
+                        response.raise_for_status()
+                        text = response.text.strip()
+                        if "WAF" in text or "禁止访问" in text or text.startswith("<"):
+                            raise ValueError("China Sporttery gateway blocked this request or returned non-JSON HTML")
+                        events = self.parse_events(response.json())
+                        return events
+                    except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                        last_error = exc
+                        continue
+            if last_error:
+                raise last_error
+        return []
+
+    def _headers(self) -> dict[str, str]:
+        return {
+            "Referer": self.page_url,
+            "Origin": "https://m.sporttery.cn",
+            "User-Agent": (
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+                "AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"
+            ),
+            "Accept": "application/json,text/plain,*/*",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.6",
+            "Connection": "keep-alive",
+        }
+
+    def _candidate_endpoints(self, page_text: str) -> list[str]:
+        candidates = [self.endpoint]
+        if "getMatchCalculatorV1.qry" in page_text:
+            candidates.insert(0, self.endpoint)
+        seen = set()
+        unique = []
+        for item in candidates:
+            if item not in seen:
+                seen.add(item)
+                unique.append(item)
+        return unique
 
     def fetch_historical_odds(self, start_date: str, end_date: str) -> list[dict[str, Any]]:
         return []
@@ -748,6 +1009,7 @@ class SportteryOddsProvider:
             "handicap": normalize_three_way_odds(handicap, home_key="h", draw_key="d", away_key="a"),
             "handicap_line": first_present(handicap, ["fixedodds", "goalLine", "line"]) or first_present(item, ["goalLine"]),
             "totals": normalize_two_way_odds(totals),
+            "updated_at": _checked_at(),
         }
 
     def _enrich_fixture(self, fixture: dict[str, Any], events: list[dict[str, Any]]) -> dict[str, Any]:
@@ -987,12 +1249,13 @@ class BetfairOddsProvider:
 class ProviderRegistry:
     def __init__(self):
         self.footballdata_io_provider = FootballDataIoProvider()
+        self.sportmonks_provider = SportmonksProvider()
         self.providers: list[FixtureProvider] = [
             ApiFootballProvider(),
             self.footballdata_io_provider,
+            self.sportmonks_provider,
             FootballDataProvider(),
             EspnScoreboardProvider(),
-            SportmonksProvider(),
             SampleFixtureProvider(),
         ]
         self.odds_provider = OddsApiProvider()
