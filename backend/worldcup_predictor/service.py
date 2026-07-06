@@ -753,12 +753,27 @@ class WorldCupService:
             and self._is_final_row(match)
             and match.get("home_score") is not None
             and match.get("away_score") is not None
+            and not self._is_untrusted_lyihub_placeholder_result(match)
         ]
         for match in normalized:
+            if self._is_untrusted_lyihub_placeholder_result(match):
+                continue
             if match.get("date") == target_date or self.db.get_lyihub_match_by_fixture(match["id"]):
                 self.db.upsert_lyihub_match(match)
                 self.db.upsert_web_fixture(match, source_name="lyihub_worldcup_static_json")
         return [self._lyihub_finished_match_payload(match) for match in finished]
+
+    def _is_untrusted_lyihub_placeholder_result(self, match: dict[str, Any]) -> bool:
+        if not self._is_knockout_stage(match.get("stage") or match.get("group")):
+            return False
+        home_score = match.get("home_score")
+        away_score = match.get("away_score")
+        if home_score != 0 or away_score != 0:
+            return False
+        full_score = self._lyihub_full_score(match)
+        if full_score.get("home") not in (None, 0) or full_score.get("away") not in (None, 0):
+            return False
+        return True
 
     def _lyihub_finished_match_payload(self, match: dict[str, Any]) -> dict[str, Any]:
         home_score = match.get("home_score")

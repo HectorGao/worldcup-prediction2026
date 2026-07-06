@@ -115,9 +115,52 @@ def test_fetch_latest_finished_matches_filters_target_date_and_non_final_events(
 
     matches = fetch_latest_finished_matches(target_date="2026-06-30", timezone="Asia/Shanghai", client=client)
 
-    assert client.requested_dates == ["20260630"]
+    assert client.requested_dates == ["20260629", "20260630"]
     assert [match["match_id"] for match in matches] == ["espn-final-1"]
     assert matches[0]["date"] == "2026-06-30"
+
+
+def test_fetch_latest_finished_matches_queries_previous_espn_date_for_beijing_target():
+    client = FakeClient(
+        {
+            "20260705": {
+                "events": [
+                    {
+                        **espn_event("mex-eng", "STATUS_FULL_TIME", True, "2026-07-06", 2, 3),
+                        "date": "2026-07-06T01:00Z",
+                        "competitions": [
+                            {
+                                "id": "mex-eng",
+                                "status": {"type": {"name": "STATUS_FULL_TIME", "completed": True, "description": "Full Time"}},
+                                "competitors": [
+                                    {
+                                        "homeAway": "home",
+                                        "score": "2",
+                                        "winner": False,
+                                        "team": {"displayName": "Mexico"},
+                                    },
+                                    {
+                                        "homeAway": "away",
+                                        "score": "3",
+                                        "winner": True,
+                                        "team": {"displayName": "England"},
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            },
+            "20260706": {"events": []},
+        }
+    )
+
+    matches = fetch_latest_finished_matches(target_date="2026-07-06", timezone="Asia/Shanghai", client=client)
+
+    assert client.requested_dates == ["20260705", "20260706"]
+    assert [(match["home_team"], match["away_team"], match["home_goals_90"], match["away_goals_90"]) for match in matches] == [
+        ("Mexico", "England", 2, 3)
+    ]
     assert matches[0]["is_finished"] is True
 
 
@@ -572,3 +615,84 @@ def test_update_after_results_falls_back_to_lyihub_for_today_results(tmp_path: P
     assert stored["away_team"] == "Japan"
     assert stored["home_score"] == 2
     assert stored["away_score"] == 1
+
+
+def test_update_after_results_does_not_sync_lyihub_knockout_placeholder_zero_zero(tmp_path: Path, monkeypatch):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    monkeypatch.setattr(service_module, "fetch_latest_finished_matches", lambda **_kwargs: [])
+    service.lyihub_scraper.fetch_index = lambda: {
+        "matches": [
+            {
+                "match_id": "54328020",
+                "kickoff_at": "2026-07-06T01:00:00+00:00",
+                "stage": "1/8决赛",
+                "team_a": "墨西哥",
+                "team_b": "英格兰",
+                "team_a_id": "mex",
+                "team_b_id": "eng",
+                "venue": "test",
+                "score": {"team_a": 0, "team_b": 0},
+                "score_full": {"team_a": 0, "team_b": 0},
+                "score_90min": {"team_a": 0, "team_b": 0},
+                "has_predict": False,
+            },
+        ]
+    }
+
+    result = service.update_after_results(
+        fetch_online_results=True,
+        use_xgboost=False,
+        recalculate=False,
+        output_dir=tmp_path / "outputs",
+        date="2026-07-06",
+    )
+
+    assert result["today_finished_matches"] == []
+    assert service.db.get_lyihub_match_by_fixture("lyihub-54328020") is None
+
+
+def test_sync_finished_matches_replaces_stale_same_fixture_result(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    stale = {
+        "match_id": "lyihub-54328020",
+        "date": "2026-07-06",
+        "stage": "1/8决赛",
+        "home_team": "Mexico",
+        "away_team": "England",
+        "home_goals_90": 0,
+        "away_goals_90": 0,
+        "home_goals_extra_time": None,
+        "away_goals_extra_time": None,
+        "home_penalties": None,
+        "away_penalties": None,
+        "winner": None,
+        "loser": None,
+        "is_finished": True,
+        "decided_by_extra_time": False,
+        "decided_by_penalties": False,
+        "source": "lyihub_worldcup_static_json",
+        "source_url": "https://worldcup.lyihub.com/match.html?id=54328020",
+        "fetched_at": "2026-07-06T08:00:00+00:00",
+    }
+    verified = {
+        **stale,
+        "match_id": "espn-760505",
+        "home_goals_90": 2,
+        "away_goals_90": 3,
+        "winner": "England",
+        "loser": "Mexico",
+        "source": "ESPN",
+        "source_url": "https://www.espn.com/soccer/match/_/gameId/760505/england-mexico",
+    }
+
+    service.db.upsert_finished_match_result(stale)
+    sync_finished_matches_to_local_store([verified], service.db)
+    stored = [
+        match
+        for match in service.db.list_finished_matches()
+        if (match["date"], match["home_team"], match["away_team"]) == ("2026-07-06", "Mexico", "England")
+    ]
+
+    assert len(stored) == 1
+    assert stored[0]["match_id"] == "espn-760505"
+    assert (stored[0]["home_goals_90"], stored[0]["away_goals_90"]) == (2, 3)

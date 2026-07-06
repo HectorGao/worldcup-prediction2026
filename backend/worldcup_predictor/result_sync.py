@@ -34,7 +34,14 @@ def fetch_latest_finished_matches(
     client = client or httpx.Client(timeout=30, follow_redirects=True)
     local_tz = ZoneInfo(timezone)
     today = datetime.now(local_tz).date()
-    query_dates = [datetime.fromisoformat(target_date).date()] if target_date else [today - timedelta(days=offset) for offset in range(max(1, int(days_back)))]
+    if target_date:
+        target_day = datetime.fromisoformat(target_date).date()
+        # ESPN's ``dates`` parameter is keyed to the event's US/UTC calendar day,
+        # while this workflow filters by Beijing date. Evening matches in North
+        # America can therefore belong to the previous ESPN date.
+        query_dates = [target_day - timedelta(days=1), target_day]
+    else:
+        query_dates = [today - timedelta(days=offset) for offset in range(max(1, int(days_back)))]
     matches: dict[str, dict[str, Any]] = {}
     errors = []
     for day in query_dates:

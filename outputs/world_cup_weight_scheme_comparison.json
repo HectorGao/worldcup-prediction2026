@@ -7,17 +7,17 @@
       "metrics": {
         "match_count": 146,
         "accuracy_90": 0.664384,
-        "log_loss": 0.760272,
-        "brier_score": 0.146737,
-        "calibration_error": 0.396718,
-        "goals_mae": 0.743894,
-        "goals_rmse": 0.986819,
-        "over25_accuracy": 0.753425,
+        "log_loss": 0.761199,
+        "brier_score": 0.146933,
+        "calibration_error": 0.396359,
+        "goals_mae": 0.740666,
+        "goals_rmse": 0.9839,
+        "over25_accuracy": 0.773973,
         "over25_sample_count": 146,
-        "advance_accuracy": 0.907407,
-        "advance_sample_count": 108
+        "advance_accuracy": 0.899083,
+        "advance_sample_count": 109
       },
-      "selection_score": 1.148708
+      "selection_score": 1.145673
     },
     "scheme_2": {
       "current_world_cup": 0.75,
@@ -26,17 +26,17 @@
       "metrics": {
         "match_count": 146,
         "accuracy_90": 0.664384,
-        "log_loss": 0.76044,
-        "brier_score": 0.146766,
-        "calibration_error": 0.396839,
-        "goals_mae": 0.744147,
-        "goals_rmse": 0.98697,
-        "over25_accuracy": 0.753425,
+        "log_loss": 0.761189,
+        "brier_score": 0.146931,
+        "calibration_error": 0.396353,
+        "goals_mae": 0.740642,
+        "goals_rmse": 0.983883,
+        "over25_accuracy": 0.773973,
         "over25_sample_count": 146,
-        "advance_accuracy": 0.907407,
-        "advance_sample_count": 108
+        "advance_accuracy": 0.899083,
+        "advance_sample_count": 109
       },
-      "selection_score": 1.149077
+      "selection_score": 1.14565
     },
     "scheme_3": {
       "current_world_cup": 0.8,
@@ -45,17 +45,17 @@
       "metrics": {
         "match_count": 146,
         "accuracy_90": 0.664384,
-        "log_loss": 0.760609,
-        "brier_score": 0.146795,
-        "calibration_error": 0.39696,
-        "goals_mae": 0.744395,
-        "goals_rmse": 0.987125,
-        "over25_accuracy": 0.753425,
+        "log_loss": 0.761178,
+        "brier_score": 0.146929,
+        "calibration_error": 0.396347,
+        "goals_mae": 0.740617,
+        "goals_rmse": 0.983864,
+        "over25_accuracy": 0.773973,
         "over25_sample_count": 146,
-        "advance_accuracy": 0.907407,
-        "advance_sample_count": 108
+        "advance_accuracy": 0.899083,
+        "advance_sample_count": 109
       },
-      "selection_score": 1.149445
+      "selection_score": 1.145625
     },
     "scheme_4": {
       "current_world_cup": 0.85,
@@ -64,40 +64,40 @@
       "metrics": {
         "match_count": 146,
         "accuracy_90": 0.664384,
-        "log_loss": 0.760783,
-        "brier_score": 0.146826,
-        "calibration_error": 0.397083,
-        "goals_mae": 0.744646,
-        "goals_rmse": 0.987287,
-        "over25_accuracy": 0.753425,
+        "log_loss": 0.761168,
+        "brier_score": 0.146927,
+        "calibration_error": 0.39634,
+        "goals_mae": 0.740593,
+        "goals_rmse": 0.983846,
+        "over25_accuracy": 0.773973,
         "over25_sample_count": 146,
-        "advance_accuracy": 0.907407,
-        "advance_sample_count": 108
+        "advance_accuracy": 0.899083,
+        "advance_sample_count": 109
       },
-      "selection_score": 1.149824
+      "selection_score": 1.145601
     }
   },
   "selected_scheme": {
-    "name": "scheme_1",
-    "current_world_cup": 0.7,
-    "historical": 0.2,
-    "market": 0.1,
+    "name": "scheme_4",
+    "current_world_cup": 0.85,
+    "historical": 0.1,
+    "market": 0.05,
     "metrics": {
       "match_count": 146,
       "accuracy_90": 0.664384,
-      "log_loss": 0.760272,
-      "brier_score": 0.146737,
-      "calibration_error": 0.396718,
-      "goals_mae": 0.743894,
-      "goals_rmse": 0.986819,
-      "over25_accuracy": 0.753425,
+      "log_loss": 0.761168,
+      "brier_score": 0.146927,
+      "calibration_error": 0.39634,
+      "goals_mae": 0.740593,
+      "goals_rmse": 0.983846,
+      "over25_accuracy": 0.773973,
       "over25_sample_count": 146,
-      "advance_accuracy": 0.907407,
-      "advance_sample_count": 108
+      "advance_accuracy": 0.899083,
+      "advance_sample_count": 109
     },
-    "selection_score": 1.148708
+    "selection_score": 1.145601
   },
   "selection_policy": "minimize log_loss + brier + calibration_error + goal error, with small rewards for accuracy and over2.5 accuracy",
   "tie_break_target_world_cup_weight": 0.8,
-  "generated_at": "2026-07-06T08:04:44.931939+00:00"
+  "generated_at": "2026-07-06T09:00:38.552430+00:00"
 }

@@ -484,6 +484,13 @@ class Database:
         with self.connect() as connection:
             connection.execute(
                 """
+                DELETE FROM finished_match_results
+                WHERE date = ? AND home_team = ? AND away_team = ? AND match_id != ?
+                """,
+                (match["date"], match["home_team"], match["away_team"], match["match_id"]),
+            )
+            connection.execute(
+                """
                 INSERT INTO finished_match_results (
                   match_id, date, stage, home_team, away_team, home_goals_90, away_goals_90,
                   home_goals_extra_time, away_goals_extra_time, home_penalties, away_penalties,
@@ -600,17 +607,9 @@ class Database:
                     """,
                     (score[0], score[1], row["id"]),
                 )
+            self._mark_lyihub_fixture_final_from_result(match, score)
         elif row and row.get("table_name") == "lyihub_match_details":
-            with self.connect() as connection:
-                connection.execute(
-                    """
-                    UPDATE lyihub_match_details
-                    SET status = 'final', home_score = ?, away_score = ?, source_url = COALESCE(?, source_url),
-                        synced_at = CURRENT_TIMESTAMP
-                    WHERE fixture_id = ?
-                    """,
-                    (score[0], score[1], match.get("source_url"), row["fixture_id"]),
-                )
+            self._mark_lyihub_fixture_final_from_result(match, score, fixture_id=row["fixture_id"])
         else:
             self.upsert_web_fixture(
                 {
@@ -629,8 +628,63 @@ class Database:
                 },
                 source_name=str(match.get("source") or "online_result_sync"),
             )
+            self._mark_lyihub_fixture_final_from_result(match, score)
         self.delete_prediction(fixture_id)
         return fixture_id
+
+    def _mark_lyihub_fixture_final_from_result(
+        self,
+        match: dict[str, Any],
+        score: tuple[Any, Any],
+        fixture_id: str | None = None,
+    ) -> None:
+        where = "fixture_id = ?"
+        params: tuple[Any, ...] = (fixture_id,)
+        if not fixture_id:
+            where = "date = ? AND home_team = ? AND away_team = ?"
+            params = (match.get("date"), match.get("home_team"), match.get("away_team"))
+        with self.connect() as connection:
+            existing = connection.execute(
+                f"""
+                SELECT fixture_id, payload_json, detail_json FROM lyihub_match_details
+                WHERE {where}
+                LIMIT 1
+                """,
+                params,
+            ).fetchone()
+            if not existing:
+                return
+            payload = json.loads(existing["payload_json"] or "{}")
+            detail = json.loads(existing["detail_json"]) if existing["detail_json"] else None
+            full_home = match.get("home_goals_extra_time")
+            full_away = match.get("away_goals_extra_time")
+            if full_home is None:
+                full_home = score[0]
+            if full_away is None:
+                full_away = score[1]
+            for target in (payload, (detail or {}).get("match") if isinstance(detail, dict) else None):
+                if not isinstance(target, dict):
+                    continue
+                target["score_90min"] = {"team_a": score[0], "team_b": score[1]}
+                target["score"] = {"team_a": score[0], "team_b": score[1]}
+                target["score_full"] = {"team_a": full_home, "team_b": full_away}
+            connection.execute(
+                """
+                UPDATE lyihub_match_details
+                SET status = 'final', home_score = ?, away_score = ?, source_url = COALESCE(?, source_url),
+                    payload_json = ?, detail_json = COALESCE(?, detail_json),
+                    synced_at = CURRENT_TIMESTAMP
+                WHERE fixture_id = ?
+                """,
+                (
+                    score[0],
+                    score[1],
+                    match.get("source_url"),
+                    json.dumps(payload, ensure_ascii=False),
+                    json.dumps(detail, ensure_ascii=False) if detail is not None else None,
+                    existing["fixture_id"],
+                ),
+            )
 
     def delete_prediction(self, fixture_id: str) -> None:
         with self.connect() as connection:
