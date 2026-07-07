@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
-from ..team_metadata import TEAM_METADATA
+from ..team_metadata import TEAM_METADATA, canonical_team_name
 
 
 LYIHUB_BASE = "https://worldcup.lyihub.com"
@@ -157,7 +157,7 @@ class LyihubWorldCupScraper:
 
 
 def canonical_team(team_zh: str) -> str:
-    return ZH_TO_CANONICAL.get(team_zh, team_zh)
+    return canonical_team_name(ZH_TO_CANONICAL.get(team_zh, team_zh))
 
 
 def _score(match: dict[str, Any]) -> dict[str, int | None]:

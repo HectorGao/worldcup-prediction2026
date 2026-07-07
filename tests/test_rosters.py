@@ -18,6 +18,7 @@ from worldcup_predictor.roster_strength import (
     player_strength,
 )
 from worldcup_predictor.service import WorldCupService
+from worldcup_predictor.team_metadata import canonical_team_name
 from worldcup_predictor.data.fifa_official import FifaOfficialWorldCupCrawler
 
 
@@ -644,6 +645,70 @@ def test_service_enriches_roster_queue_from_public_sources(tmp_path: Path):
     assert squad["players"][0]["stats_status"] == "enriched"
     assert strength["coverage"] == 1.0
     assert service.roster_data_health()["players_with_stats"] == 1
+
+
+def test_portugal_aliases_map_to_single_canonical_team():
+    aliases = ["Portugal", "POR", "葡萄牙", "葡萄牙队", "Portugal National Team"]
+
+    assert {canonical_team_name(alias) for alias in aliases} == {"Portugal"}
+
+
+def test_poor_portugal_placeholder_roster_uses_quality_prior(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.save_team_profile(
+        "Portugal",
+        {
+            "team": "Portugal",
+            "elo": 1702,
+            "attack_rating": 2.0,
+            "midfield_rating": 85.8,
+            "defensive_stability": 1.97,
+            "form_rating": 0.21,
+        },
+    )
+    players = [
+        {"player_id": f"p{i}", "name": f"Player {i}", "position": position, "source": "api-football"}
+        for i, position in enumerate(
+            ["Goalkeeper", "Goalkeeper", "Centre-Back", "Right-Back", "Centre-Back", "Left-Back", "Midfielder", "Midfielder", "Midfielder", "Forward", "Forward", "Forward"],
+            start=1,
+        )
+    ]
+    service.db.save_team_squad(
+        "Portugal",
+        {
+            "team": "Portugal",
+            "team_id": 27,
+            "source": "api-football",
+            "players": players,
+        },
+    )
+    for player in players:
+        service.db.save_player_club_stats(
+            player["player_id"],
+            {
+                "player_id": player["player_id"],
+                "season": 2026,
+                "club": "Unknown",
+                "league": "",
+                "position": player["position"],
+                "stats_status": "enriched",
+                "player_strength": 58.9,
+                "appearances": 0,
+                "starts": 0,
+                "minutes": 0,
+                "rating": None,
+            },
+        )
+
+    raw = service._raw_squad_strength_for_team("POR")
+
+    assert raw["team"] == "Portugal"
+    assert raw["fallback_triggered"] is True
+    assert "placeholder" in raw["fallback_reason"]
+    assert raw["attack_line_strength"] > 75
+    assert raw["midfield_line_strength"] > 75
+    assert raw["defense_line_strength"] > 75
+    assert raw["team_market_value_prior"]["overall"] > 85
 
 
 def test_roster_weight_changes_prediction_when_strengths_are_available(tmp_path: Path):

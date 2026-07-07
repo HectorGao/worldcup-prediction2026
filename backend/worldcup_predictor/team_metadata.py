@@ -55,12 +55,49 @@ TEAM_METADATA: dict[str, dict[str, str]] = {
     "Uzbekistan": {"zh": "乌兹别克斯坦", "iso2": "UZ", "flag": "🇺🇿"},
 }
 
+TEAM_ALIASES: dict[str, str] = {
+    "POR": "Portugal",
+    "葡萄牙队": "Portugal",
+    "Portugal National Team": "Portugal",
+    "USA": "United States",
+    "USMNT": "United States",
+    "United States National Team": "United States",
+    "South Korea": "South Korea",
+    "Korea Republic": "South Korea",
+    "Côte d'Ivoire": "Ivory Coast",
+    "Cote d'Ivoire": "Ivory Coast",
+    "Türkiye": "Turkey",
+    "Turkiye": "Turkey",
+}
+for _team, _metadata in TEAM_METADATA.items():
+    TEAM_ALIASES.setdefault(_team, _team)
+    TEAM_ALIASES.setdefault(_metadata["zh"], _team)
+    TEAM_ALIASES.setdefault(f"{_metadata['zh']}队", _team)
+    iso2 = _metadata.get("iso2") or ""
+    if iso2 and len(iso2) == 2:
+        TEAM_ALIASES.setdefault(iso2, _team)
+
+
+def canonical_team_name(team: str) -> str:
+    value = str(team or "").strip()
+    if not value:
+        return value
+    if value in TEAM_ALIASES:
+        return TEAM_ALIASES[value]
+    normalized = " ".join(value.replace("_", " ").replace("-", " ").split()).lower()
+    for alias, canonical in TEAM_ALIASES.items():
+        alias_normalized = " ".join(alias.replace("_", " ").replace("-", " ").split()).lower()
+        if normalized == alias_normalized:
+            return canonical
+    return value
+
 
 def display_team(team: str) -> dict[str, str]:
-    metadata = TEAM_METADATA.get(team, {})
+    canonical = canonical_team_name(team)
+    metadata = TEAM_METADATA.get(canonical, {})
     return {
-        "name": team,
-        "zh": metadata.get("zh", team),
+        "name": canonical,
+        "zh": metadata.get("zh", canonical),
         "flag": metadata.get("flag", "🏳️"),
         "iso2": metadata.get("iso2", ""),
     }

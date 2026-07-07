@@ -59,8 +59,25 @@ from .result_sync import (
     validate_bracket_after_result_sync,
     write_prediction_outputs,
 )
-from .roster_strength import USABLE_STATUSES, aggregate_team_strength, player_strength, position_bucket
-from .team_metadata import display_team, enrich_fixture, enrich_profile
+from .roster_strength import USABLE_STATUSES, aggregate_team_strength, league_tier_score, player_strength, position_bucket
+from .team_metadata import canonical_team_name, display_team, enrich_fixture, enrich_profile
+
+
+ROSTER_PAPER_STRENGTH_PRIORS: dict[str, dict[str, float]] = {
+    "France": {"attack": 91, "midfield": 90, "defense": 89, "goalkeeper": 86, "overall": 89.5, "depth": 89},
+    "England": {"attack": 89, "midfield": 89, "defense": 86, "goalkeeper": 85, "overall": 88, "depth": 88},
+    "Spain": {"attack": 88, "midfield": 91, "defense": 87, "goalkeeper": 86, "overall": 88.5, "depth": 88},
+    "Argentina": {"attack": 89, "midfield": 88, "defense": 86, "goalkeeper": 84, "overall": 87.5, "depth": 86},
+    "Brazil": {"attack": 90, "midfield": 87, "defense": 86, "goalkeeper": 86, "overall": 88, "depth": 87},
+    "Portugal": {"attack": 89, "midfield": 88, "defense": 87, "goalkeeper": 85, "overall": 87.5, "depth": 87},
+    "Germany": {"attack": 87, "midfield": 88, "defense": 85, "goalkeeper": 85, "overall": 86.5, "depth": 86},
+    "Netherlands": {"attack": 86, "midfield": 85, "defense": 87, "goalkeeper": 84, "overall": 85.5, "depth": 85},
+    "Belgium": {"attack": 85, "midfield": 85, "defense": 82, "goalkeeper": 84, "overall": 84, "depth": 82},
+    "Croatia": {"attack": 82, "midfield": 86, "defense": 82, "goalkeeper": 82, "overall": 83, "depth": 81},
+    "Uruguay": {"attack": 84, "midfield": 83, "defense": 84, "goalkeeper": 82, "overall": 83.5, "depth": 82},
+}
+
+STRONG_TEAM_SANITY_TEAMS = {"Portugal", "France", "England", "Spain", "Argentina", "Brazil"}
 
 
 class WorldCupService:
@@ -2063,12 +2080,13 @@ class WorldCupService:
         }
 
     def get_team_squad(self, team: str, allow_empty: bool = False) -> dict[str, Any]:
-        squad = self.db.get_team_squad(team)
+        canonical = canonical_team_name(team)
+        squad = self.db.get_team_squad(canonical)
         if not squad:
             if allow_empty:
-                display = display_team(team)
+                display = display_team(canonical)
                 return {
-                    "team": team,
+                    "team": canonical,
                     "team_zh": display["zh"],
                     "flag": display["flag"],
                     "available": False,
@@ -2085,22 +2103,23 @@ class WorldCupService:
         return squad
 
     def get_team_strength(self, team: str, allow_empty: bool = False) -> dict[str, Any]:
-        strength = self.db.get_squad_strength(team)
+        canonical = canonical_team_name(team)
+        strength = self.db.get_squad_strength(canonical)
         if strength and self._squad_strength_cache_current(strength):
             return strength
         if allow_empty:
             self.recompute_all_squad_strengths(force=True)
-            refreshed = self.db.get_squad_strength(team)
+            refreshed = self.db.get_squad_strength(canonical)
             if refreshed and self._squad_strength_cache_current(refreshed):
                 return refreshed
-            raw = self._raw_squad_strength_for_team(team)
-            normalized = self._standardize_squad_strengths({team: raw}, pool_note="single-team fallback").get(team, raw)
-            self.db.save_squad_strength(team, normalized)
+            raw = self._raw_squad_strength_for_team(canonical)
+            normalized = self._standardize_squad_strengths({canonical: raw}, pool_note="single-team fallback").get(canonical, raw)
+            self.db.save_squad_strength(canonical, normalized)
             return normalized
-        squad = self.db.get_team_squad(team)
-        if squad or strength or self.db.list_player_power_rankings(team):
+        squad = self.db.get_team_squad(canonical)
+        if squad or strength or self.db.list_player_power_rankings(canonical):
             self.recompute_all_squad_strengths(force=True)
-            refreshed = self.db.get_squad_strength(team)
+            refreshed = self.db.get_squad_strength(canonical)
             if refreshed:
                 return refreshed
         raise KeyError(f"Unknown strength: {team}")
@@ -2228,11 +2247,13 @@ class WorldCupService:
             if "fallback" in str(strength.get("paper_strength_source") or "").lower():
                 fallback.append(team)
         summary = self._squad_strength_standardization_summary(normalized_by_team)
+        sanity_warnings = self._strong_team_sanity_warnings(normalized_by_team)
         return {
             "updated": len(updated),
             "fallback_count": len(fallback),
             "fallback_teams": fallback,
             "standardization": summary,
+            "sanity_warnings": sanity_warnings,
             "baseline_note": "50 = 本届世界杯48队平均水平",
             "model_versions": [
                 "world-cup-line-strength-v1",
@@ -2273,7 +2294,154 @@ class WorldCupService:
         }
         path = output_dir / "squad_strengths_updated.json"
         path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-        return {"squad_strengths_updated_json": str(path)}
+        team_strengths_path = output_dir / "team_strengths.json"
+        team_strengths_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        debug_path = output_dir / "portugal_squad_strength_debug.json"
+        debug_path.write_text(json.dumps(self._portugal_squad_strength_debug(strengths), ensure_ascii=False, indent=2), encoding="utf-8")
+        return {
+            "squad_strengths_updated_json": str(path),
+            "team_strengths_json": str(team_strengths_path),
+            "portugal_squad_strength_debug_json": str(debug_path),
+        }
+
+    def _strong_team_sanity_warnings(self, strengths: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+        warnings = []
+        for team in sorted(STRONG_TEAM_SANITY_TEAMS):
+            strength = strengths.get(team)
+            if not strength:
+                warnings.append({"team": team, "warning": "missing_squad_strength"})
+                continue
+            line_values = [
+                float(strength.get("attack_line_strength") or 0),
+                float(strength.get("midfield_line_strength") or 0),
+                float(strength.get("defense_line_strength") or 0),
+            ]
+            overall = float(strength.get("squad_overall_strength") or 0)
+            if overall < 50:
+                warnings.append({"team": team, "warning": "strong_team_overall_below_average", "squad_overall_strength": overall})
+            if all(value < 50 for value in line_values):
+                warnings.append(
+                    {
+                        "team": team,
+                        "warning": "strong_team_all_lines_below_average",
+                        "attack_line_strength": line_values[0],
+                        "midfield_line_strength": line_values[1],
+                        "defense_line_strength": line_values[2],
+                    }
+                )
+        return warnings
+
+    def _portugal_squad_strength_debug(self, strengths: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        team = "Portugal"
+        strength = strengths.get(team) or self.db.get_squad_strength(team) or {}
+        squad = self.db.get_team_squad(team) or {"players": []}
+        team_matches = self.db.lyihub_team_matches(team)
+        source_ids = self._team_source_ids(team, team_matches)
+        aliases = ["Portugal", "POR", "葡萄牙", "葡萄牙队", "Portugal National Team"]
+        raw_fields = [
+            "attack_line_strength",
+            "midfield_line_strength",
+            "defense_line_strength",
+            "goalkeeper_strength",
+            "squad_overall_strength",
+        ]
+        raw_stats = {}
+        for field in raw_fields:
+            values = [
+                float(payload.get(f"{field}_raw"))
+                for payload in strengths.values()
+                if payload and payload.get(f"{field}_raw") is not None
+            ]
+            if values:
+                mean_value = sum(values) / len(values)
+                variance = sum((value - mean_value) ** 2 for value in values) / len(values)
+                raw_stats[field] = {
+                    "mean": round(mean_value, 4),
+                    "std": round(math.sqrt(variance), 4),
+                }
+        latest_detail = next((match.get("detail") or {} for match in reversed(team_matches) if isinstance(match.get("detail"), dict)), {})
+        tactics = latest_detail.get("tactics") if isinstance(latest_detail, dict) else {}
+        side = None
+        match_payload = latest_detail.get("match") if isinstance(latest_detail, dict) else {}
+        if isinstance(match_payload, dict):
+            if canonical_team(str(match_payload.get("team_a") or "")) == team:
+                side = "A"
+            elif canonical_team(str(match_payload.get("team_b") or "")) == team:
+                side = "B"
+        side_tactics = tactics.get(side, {}) if isinstance(tactics, dict) and side else {}
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "team_id": team,
+            "canonical_team_id": team,
+            "team_name": display_team(team),
+            "fifa_team_id": source_ids.get("fifa_team_id"),
+            "sportmonks_team_id": source_ids.get("sportmonks_team_id"),
+            "footballdata_io_team_id": source_ids.get("footballdata_io_team_id"),
+            "alias_mapping": {alias: canonical_team_name(alias) for alias in aliases},
+            "alias_mapping_success": all(canonical_team_name(alias) == team for alias in aliases),
+            "players_used": [
+                {
+                    "player_id": player.get("player_id"),
+                    "name": player.get("name"),
+                    "position": player.get("position"),
+                    "club": player.get("club"),
+                    "league": player.get("league"),
+                    "source": player.get("source_name"),
+                    "source_priority": player.get("source_priority"),
+                    "stats_status": player.get("stats_status"),
+                    "player_strength": player.get("player_strength"),
+                    "fifa_power_rating": player.get("fifa_power_rating"),
+                    "rating": player.get("rating"),
+                    "appearances": player.get("appearances"),
+                    "starts": player.get("starts"),
+                    "minutes": player.get("minutes"),
+                }
+                for player in squad.get("players", [])
+            ],
+            "starting_players": side_tactics.get("starters") or side_tactics.get("首发") or [],
+            "substitutes": side_tactics.get("substitutes") or side_tactics.get("替补") or [],
+            "power_rankings": self.db.list_player_power_rankings(team),
+            "player_value_or_ability_data": {
+                "team_market_value_prior": strength.get("team_market_value_prior"),
+                "player_value_score": strength.get("player_value_score"),
+                "roster_quality_prior": strength.get("roster_quality_prior"),
+                "squad_depth_prior": strength.get("squad_depth_prior"),
+            },
+            "fallback_triggered": strength.get("fallback_triggered"),
+            "fallback_reason": strength.get("fallback_reason"),
+            "raw_scores": {field: strength.get(f"{field}_raw") for field in raw_fields},
+            "raw_pool_stats_48": raw_stats,
+            "normalized_scores": {field: strength.get(field) for field in raw_fields},
+            "source_fields": {
+                "paper_strength_source": strength.get("paper_strength_source"),
+                "line_strength_source": strength.get("line_strength_source"),
+                "fallback_fields": strength.get("fallback_fields"),
+                "coverage": strength.get("coverage"),
+                "fifa_power_coverage": strength.get("fifa_power_coverage"),
+                "roster_data_quality": strength.get("roster_data_quality"),
+            },
+            "strong_team_sanity_warnings": self._strong_team_sanity_warnings(strengths),
+            "standardization": strength.get("standardization_method"),
+            "baseline": strength.get("strength_baseline"),
+        }
+
+    def _team_source_ids(self, team: str, matches: list[dict[str, Any]]) -> dict[str, Any]:
+        ids: dict[str, Any] = {
+            "fifa_team_id": None,
+            "sportmonks_team_id": None,
+            "footballdata_io_team_id": None,
+            "lyihub_team_id": None,
+            "api_football_team_id": None,
+        }
+        for match in matches:
+            if match.get("home_team") == team:
+                ids["lyihub_team_id"] = ids["lyihub_team_id"] or match.get("home_team_source_id")
+            if match.get("away_team") == team:
+                ids["lyihub_team_id"] = ids["lyihub_team_id"] or match.get("away_team_source_id")
+        squad = self.db.get_team_squad(team)
+        if squad:
+            ids["api_football_team_id"] = (squad.get("source_id") or squad.get("team_id"))
+        return ids
 
     def _current_world_cup_teams(self) -> set[str]:
         group_stage_teams: set[str] = set()
@@ -2314,12 +2482,159 @@ class WorldCupService:
         return not any(token in team for token in placeholder_tokens)
 
     def _raw_squad_strength_for_team(self, team: str) -> dict[str, Any]:
+        team = canonical_team_name(team)
         squad = self.db.get_team_squad(team)
         if squad:
             strength = aggregate_team_strength(team, squad.get("players", []))
+            strength = self._apply_roster_quality_prior(team, strength, squad.get("players", []))
         else:
             strength = self._team_power_rankings_strength(team) or self._team_performance_strength_fallback(team)
+            strength = self._apply_roster_quality_prior(team, strength, [])
         return self._ensure_squad_overall(team, strength)
+
+    def _apply_roster_quality_prior(self, team: str, strength: dict[str, Any], players: list[dict[str, Any]]) -> dict[str, Any]:
+        payload = dict(strength)
+        quality = self._roster_data_quality(players)
+        player_value = self._player_value_prior(players)
+        market_prior = ROSTER_PAPER_STRENGTH_PRIORS.get(team)
+        performance_prior = self._team_performance_strength_fallback(team)
+        payload["player_value_score"] = player_value["overall"]
+        payload["squad_depth_prior"] = player_value["depth"]
+        payload["team_market_value_prior"] = market_prior
+        fallback_reason = quality["reason"] if quality["poor"] else None
+        blended_prior = self._blended_roster_prior(market_prior, performance_prior, player_value)
+        payload["roster_quality_prior"] = blended_prior
+        if not players:
+            payload["fallback_triggered"] = "fallback" in str(payload.get("paper_strength_source") or "").lower()
+            payload["fallback_reason"] = fallback_reason
+            payload["roster_data_quality"] = quality
+            return payload
+        if not quality["poor"] and not market_prior:
+            return payload
+        fields = {
+            "attack_line_strength": "attack",
+            "midfield_line_strength": "midfield",
+            "defense_line_strength": "defense",
+            "goalkeeper_strength": "goalkeeper",
+            "squad_overall_strength": "overall",
+            "starting_xi_strength": "overall",
+            "bench_strength": "depth",
+        }
+        boosted_fields = []
+        for field, prior_key in fields.items():
+            current = float(payload.get(field) or 0)
+            prior = blended_prior.get(prior_key)
+            if prior is None:
+                continue
+            should_boost = quality["poor"] or current <= 0 or (market_prior and current + 8 < prior)
+            if should_boost:
+                weight = 0.82 if quality["poor"] else 0.45
+                adjusted = float(prior) if current <= 0 else max(current, current * (1 - weight) + float(prior) * weight)
+                payload[field] = round(self._clamp(adjusted, 45, 94), 2)
+                boosted_fields.append(field)
+        if boosted_fields:
+            fallback_fields = set(payload.get("fallback_fields") or [])
+            fallback_fields.update(boosted_fields)
+            payload["fallback_fields"] = sorted(fallback_fields)
+            payload["fallback_triggered"] = True
+            payload["fallback_reason"] = fallback_reason or "Roster paper-strength prior exceeds sparse player-data aggregate."
+            payload["paper_strength_source"] = "roster quality prior + 本届世界杯表现 fallback"
+            payload["line_strength_source"] = "FIFA/SportMonks/FootballData missing or sparse; blended roster quality prior"
+            payload["coverage"] = min(float(payload.get("coverage") or 0.0), quality["effective_coverage"])
+        else:
+            payload["fallback_triggered"] = bool(fallback_reason)
+            payload["fallback_reason"] = fallback_reason
+        payload["roster_data_quality"] = quality
+        return payload
+
+    def _roster_data_quality(self, players: list[dict[str, Any]]) -> dict[str, Any]:
+        if not players:
+            return {
+                "poor": True,
+                "effective_coverage": 0.0,
+                "reason": "No player roster available; using team-level roster quality prior.",
+                "players": 0,
+            }
+        strengths = [float(player.get("player_strength")) for player in players if player.get("player_strength") is not None]
+        fifa_power_count = len([player for player in players if player.get("fifa_power_rating") is not None])
+        real_stats = [
+            player
+            for player in players
+            if float(player.get("minutes") or 0) > 0
+            or float(player.get("appearances") or 0) > 0
+            or player.get("rating") is not None
+            or player.get("fifa_power_rating") is not None
+        ]
+        identical_strengths = len(strengths) >= max(6, len(players) // 2) and len({round(value, 2) for value in strengths}) <= 1
+        poor = len(players) >= 11 and fifa_power_count == 0 and (not real_stats or identical_strengths)
+        reason = None
+        if poor:
+            reason = "Player feed has no FIFA power ratings and no usable club minutes/ratings; identical enriched strengths indicate placeholder data."
+        return {
+            "poor": poor,
+            "effective_coverage": 0.35 if poor else round(len(real_stats) / len(players), 4),
+            "reason": reason,
+            "players": len(players),
+            "players_with_strength": len(strengths),
+            "fifa_power_count": fifa_power_count,
+            "players_with_real_stats": len(real_stats),
+            "identical_strengths": identical_strengths,
+        }
+
+    def _player_value_prior(self, players: list[dict[str, Any]]) -> dict[str, float]:
+        buckets: dict[str, list[float]] = {"attack": [], "midfield": [], "defense": [], "goalkeeper": []}
+        for player in players:
+            bucket = position_bucket(player.get("position"))
+            league_score = self._league_value_score(player.get("league"))
+            source_boost = 2.5 if str(player.get("source_name") or "").lower() in {"fifa", "sportmonks", "footballdata.io"} else 0.0
+            buckets.setdefault(bucket, []).append(self._clamp(league_score + source_boost, 50, 96))
+        line_scores = {
+            key: round(sum(values) / len(values), 2) if values else 68.0
+            for key, values in buckets.items()
+        }
+        all_scores = sorted([value for values in buckets.values() for value in values], reverse=True)
+        top11 = all_scores[:11] or [68.0]
+        bench = all_scores[11:] or [max(58.0, sum(top11) / len(top11) - 8)]
+        line_scores["overall"] = round(sum(top11) / len(top11), 2)
+        line_scores["depth"] = round((sum(top11) / len(top11)) * 0.65 + (sum(bench) / len(bench)) * 0.35, 2)
+        return line_scores
+
+    def _league_value_score(self, league: str | None) -> float:
+        normalized = str(league or "").lower()
+        score = league_tier_score(normalized)
+        if score > 65:
+            return score
+        if any(token in normalized for token in ("premier league", "la liga", "bundesliga", "serie a", "ligue 1")):
+            return 95.0
+        if any(token in normalized for token in ("primeira liga", "eredivisie", "super lig", "saudi", "mls", "major league")):
+            return 80.0
+        return score
+
+    def _blended_roster_prior(
+        self,
+        market_prior: dict[str, float] | None,
+        performance_prior: dict[str, Any],
+        player_value: dict[str, float],
+    ) -> dict[str, float]:
+        fields = {
+            "attack": "attack_line_strength",
+            "midfield": "midfield_line_strength",
+            "defense": "defense_line_strength",
+            "goalkeeper": "goalkeeper_strength",
+            "overall": "squad_overall_strength",
+            "depth": "squad_depth",
+        }
+        blended: dict[str, float] = {}
+        for prior_key, perf_key in fields.items():
+            market_value = (market_prior or {}).get(prior_key)
+            performance_value = float(performance_prior.get(perf_key) or 68.0)
+            player_value_score = float(player_value.get(prior_key) or player_value.get("overall") or 68.0)
+            if market_value is not None:
+                value = 0.6 * float(market_value) + 0.25 * performance_value + 0.15 * player_value_score
+            else:
+                value = 0.55 * performance_value + 0.45 * player_value_score
+            blended[prior_key] = round(self._clamp(value, 45, 94), 2)
+        return blended
 
     def _ensure_squad_overall(self, team: str, strength: dict[str, Any]) -> dict[str, Any]:
         payload = dict(strength)
@@ -2366,7 +2681,7 @@ class WorldCupService:
         scale = 10.0
         stats: dict[str, dict[str, float]] = {}
         for field in fields:
-            values = [float(payload.get(field) or 50.0) for payload in raw_by_team.values()]
+            values = [self._numeric_or_default(payload.get(field), 50.0) for payload in raw_by_team.values()]
             mean_value = sum(values) / len(values)
             variance = sum((value - mean_value) ** 2 for value in values) / len(values)
             std_value = math.sqrt(variance)
@@ -2375,7 +2690,7 @@ class WorldCupService:
         for team, raw in raw_by_team.items():
             payload = dict(raw)
             for field in fields:
-                raw_value = float(raw.get(field) or 50.0)
+                raw_value = self._numeric_or_default(raw.get(field), 50.0)
                 stat = stats[field]
                 if stat["std"] < 1e-6:
                     normalized_value = 50.0
@@ -2405,6 +2720,17 @@ class WorldCupService:
             payload["model_version"] = "world-cup-line-strength-v1"
             normalized[team] = payload
         return normalized
+
+    def _numeric_or_default(self, value: Any, default: float) -> float:
+        if value is None or value == "":
+            return default
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return default
+        if not math.isfinite(numeric):
+            return default
+        return numeric
 
     def _squad_strength_standardization_summary(self, strengths: dict[str, dict[str, Any]]) -> dict[str, Any]:
         fields = [
