@@ -2385,3 +2385,798 @@ pre {
     grid-template-columns: 1fr;
   }
 }
+
+/* 2026世界杯预测系统 — UI-only warm paper theme based on DESIGN.md.
+   Heatmap background palette is intentionally preserved. */
+:root {
+  color-scheme: light;
+  --color-stone-canvas: #fafaf9;
+  --color-pure-white: #ffffff;
+  --color-stone-border: #e8e6e5;
+  --color-stone-muted: #d6d3d1;
+  --color-ash-gray: #a8a29e;
+  --color-warm-gray: #78716c;
+  --color-ink-black: #0c0a09;
+  --color-soot: #1c1917;
+  --color-sky-wash: #c1e1f7;
+  --color-cyan-signal: #3ba6f1;
+  --color-cyan-edge: #3398e1;
+  --font-roobert: "Avenir Next", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  --font-inter: "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
+  --bg: var(--color-stone-canvas);
+  --panel: var(--color-pure-white);
+  --panel-solid: var(--color-pure-white);
+  --field: #fbfaf8;
+  --field-strong: #f5f3f1;
+  --line: var(--color-stone-border);
+  --line-strong: var(--color-stone-muted);
+  --ink: var(--color-ink-black);
+  --muted: var(--color-warm-gray);
+  --faint: var(--color-ash-gray);
+  --green: var(--color-cyan-signal);
+  --green-deep: var(--color-cyan-edge);
+  --teal: var(--color-cyan-signal);
+  --gold: var(--color-cyan-edge);
+  --blue: var(--color-cyan-signal);
+  --red: #9f3a34;
+  --paper: var(--color-ink-black);
+  --shadow: rgba(0, 0, 0, 0.05) 0 4px 16px 0;
+  --shadow-xl: rgba(17, 12, 46, 0.12) 0 12px 45px 0;
+}
+
+body {
+  background: var(--color-stone-canvas);
+  color: var(--color-ink-black);
+  font-family: var(--font-inter);
+  font-size: 14px;
+  line-height: 1.64;
+}
+
+body::before {
+  display: none;
+}
+
+button,
+input,
+select {
+  font-family: var(--font-inter);
+}
+
+button {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--color-stone-border);
+  border-radius: 9999px;
+  background: transparent;
+  box-shadow: rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+  color: var(--color-ink-black);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+button:hover {
+  border-color: var(--color-cyan-edge);
+  background: #f7fbfe;
+  box-shadow: var(--shadow);
+  color: var(--color-ink-black);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-cyan-signal);
+  outline-offset: 2px;
+}
+
+main {
+  width: min(1200px, 100%);
+  padding: 32px 24px 64px;
+}
+
+.topbar {
+  position: static;
+  margin: 0 0 24px;
+  padding: 0 0 24px;
+  border: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.topbar-main {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  min-height: 180px;
+  padding: 28px;
+  border: 1px solid var(--color-stone-border);
+  border-radius: 16px;
+  background: var(--color-pure-white);
+  box-shadow: var(--shadow-xl);
+}
+
+.brand-mark {
+  width: 64px;
+  height: 64px;
+  border: 1px solid var(--color-stone-border);
+  border-radius: 12px;
+  background: var(--color-pure-white);
+  box-shadow: var(--shadow);
+  color: var(--color-ink-black);
+}
+
+.brand-mark span {
+  color: var(--color-ink-black);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.brand-mark small {
+  color: var(--color-cyan-edge);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--color-warm-gray);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-roobert);
+  letter-spacing: 0;
+}
+
+h1 {
+  max-width: 760px;
+  color: var(--color-ink-black);
+  font-family: "Songti SC", "STSong", "Noto Serif CJK SC", "PingFang SC", serif;
+  font-size: clamp(2.6rem, 6vw, 4.45rem);
+  font-weight: 700;
+  line-height: 1.02;
+  text-wrap: balance;
+  text-shadow: none;
+}
+
+h1 span {
+  position: relative;
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 0 4px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-ink-black);
+  box-shadow: none;
+}
+
+h1 span::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-cyan-signal);
+  content: "";
+  opacity: 0.38;
+}
+
+.author-line {
+  margin-top: 12px;
+  color: var(--color-warm-gray);
+  font-size: 14px;
+}
+
+.operator-strip {
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.operator-strip span,
+.status-pill,
+.match-date-badge,
+.odds-strip i,
+.edge-strip i,
+.model-badge,
+.kelly-risk,
+.regression-metrics span {
+  border: 1px solid var(--color-stone-border);
+  border-radius: 9999px;
+  background: var(--color-pure-white);
+  color: var(--color-warm-gray);
+  font-weight: 500;
+}
+
+.operator-strip i {
+  background: var(--color-cyan-signal);
+  box-shadow: none;
+}
+
+.date-control {
+  align-items: center;
+  border: 1px solid var(--color-stone-border);
+  border-radius: 10px;
+  background: #fbfaf8;
+  box-shadow: none;
+}
+
+.date-control label {
+  color: var(--color-warm-gray);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+input[type="date"],
+.compact-control select,
+.compact-control input[type="number"] {
+  height: 38px;
+  border: 1px solid var(--color-stone-muted);
+  border-radius: 6px;
+  background: var(--color-pure-white);
+  color: var(--color-ink-black);
+  font-weight: 400;
+}
+
+#sync-button,
+#sporttery-refresh-button {
+  border-color: var(--color-cyan-edge);
+  background: var(--color-cyan-signal);
+  color: var(--color-pure-white);
+}
+
+.top-tabs {
+  gap: 8px;
+  margin-top: 16px;
+  padding: 6px;
+  border: 1px solid var(--color-stone-border);
+  border-radius: 9999px;
+  background: var(--color-pure-white);
+  box-shadow: rgba(0, 0, 0, 0.05) 0 1px 2px 0;
+}
+
+.top-tabs button {
+  min-height: 34px;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-warm-gray);
+  font-size: 14px;
+}
+
+.top-tabs button.active,
+.top-tabs button:hover {
+  border-color: var(--color-soot);
+  background: var(--color-soot);
+  color: var(--color-pure-white);
+}
+
+.status-line {
+  position: static;
+  min-height: 42px;
+  margin: 0 0 24px;
+  border: 1px solid var(--color-stone-border);
+  border-radius: 10px;
+  background: var(--color-pure-white);
+  box-shadow: var(--shadow);
+  color: var(--color-warm-gray);
+}
+
+.status-line.success {
+  border-color: var(--color-stone-border);
+  background: var(--color-pure-white);
+  color: var(--color-warm-gray);
+}
+
+.status-line.error,
+.analysis.warning {
+  border-color: #e8c7c2;
+  background: #fff7f6;
+  color: var(--red);
+}
+
+.panel,
+.match-row,
+.round-card,
+.round-switch-card,
+.sync-summary-card,
+.regression-head,
+.prediction-chip,
+.regression-card,
+.model-card,
+.value-card,
+.market-panel,
+.score-item,
+.metric-card,
+.health-item,
+.rank-item,
+.team-match-row,
+.player-row,
+.squad-panel,
+.control-card,
+.collapsible-section {
+  border: 1px solid var(--color-stone-border);
+  border-radius: 10px;
+  background: var(--color-pure-white);
+  box-shadow: var(--shadow);
+}
+
+.panel {
+  overflow: clip;
+}
+
+.panel-head {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--color-stone-border);
+  background: var(--color-pure-white);
+}
+
+h2 {
+  color: var(--color-ink-black);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+h3 {
+  color: var(--color-ink-black);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+h3::before {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-cyan-edge);
+  border-radius: 4px;
+  background: var(--color-sky-wash);
+}
+
+.panel-head span,
+.panel-subhead,
+.meta,
+.empty-state,
+.coach-line,
+.player-row span,
+.team-match-row span,
+.metric-card span,
+.health-item span,
+.rank-item span,
+.value-summary span,
+.model-card small,
+.value-card p,
+.value-item small,
+.round-card-meta,
+.prediction-chip span,
+.prediction-chip small,
+.sync-summary-card span,
+.sync-summary-card small {
+  color: var(--color-warm-gray);
+}
+
+.match-list,
+.round-grid,
+.score-grid,
+.metric-grid,
+.profile-grid,
+.squad-grid,
+.health-list,
+.rank-list {
+  gap: 12px;
+  padding: 16px;
+}
+
+.match-list {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.match-row {
+  padding: 16px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.match-row:has(.status-pill:not([data-status="final"])) {
+  border-color: rgba(59, 166, 241, 0.28);
+  background:
+    linear-gradient(135deg, rgba(193, 225, 247, 0.58), rgba(255, 255, 255, 0.74)),
+    rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: rgba(17, 12, 46, 0.1) 0 12px 45px 0;
+}
+
+.match-row:has(.status-pill[data-status="final"]) {
+  background: var(--color-pure-white);
+}
+
+.match-row:hover,
+.round-card:hover,
+.round-card:focus-visible {
+  border-color: var(--color-cyan-edge);
+  box-shadow: var(--shadow-xl);
+}
+
+.teams strong,
+.round-card-score strong,
+.score-item strong,
+.metric-card strong,
+.health-item strong,
+.rank-item strong,
+.model-card-head strong,
+.value-summary strong,
+.team-match-row strong,
+.player-row strong,
+.squad-panel h4,
+.bar-row strong,
+.mini-prob b,
+.mini-meter strong,
+.value-item strong,
+.sync-summary-card strong,
+.regression-head strong,
+.prediction-chip strong,
+.regression-card strong {
+  color: var(--color-ink-black);
+}
+
+.team-link {
+  color: var(--color-ink-black);
+  text-decoration-color: var(--color-sky-wash);
+}
+
+.team-link:hover {
+  color: var(--color-cyan-edge);
+}
+
+.score-summary {
+  border-top-color: var(--color-stone-border);
+  color: var(--color-warm-gray);
+}
+
+.score-summary b,
+.match-value-line b,
+.odds-strip b,
+.odds-panel-head strong,
+.odds-market-label b {
+  color: var(--color-cyan-edge);
+}
+
+.prob-bars,
+.market-panel,
+.match-odds-panel,
+.value-item,
+.odds-cell,
+.forecast-pill {
+  border: 1px solid var(--color-stone-border);
+  border-radius: 10px;
+  background: #fbfaf8;
+  color: var(--color-ink-black);
+  box-shadow: none;
+}
+
+.bar-track {
+  height: 10px;
+  border: 1px solid var(--color-stone-border);
+  background: #f1f0ee;
+}
+
+.home-fill {
+  background: linear-gradient(90deg, #2f8f5b, #3fb77a);
+}
+
+.draw-fill {
+  background: linear-gradient(90deg, #8f6515, #d8aa3e);
+}
+
+.away-fill {
+  background: linear-gradient(90deg, #23549a, #3b78d8);
+}
+
+.mini-meter.strength-elite .bar-fill {
+  background: linear-gradient(90deg, #dfa64a, #c77c15);
+}
+
+.mini-meter.strength-strong .bar-fill {
+  background: linear-gradient(90deg, #f4d28c, #dfa64a);
+}
+
+.mini-meter.strength-medium .bar-fill {
+  background: linear-gradient(90deg, #dce9e2, #cbeed8);
+}
+
+.mini-meter.strength-weak .bar-fill {
+  background: linear-gradient(90deg, rgba(201, 217, 246, 0.38), #c9d9f6);
+}
+
+.mini-meter.strength-very-weak .bar-fill {
+  background: linear-gradient(90deg, rgba(201, 217, 246, 0.08), rgba(201, 217, 246, 0.52));
+}
+
+.model-card.market-card .bar-fill {
+  opacity: 0.48;
+}
+
+.model-market-row.outcome-home .bar-track .bar-fill {
+  background: linear-gradient(90deg, #2f8f5b, #3fb77a);
+}
+
+.model-market-row.outcome-draw .bar-track .bar-fill {
+  background: linear-gradient(90deg, #8f6515, #d8aa3e);
+}
+
+.model-market-row.outcome-away .bar-track .bar-fill {
+  background: linear-gradient(90deg, #23549a, #3b78d8);
+}
+
+.model-market-row .bar-track:nth-of-type(2) .bar-fill {
+  opacity: 0.42;
+}
+
+.model-market-row strong {
+  display: inline-flex;
+  justify-content: flex-end;
+  min-height: 24px;
+  padding: 0 8px;
+  border: 1px solid #ead8a9;
+  border-radius: 999px;
+  background: #fff9ea;
+  color: #9a6c12;
+}
+
+.model-market-row strong.value {
+  border-color: #b7dbc8;
+  background: #effaf3;
+  color: #227a4d;
+}
+
+.model-market-row strong.efficient {
+  border-color: var(--color-stone-border);
+  background: #f5f3f1;
+  color: var(--color-warm-gray);
+}
+
+.model-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.compact-metrics,
+.value-grid {
+  gap: 12px;
+}
+
+.score-grid {
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+}
+
+.score-item {
+  min-height: 84px;
+  background: var(--color-pure-white);
+}
+
+.score-item strong {
+  font-size: 32px;
+  font-weight: 400;
+}
+
+.score-match-title,
+.heatmap-axis-title {
+  color: var(--color-ink-black);
+}
+
+.heatmap-wrap {
+  gap: 12px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-xl);
+}
+
+.heatmap {
+  grid-template-columns: minmax(74px, 0.75fr) repeat(var(--heatmap-goals, 8), minmax(68px, 1fr));
+  gap: 5px;
+  padding: 2px 2px 8px;
+}
+
+.heatmap-head {
+  min-height: 42px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.heat-cell {
+  min-height: 64px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.heat-cell:not(.heat-level-6) span {
+  color: var(--color-ink-black);
+  font-weight: 600;
+}
+
+.round-tabs {
+  gap: 8px;
+  padding: 16px;
+}
+
+.round-switch-card {
+  min-height: 82px;
+  box-shadow: none;
+}
+
+.round-switch-card.active {
+  border-color: var(--color-cyan-edge);
+  background: #f2f9fe;
+  box-shadow: var(--shadow);
+}
+
+.round-switch-card strong {
+  color: var(--color-cyan-edge);
+}
+
+.round-switch-card span {
+  color: var(--color-ink-black);
+}
+
+.round-card {
+  min-height: 168px;
+  background: var(--color-pure-white);
+}
+
+.round-card-result,
+.health-item.ok,
+.health-item.warn,
+.value-item.positive,
+.value-item.negative,
+.model-card.prominent,
+.forecast-pill.is-best {
+  border-color: var(--color-stone-border);
+  background: #f7fbfe;
+  box-shadow: inset 3px 0 0 var(--color-cyan-signal);
+  color: var(--color-ink-black);
+}
+
+.team-detail-grid {
+  gap: 16px;
+}
+
+.profile-card,
+.strength-card {
+  gap: 10px;
+}
+
+.mini-meter {
+  grid-template-columns: 62px minmax(120px, 1fr) 48px;
+}
+
+.squad-panel {
+  overflow: hidden;
+}
+
+.squad-panel h4,
+.coach-line {
+  border-bottom-color: var(--color-stone-border);
+}
+
+.player-table {
+  scrollbar-color: var(--color-stone-muted) transparent;
+}
+
+.analysis {
+  border: 1px solid var(--color-stone-border);
+  border-left: 3px solid var(--color-cyan-signal);
+  background: #f7fbfe;
+  color: var(--color-ink-black);
+}
+
+pre {
+  color: var(--color-ink-black);
+}
+
+@media (max-width: 1180px) {
+  main {
+    padding: 24px 18px 48px;
+  }
+
+  .topbar-main {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .topbar-main .date-control {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .layout,
+  .lower,
+  .round-grid,
+  .team-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  main {
+    padding: 16px 12px 40px;
+  }
+
+  .topbar-main {
+    min-height: auto;
+    padding: 20px;
+  }
+
+  .brand-mark {
+    width: 48px;
+    height: 48px;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+  }
+
+  h1 span {
+    margin: 6px 0 0;
+  }
+
+  .top-tabs {
+    border-radius: 16px;
+  }
+
+  .top-tabs button {
+    min-height: 36px;
+  }
+
+  .panel-head,
+  .section-title,
+  .model-card-head,
+  .value-summary,
+  .regression-head {
+    display: grid;
+    justify-content: stretch;
+  }
+
+  .button-row,
+  .section-title-actions {
+    justify-content: start;
+  }
+
+  .match-list,
+  .round-grid,
+  .score-grid,
+  .metric-grid,
+  .profile-grid,
+  .squad-grid,
+  .health-list,
+  .rank-list {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .model-grid,
+  .value-grid,
+  .compact-metrics,
+  .inline-forecast {
+    grid-template-columns: 1fr;
+  }
+
+  .model-market-row,
+  .odds-market-row {
+    grid-template-columns: 1fr;
+  }
+
+  .heatmap {
+    grid-template-columns: minmax(76px, 0.9fr) repeat(var(--heatmap-goals, 8), minmax(58px, 1fr));
+  }
+
+  .heat-cell {
+    min-height: 56px;
+    padding: 4px;
+  }
+}
