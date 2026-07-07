@@ -1542,8 +1542,9 @@ function modelWeightAudit(prediction) {
 
 function modelCard(title, source, weight, helper, prominent = false) {
   const probs = normalizeModelProbabilities(source);
+  const className = `${prominent ? 'prominent' : ''} ${title === 'Market' ? 'market-card' : ''}`.trim();
   return `
-    <article class="model-card ${prominent ? 'prominent' : ''}">
+    <article class="model-card ${className}">
       <div class="model-card-head">
         <strong>${title}</strong>
         <span>权重 ${safePercent(weight ?? 0)}</span>
@@ -1669,7 +1670,7 @@ function marketVsModelCard(prediction) {
         ${(prediction.value_analysis?.items || [])
           .map(
             (item) => `
-              <div class="model-market-row">
+              <div class="model-market-row outcome-${escapeAttr(item.outcome)}">
                 <span>${outcomeLabel(item.outcome)}</span>
                 <div class="bar-track"><div class="bar-fill home-fill" style="width:${Math.max(0, Math.min(100, item.model_probability * 100))}%"></div></div>
                 <div class="bar-track"><div class="bar-fill draw-fill" style="width:${Math.max(0, Math.min(100, item.market_probability * 100))}%"></div></div>
@@ -1700,7 +1701,7 @@ function handicapComparisonCard(handicap) {
         ${items
           .map(
             (item) => `
-              <div class="model-market-row">
+              <div class="model-market-row outcome-${escapeAttr(item.outcome)}">
                 <span>让${handicapOutcomeLabel(item.outcome)}</span>
                 <div class="bar-track"><div class="bar-fill home-fill" style="width:${Math.max(0, Math.min(100, item.model_probability * 100))}%"></div></div>
                 <div class="bar-track"><div class="bar-fill draw-fill" style="width:${Math.max(0, Math.min(100, item.market_probability * 100))}%"></div></div>
