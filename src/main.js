@@ -28,7 +28,8 @@ const state = {
   }
 };
 
-const API_BASE = window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '';
+const STATIC_BUILD = Boolean(window.WORLDCUP_STATIC_BUILD);
+const API_BASE = window.location.protocol === 'file:' && !STATIC_BUILD ? 'http://127.0.0.1:8000' : '';
 const formatPercent = (value) => `${(value * 100).toFixed(1)}%`;
 const statusEl = () => document.querySelector('#status');
 
@@ -40,11 +41,56 @@ function setStatus(message, kind = '') {
 }
 
 async function api(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, options);
+  const targetPath = STATIC_BUILD ? staticApiPath(path, options) : path;
+  if (!targetPath) {
+    throw new Error('公开静态部署为只读模式，数据由 GitHub Actions 定时刷新。');
+  }
+  const response = await fetch(`${API_BASE}${targetPath}`, STATIC_BUILD ? {} : options);
   if (!response.ok) {
     throw new Error(`${response.status} ${response.statusText}`);
   }
   return response.json();
+}
+
+function staticApiPath(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const url = new URL(path, window.location.origin);
+  const pathname = url.pathname;
+  const clean = (value) => encodeURIComponent(value || '');
+  if (method === 'POST' && pathname.startsWith('/api/predict/')) {
+    return `/api/predictions/${clean(decodeURIComponent(pathname.split('/').pop()))}.json`;
+  }
+  if (method !== 'GET') return null;
+  if (pathname === '/api/matches/available-dates') return '/api/matches/available-dates.json';
+  if (pathname === '/api/matches') return `/api/matches/${clean(url.searchParams.get('date') || selectedDate())}.json`;
+  if (pathname === '/api/lyihub/rounds') return '/api/lyihub/rounds.json';
+  if (pathname === '/api/lyihub/matches') {
+    const stage = url.searchParams.get('stage');
+    const date = url.searchParams.get('date');
+    if (stage) return `/api/lyihub/matches/stage-${clean(stage)}.json`;
+    if (date) return `/api/lyihub/matches/date-${clean(date)}.json`;
+    return '/api/lyihub/matches/all.json';
+  }
+  if (pathname === '/api/health/data-sources') return '/api/health/data-sources.json';
+  if (pathname === '/api/health/roster-data') return '/api/health/roster-data.json';
+  if (pathname === '/api/reports/daily') return `/api/reports/daily/${clean(url.searchParams.get('date') || selectedDate())}.json`;
+  if (pathname === '/api/teams/rankings') return '/api/teams/rankings.json';
+  if (pathname === '/api/knockout') return '/api/knockout.json';
+  if (pathname === '/api/meta') return '/api/meta.json';
+
+  let match = pathname.match(/^\/api\/predictions\/(.+)$/);
+  if (match) return `/api/predictions/${clean(decodeURIComponent(match[1]))}.json`;
+  match = pathname.match(/^\/api\/matches\/(.+)\/analysis$/);
+  if (match) return `/api/matches/${clean(decodeURIComponent(match[1]))}/analysis.json`;
+  match = pathname.match(/^\/api\/teams\/(.+)\/world-cup-detail$/);
+  if (match) return `/api/teams/${clean(decodeURIComponent(match[1]))}/world-cup-detail.json`;
+  match = pathname.match(/^\/api\/teams\/(.+)\/squad$/);
+  if (match) return `/api/teams/${clean(decodeURIComponent(match[1]))}/squad.json`;
+  return null;
+}
+
+function staticReadOnlyNotice(action) {
+  setStatus(`${action} 已在公开静态部署中禁用；数据由 GitHub Actions 定时生成。`, 'success');
 }
 
 function selectedDate() {
@@ -61,6 +107,7 @@ function teamDisplay(entity, side = '') {
 
 async function bootstrap() {
   try {
+    configureStaticMode();
     updateActiveView();
     await loadAvailableDates();
     await loadMatches();
@@ -73,10 +120,50 @@ async function bootstrap() {
     if (state.activeView === 'detail') {
       await ensureDetailPrediction();
     } else {
-      setStatus('数据已加载。公开网页赛程与历史 CSV/Elo fallback 可用。', 'success');
+      if (STATIC_BUILD) {
+        await loadStaticMeta();
+      } else {
+        setStatus('数据已加载。公开网页赛程与历史 CSV/Elo fallback 可用。', 'success');
+      }
     }
   } catch (error) {
-    setStatus(`加载失败：${error.message}。请确认后端服务已启动并可访问 /api。`, 'error');
+    const hint = STATIC_BUILD ? '请确认静态导出文件已发布完整。' : '请确认后端服务已启动并可访问 /api。';
+    setStatus(`加载失败：${error.message}。${hint}`, 'error');
+  }
+}
+
+function configureStaticMode() {
+  if (!STATIC_BUILD) return;
+  const readonlyButtons = [
+    ['#sync-button', '↻', '公开静态部署为只读模式，数据由 GitHub Actions 定时刷新。'],
+    ['#round-sync-button', '已静态生成', '公开静态部署为只读模式，赛程数据由 GitHub Actions 定时刷新。'],
+    ['#round-regress-button', '已静态生成', '公开静态部署为只读模式，模型回归由 GitHub Actions 定时运行。'],
+    ['#sporttery-refresh-button', '已静态生成', '公开静态部署为只读模式，赔率快照由 GitHub Actions 定时刷新。'],
+    ['#sync-reference-button', '已静态生成', '公开静态部署为只读模式，参考数据由 GitHub Actions 定时刷新。'],
+    ['#validate-sources-button', '静态快照', '公开静态部署为只读模式，数据源校验只展示导出时状态。'],
+    ['#process-roster-button', '静态快照', '公开静态部署为只读模式，阵容补全在后台导出流程执行。'],
+    ['#public-roster-button', '静态快照', '公开静态部署为只读模式，公开源补全在后台导出流程执行。'],
+  ];
+  readonlyButtons.forEach(([selector, text, title]) => {
+    const button = document.querySelector(selector);
+    if (!button) return;
+    button.textContent = text;
+    button.title = title;
+  });
+}
+
+async function loadStaticMeta() {
+  try {
+    const payload = await api('/api/meta');
+    const meta = payload.static_export || {};
+    const generated = formatDateTime(meta.generated_at);
+    setStatus(`静态数据已加载。最近生成 ${generated}，默认比赛日 ${meta.default_date || selectedDate()}。`, 'success');
+    const lastSyncNode = document.querySelector('#round-last-sync');
+    if (lastSyncNode) {
+      lastSyncNode.textContent = `静态生成 ${generated}`;
+    }
+  } catch (error) {
+    setStatus('静态数据已加载。', 'success');
   }
 }
 
@@ -104,6 +191,10 @@ async function loadMatches() {
 }
 
 async function syncMatches() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('同步数据');
+    return;
+  }
   const date = selectedDate();
   const button = document.querySelector('#sync-button');
   button.disabled = true;
@@ -136,6 +227,10 @@ async function syncMatches() {
 }
 
 async function refreshSportteryOdds() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('刷新赔率');
+    return;
+  }
   const button = document.querySelector('#sporttery-refresh-button');
   button.disabled = true;
   button.textContent = '刷新中...';
@@ -158,6 +253,10 @@ async function refreshSportteryOdds() {
 }
 
 async function syncRoundOverview() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('赛程同步');
+    return;
+  }
   const date = selectedDate();
   const button = document.querySelector('#round-sync-button');
   button.disabled = true;
@@ -189,6 +288,10 @@ async function syncRoundOverview() {
 }
 
 async function regressRoundOverview() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('回归');
+    return;
+  }
   const date = selectedDate();
   const button = document.querySelector('#round-regress-button');
   button.disabled = true;
@@ -436,6 +539,10 @@ function formatDateTime(value) {
 }
 
 async function syncReferenceData() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('刷新参考数据');
+    return;
+  }
   const button = document.querySelector('#sync-reference-button');
   button.disabled = true;
   button.textContent = '刷新中...';
@@ -462,6 +569,9 @@ async function loadPrediction(fixtureId) {
   setStatus('正在生成单场预测...');
   try {
     const prediction = await api(`/api/predict/${fixtureId}?roster_weight=${state.rosterWeight}&simulations=${state.simulations}`, { method: 'POST' });
+    if (prediction.available === false) {
+      throw new Error(prediction.error || '静态预测不可用');
+    }
     state.matchPredictions[fixtureId] = { status: 'ready', prediction };
     let analysis = null;
     try {
@@ -513,6 +623,9 @@ async function loadMatchCardPredictions() {
     missing.map(async (match) => {
       try {
         const prediction = await api(`/api/predict/${match.id}?roster_weight=${state.rosterWeight}&simulations=${state.simulations}`, { method: 'POST' });
+        if (prediction.available === false) {
+          throw new Error(prediction.error || '静态预测不可用');
+        }
         state.matchPredictions[match.id] = { status: 'ready', prediction };
       } catch (error) {
         state.matchPredictions[match.id] = { status: 'error', error: error.message };
@@ -599,6 +712,10 @@ function renderRosterHealth() {
 }
 
 async function validateSources() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('数据源校验');
+    return;
+  }
   const button = document.querySelector('#validate-sources-button');
   button.disabled = true;
   button.textContent = '校验中...';
@@ -1988,6 +2105,10 @@ function squadPanel(team, squad) {
 }
 
 async function syncFixtureSquads(fixture) {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('同步阵容');
+    return;
+  }
   setStatus('正在同步本场双方阵容和教练...');
   try {
     await api(`/api/squads/sync?team=${encodeURIComponent(fixture.home_team)}`, { method: 'POST' });
@@ -2001,6 +2122,10 @@ async function syncFixtureSquads(fixture) {
 }
 
 async function processRosterQueue() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('补全阵容队列');
+    return;
+  }
   const button = document.querySelector('#process-roster-button');
   if (button) {
     button.disabled = true;
@@ -2025,6 +2150,10 @@ async function processRosterQueue() {
 }
 
 async function enrichPublicRosterQueue() {
+  if (STATIC_BUILD) {
+    staticReadOnlyNotice('公开源补全');
+    return;
+  }
   const button = document.querySelector('#public-roster-button');
   if (button) {
     button.disabled = true;

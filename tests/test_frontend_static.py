@@ -92,3 +92,24 @@ def test_market_model_delta_bars_use_semantic_colors():
     assert "opacity: 0.42;" in css
     assert ".model-market-row strong.value" in css
     assert ".model-market-row strong.efficient" in css
+
+
+def test_static_build_adapter_maps_dynamic_routes_to_json_files():
+    source = Path("src/main.js").read_text(encoding="utf-8")
+
+    assert "const STATIC_BUILD = Boolean(window.WORLDCUP_STATIC_BUILD);" in source
+    assert "function staticApiPath(path, options = {})" in source
+    assert "return `/api/matches/${clean(url.searchParams.get('date') || selectedDate())}.json`;" in source
+    assert "return `/api/predictions/${clean(decodeURIComponent(pathname.split('/').pop()))}.json`;" in source
+    assert "return `/api/teams/${clean(decodeURIComponent(match[1]))}/world-cup-detail.json`;" in source
+    assert "公开静态部署为只读模式" in source
+
+
+def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
+    source = Path("scripts/export_static_site.py").read_text(encoding="utf-8")
+
+    assert "window.WORLDCUP_STATIC_BUILD = true;" in source
+    assert "api/matches/available-dates.json" in source
+    assert "api/meta.json" in source
+    assert "api/teams/rankings.json" in source
+    assert "read_only_static_site" in source

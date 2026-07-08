@@ -1,0 +1,59 @@
+name: Deploy static World Cup dashboard
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+      BETFAIR_APP_KEY: ${{ secrets.BETFAIR_APP_KEY }}
+      BETFAIR_SESSION_TOKEN: ${{ secrets.BETFAIR_SESSION_TOKEN }}
+      FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+      FOOTBALLDATA_IO_API_KEY: ${{ secrets.FOOTBALLDATA_IO_API_KEY }}
+      API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      SPORTMONKS_API_KEY: ${{ secrets.SPORTMONKS_API_KEY }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      SPORTTERY_ENABLE_LIVE: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install Python dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Export static site
+        run: PYTHONPATH=backend python scripts/export_static_site.py
+
+      - name: Upload static artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: worldcup-static-site
+          path: dist
+
+      - name: Deploy to Cloudflare Pages
+        if: ${{ github.event_name != 'pull_request' && env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != '' }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=worldcup-hectorgao
