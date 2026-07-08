@@ -9,12 +9,12 @@
 - 前端：`index.html` + `src/main.js` + `src/styles.css`，没有 Vite/React 构建步骤。
 - 后端：Python FastAPI，入口为 `worldcup_predictor.api:app`。
 - 前端通过同源 `/api/...` 调用后端接口。
-- 后端同时负责：
+- 本地后端负责：
   - 托管 `/` 和 `/src/*` 静态资源；
   - 提供预测、赛果同步、sporttery 赔率刷新、回归训练等 API；
   - 使用 SQLite 数据库，默认路径为 `data/worldcup.sqlite3`。
 
-因此当前系统应部署为一个 Python Web Service，而不是 GitHub Pages / Cloudflare Pages 这种纯静态站。
+因此当前系统部署为一个 Python Web Service。线上 Render 使用只读预计算模式，只读取仓库里的 `precomputed/api/*.json`，不在用户请求中执行赛果同步、赔率抓取或模型重算。
 
 ## 2. 推荐免费部署方案
 
@@ -22,10 +22,10 @@
 
 原因：
 
-- 支持 Python + FastAPI 长运行服务。
+- 支持 Python + FastAPI 服务。
 - 免费额度可以公开访问。
 - 支持自定义域名和自动 HTTPS。
-- 可以用一个服务同时托管前端页面和后端 API，避免跨域和前后端分离部署。
+- 可以用一个服务同时托管前端页面和只读 API，避免跨域和前后端分离部署。
 - 不需要购买服务器。
 
 备选方案：
@@ -45,6 +45,9 @@
 - `/healthz`：部署平台健康检查接口。
 - `WORLDCUP_DB_PATH`：线上 SQLite 路径环境变量。
 - `WORLDCUP_CORS_ORIGINS`：可追加允许跨域来源。
+- `WORLDCUP_USE_PRECOMPUTED`：线上优先读取 `precomputed/api`。
+- `WORLDCUP_READ_ONLY`：线上禁用同步、赔率刷新、模型回归等重任务接口。
+- `precomputed/api/`：可提交的线上 API JSON 缓存。
 
 核心预测算法、赔率解析、赛果同步、模型训练逻辑没有为了部署而改动。
 
@@ -94,8 +97,11 @@ uvicorn worldcup_predictor.api:app --app-dir backend --host 0.0.0.0 --port $PORT
 
 ```text
 WORLDCUP_DB_PATH=/opt/render/project/src/data/worldcup.sqlite3
-WORLDCUP_CORS_ORIGINS=https://worldcup.hectorgao.com
-SPORTTERY_ENABLE_LIVE=1
+WORLDCUP_CORS_ORIGINS=https://worldcup-prediction2026.onrender.com,https://worldcup.hectorgao.com
+WORLDCUP_USE_PRECOMPUTED=1
+WORLDCUP_READ_ONLY=1
+WORLDCUP_PRECOMPUTED_DIR=/opt/render/project/src/precomputed
+SPORTTERY_ENABLE_LIVE=0
 ```
 
 可选数据源 API key：
@@ -112,13 +118,36 @@ FOOTBALL_DATA_API_KEY=...
 - 不要把 API key 写入前端或仓库。
 - 如果不配置可选 API key，相关数据源会显示未配置，系统仍可使用已有 fallback 数据源。
 - Render Free 服务的文件系统不是持久存储。服务重启或重新部署后，运行时生成的 SQLite 数据可能丢失。
+- 线上只读模式不依赖运行时 SQLite 数据；比赛、预测、球队、淘汰赛和健康检查快照来自仓库里的 `precomputed/api`。
 
 如果你需要长期保留线上同步后的 SQLite 数据，有两个选择：
 
 1. 使用 Render Disk。这个通常不是免费方案。
-2. 不在网页上频繁执行同步，把本地生成好的 `outputs/*.json` 和数据库作为发布前数据快照管理。
+2. 不在网页上执行同步，把本地生成好的 `outputs/*.json` 和 `precomputed/api/*.json` 作为发布前数据快照管理。
 
-当前免费方案的建议是：线上用于公开展示和轻量刷新；重要数据同步和回归仍在本地或 Codex 中运行后提交输出文件。
+当前免费方案的建议是：线上用于公开展示；重要数据同步、赔率刷新和回归仍在本地或 Codex 中运行后提交输出文件与预计算 API 缓存。
+
+### 4.4 更新线上比赛数据的本地流程
+
+线上 Render 不执行重计算。需要更新比赛数据时，在本地运行：
+
+```bash
+SPORTTERY_ENABLE_LIVE=1 .venv/bin/python scripts/update_after_results.py --fetch-online-results --use-xgboost --recalculate --sync-fifa --sync-fifa-rosters --sync-sportmonks --use-sportmonks --sync-footballdata-io --sync-sporttery --sync-sporttery-history --backfill-historical --train-over25 --date 2026-07-08
+```
+
+然后导出线上只读 API 缓存：
+
+```bash
+PYTHONPATH=backend .venv/bin/python scripts/export_static_site.py --precomputed --all-dates --simulations 10000
+```
+
+确认 `precomputed/api/` 已更新后提交并推送：
+
+```bash
+git add outputs precomputed render.yaml DEPLOYMENT.md backend src scripts tests
+git commit -m "fix: resolve render api 502 and support precomputed match data"
+git push origin main
+```
 
 ## 5. 绑定 `worldcup.hectorgao.com`
 
@@ -185,7 +214,7 @@ https://worldcup.hectorgao.com/healthz
 应返回：
 
 ```json
-{"status":"ok"}
+{"status":"ok","deployment":{"read_only":true,"use_precomputed":true}}
 ```
 
 3. API 可访问：
@@ -193,17 +222,17 @@ https://worldcup.hectorgao.com/healthz
 ```text
 https://worldcup.hectorgao.com/api/meta
 https://worldcup.hectorgao.com/api/matches/available-dates
+https://worldcup.hectorgao.com/api/matches?date=2026-07-08
 ```
 
 4. 页面功能检查：
 
 - 顶部页面能加载；
 - “今日比赛”能请求 `/api/matches`；
-- “刷新赔率”能调用 `/api/odds/sporttery/refresh`；
-- “同步”能调用 `/api/results/update`；
-- “单场预测”能调用 `/api/predict/{fixture_id}`。
+- “刷新赔率”“同步”“回归”等按钮显示只读提示，不会在线上执行重任务；
+- “单场预测”读取预计算预测结果。
 
-Render Free 服务首次访问可能冷启动，等待 30-60 秒后刷新即可。
+Render Free 服务首次访问可能冷启动，等待 30-60 秒后刷新即可。冷启动后 `/api/matches` 应快速返回，不应触发线上同步或模型重算。
 
 ## 7. 国内访问考虑
 
@@ -220,13 +249,14 @@ Render Free 服务首次访问可能冷启动，等待 30-60 秒后刷新即可�
 
 ### 页面打开但数据为空
 
-当前仓库不一定包含 `data/worldcup.sqlite3`。线上第一次启动会自动创建空数据库。
+线上不依赖 `data/worldcup.sqlite3`。如果页面打开但数据为空，优先检查 `precomputed/api` 是否已提交并随 Render 部署发布。
 
 处理方式：
 
-- 在页面点击“同步”或“刷新参考数据”补数据；
-- 或者在本地运行同步/回归流程后，将需要公开展示的数据文件随代码提交；
-- 如果要保留线上运行后生成的数据，需要使用持久化磁盘。
+- 本地运行同步、赔率刷新和回归流程；
+- 运行 `scripts/export_static_site.py --precomputed --all-dates`；
+- 提交 `precomputed/api` 后重新部署；
+- 不要提交 `data/*.sqlite3`。
 
 ### Render 构建失败，提示找不到包
 
@@ -257,9 +287,10 @@ uvicorn worldcup_predictor.api:app --app-dir backend --host 0.0.0.0 --port $PORT
 
 处理方式：
 
-- 查看页面提示和 Render Logs；
-- 确认 `SPORTTERY_ENABLE_LIVE=1`；
-- 失败时系统应保留上一次 sporttery snapshot，不应生成假赔率。
+- 在本地环境刷新 sporttery 赔率；
+- 确认本地 `SPORTTERY_ENABLE_LIVE=1`；
+- 失败时系统应保留上一次 sporttery snapshot，不应生成假赔率；
+- 线上 Render 设置 `SPORTTERY_ENABLE_LIVE=0`，页面只读取预计算赔率快照。
 
 ### 同步或回归耗时较长
 
@@ -267,6 +298,6 @@ Render Free 机器资源有限，赛果同步、赔率抓取和 XGBoost 回归�
 
 建议：
 
-- 公开页面主要用于查看和轻量刷新；
+- 公开页面只用于查看预计算结果；
 - 大规模同步和回归在本地或 Codex 环境运行；
-- 运行完成后提交更新后的 `outputs/` 文件。
+- 运行完成后提交更新后的 `outputs/` 和 `precomputed/api/` 文件。

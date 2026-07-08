@@ -12,6 +12,12 @@ services:
       - key: WORLDCUP_DB_PATH
         value: /opt/render/project/src/data/worldcup.sqlite3
       - key: WORLDCUP_CORS_ORIGINS
-        value: https://worldcup.hectorgao.com
-      - key: SPORTTERY_ENABLE_LIVE
+        value: https://worldcup-prediction2026.onrender.com,https://worldcup.hectorgao.com
+      - key: WORLDCUP_USE_PRECOMPUTED
         value: "1"
+      - key: WORLDCUP_READ_ONLY
+        value: "1"
+      - key: WORLDCUP_PRECOMPUTED_DIR
+        value: /opt/render/project/src/precomputed
+      - key: SPORTTERY_ENABLE_LIVE
+        value: "0"

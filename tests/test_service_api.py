@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 
 from fastapi.testclient import TestClient
 
@@ -120,8 +121,69 @@ def test_deployment_healthcheck_and_env_db_path(tmp_path: Path, monkeypatch):
     response = client.get("/healthz")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json()["status"] == "ok"
+    assert response.json()["deployment"]["use_precomputed"] is False
     assert db_path.exists()
+
+
+def test_render_precomputed_mode_serves_json_without_syncing(tmp_path: Path, monkeypatch):
+    precomputed = tmp_path / "precomputed"
+    api_root = precomputed / "api"
+    (api_root / "matches").mkdir(parents=True)
+    (api_root / "predictions").mkdir(parents=True)
+    (api_root / "matches" / "fixture-1").mkdir(parents=True)
+    (api_root / "teams").mkdir(parents=True)
+    (api_root / "health").mkdir(parents=True)
+    (api_root / "lyihub" / "matches").mkdir(parents=True)
+    (api_root / "reports" / "daily").mkdir(parents=True)
+    payloads = {
+        api_root / "matches" / "available-dates.json": {"dates": ["2026-07-08"], "default_date": "2026-07-08"},
+        api_root / "matches" / "2026-07-08.json": {
+            "date": "2026-07-08",
+            "requested_date": "2026-07-08",
+            "matches": [{"id": "fixture-1", "home_team": "Brazil", "away_team": "Germany"}],
+        },
+        api_root / "meta.json": {"static_export": {"generated_at": "2026-07-08T08:00:00+08:00"}},
+        api_root / "predictions" / "fixture-1.json": {"fixture": {"id": "fixture-1"}, "probabilities": {"home": 0.4}},
+        api_root / "matches" / "fixture-1" / "analysis.json": {"fixture_id": "fixture-1", "prediction": {}},
+        api_root / "teams" / "rankings.json": {"teams": []},
+        api_root / "health" / "data-sources.json": {"providers": [], "polling_cadence_minutes": 15},
+        api_root / "health" / "roster-data.json": {"queue_pending": 0},
+        api_root / "lyihub" / "rounds.json": {"rounds": []},
+        api_root / "lyihub" / "matches" / "all.json": {"matches": []},
+        api_root / "reports" / "daily" / "2026-07-08.json": {"date": "2026-07-08", "report": "cached"},
+        api_root / "knockout.json": {"rounds": []},
+    }
+    for path, payload in payloads.items():
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    monkeypatch.setenv("WORLDCUP_USE_PRECOMPUTED", "1")
+    monkeypatch.setenv("WORLDCUP_READ_ONLY", "1")
+    monkeypatch.setenv("WORLDCUP_PRECOMPUTED_DIR", str(precomputed))
+    app = create_app(db_path=tmp_path / "empty.sqlite3")
+    app.state.service.sync_date = lambda date: (_ for _ in ()).throw(AssertionError("sync_date should not run"))
+    client = TestClient(app)
+
+    matches_response = client.get("/api/matches", params={"date": "2026-07-08"})
+    assert matches_response.status_code == 200
+    assert matches_response.json()["matches"][0]["id"] == "fixture-1"
+    assert client.get("/api/matches/available-dates").json()["default_date"] == "2026-07-08"
+    assert client.get("/api/meta").json()["deployment"]["read_only"] is True
+    assert client.post("/api/predict/fixture-1").json()["fixture"]["id"] == "fixture-1"
+
+    sync_response = client.post("/api/sync", params={"date": "2026-07-08"})
+    assert sync_response.status_code == 409
+    assert sync_response.json()["detail"]["error"] == "read_only_deployment"
+
+
+def test_precomputed_mode_reports_missing_json(tmp_path: Path, monkeypatch):
+    monkeypatch.setenv("WORLDCUP_USE_PRECOMPUTED", "1")
+    monkeypatch.setenv("WORLDCUP_PRECOMPUTED_DIR", str(tmp_path / "precomputed"))
+    client = TestClient(create_app(db_path=tmp_path / "empty.sqlite3"))
+
+    response = client.get("/api/matches", params={"date": "2026-07-08"})
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["error"] == "precomputed_json_missing"
 
 
 def test_default_match_date_skips_completed_day_and_shows_sporttery_window(tmp_path: Path):

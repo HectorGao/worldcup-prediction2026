@@ -20,6 +20,10 @@ const state = {
   predictionParamsDirty: false,
   lastCalculationTime: null,
   detailAutoloading: false,
+  deployment: {
+    read_only: false,
+    use_precomputed: false
+  },
   collapsedPredictionSections: {
     'monte-carlo': true,
     profiles: true,
@@ -47,7 +51,14 @@ async function api(path, options = {}) {
   }
   const response = await fetch(`${API_BASE}${targetPath}`, STATIC_BUILD ? {} : options);
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    let detail = '';
+    try {
+      const payload = await response.json();
+      detail = typeof payload.detail === 'string' ? payload.detail : payload.detail?.message || payload.message || '';
+    } catch (error) {
+      detail = '';
+    }
+    throw new Error(`${response.status} ${response.statusText}${detail ? `：${detail}` : ''}`);
   }
   return response.json();
 }
@@ -90,7 +101,11 @@ function staticApiPath(path, options = {}) {
 }
 
 function staticReadOnlyNotice(action) {
-  setStatus(`${action} 已在公开静态部署中禁用；数据由 GitHub Actions 定时生成。`, 'success');
+  setStatus(`${action} 已在公开只读部署中禁用；数据由本地预计算流程生成后发布。`, 'success');
+}
+
+function isReadOnlyMode() {
+  return STATIC_BUILD || Boolean(state.deployment?.read_only || state.deployment?.use_precomputed);
 }
 
 function selectedDate() {
@@ -108,6 +123,8 @@ function teamDisplay(entity, side = '') {
 async function bootstrap() {
   try {
     configureStaticMode();
+    await loadDeploymentMeta();
+    configureRuntimeReadOnlyMode();
     updateActiveView();
     await loadAvailableDates();
     await loadMatches();
@@ -122,6 +139,9 @@ async function bootstrap() {
     } else {
       if (STATIC_BUILD) {
         await loadStaticMeta();
+      } else if (isReadOnlyMode()) {
+        const meta = state.deployment || {};
+        setStatus(`预计算数据已加载。线上只读模式，不执行实时同步或模型重算。${meta.generated_at ? `最近生成 ${formatDateTime(meta.generated_at)}。` : ''}`, 'success');
       } else {
         setStatus('数据已加载。公开网页赛程与历史 CSV/Elo fallback 可用。', 'success');
       }
@@ -134,15 +154,24 @@ async function bootstrap() {
 
 function configureStaticMode() {
   if (!STATIC_BUILD) return;
+  configureReadOnlyButtons();
+}
+
+function configureRuntimeReadOnlyMode() {
+  if (!isReadOnlyMode()) return;
+  configureReadOnlyButtons();
+}
+
+function configureReadOnlyButtons() {
   const readonlyButtons = [
-    ['#sync-button', '↻', '公开静态部署为只读模式，数据由 GitHub Actions 定时刷新。'],
-    ['#round-sync-button', '已静态生成', '公开静态部署为只读模式，赛程数据由 GitHub Actions 定时刷新。'],
-    ['#round-regress-button', '已静态生成', '公开静态部署为只读模式，模型回归由 GitHub Actions 定时运行。'],
-    ['#sporttery-refresh-button', '已静态生成', '公开静态部署为只读模式，赔率快照由 GitHub Actions 定时刷新。'],
-    ['#sync-reference-button', '已静态生成', '公开静态部署为只读模式，参考数据由 GitHub Actions 定时刷新。'],
-    ['#validate-sources-button', '静态快照', '公开静态部署为只读模式，数据源校验只展示导出时状态。'],
-    ['#process-roster-button', '静态快照', '公开静态部署为只读模式，阵容补全在后台导出流程执行。'],
-    ['#public-roster-button', '静态快照', '公开静态部署为只读模式，公开源补全在后台导出流程执行。'],
+    ['#sync-button', '↻', '公开只读部署禁用在线同步；请本地更新后导出 precomputed/api。'],
+    ['#round-sync-button', '已预计算', '公开只读部署禁用赛程同步；请本地更新后导出 precomputed/api。'],
+    ['#round-regress-button', '已预计算', '公开只读部署禁用模型回归；请本地更新后导出 precomputed/api。'],
+    ['#sporttery-refresh-button', '已预计算', '公开只读部署禁用在线赔率刷新；请本地更新后导出 precomputed/api。'],
+    ['#sync-reference-button', '已预计算', '公开只读部署禁用参考数据抓取；请本地更新后导出 precomputed/api。'],
+    ['#validate-sources-button', '静态快照', '公开只读部署只展示导出时的数据源状态。'],
+    ['#process-roster-button', '静态快照', '公开只读部署禁用阵容补全队列。'],
+    ['#public-roster-button', '静态快照', '公开只读部署禁用公开源补全。'],
   ];
   readonlyButtons.forEach(([selector, text, title]) => {
     const button = document.querySelector(selector);
@@ -150,6 +179,21 @@ function configureStaticMode() {
     button.textContent = text;
     button.title = title;
   });
+}
+
+async function loadDeploymentMeta() {
+  if (STATIC_BUILD) return;
+  try {
+    const payload = await api('/api/meta');
+    const deployment = payload.deployment || {};
+    const generated = payload.static_export?.generated_at || deployment.generated_at;
+    state.deployment = {
+      ...deployment,
+      generated_at: generated
+    };
+  } catch (error) {
+    state.deployment = { read_only: false, use_precomputed: false };
+  }
 }
 
 async function loadStaticMeta() {
@@ -191,7 +235,7 @@ async function loadMatches() {
 }
 
 async function syncMatches() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('同步数据');
     return;
   }
@@ -227,7 +271,7 @@ async function syncMatches() {
 }
 
 async function refreshSportteryOdds() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('刷新赔率');
     return;
   }
@@ -253,7 +297,7 @@ async function refreshSportteryOdds() {
 }
 
 async function syncRoundOverview() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('赛程同步');
     return;
   }
@@ -288,7 +332,7 @@ async function syncRoundOverview() {
 }
 
 async function regressRoundOverview() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('回归');
     return;
   }
@@ -539,7 +583,7 @@ function formatDateTime(value) {
 }
 
 async function syncReferenceData() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('刷新参考数据');
     return;
   }
@@ -712,7 +756,7 @@ function renderRosterHealth() {
 }
 
 async function validateSources() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('数据源校验');
     return;
   }
@@ -2105,7 +2149,7 @@ function squadPanel(team, squad) {
 }
 
 async function syncFixtureSquads(fixture) {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('同步阵容');
     return;
   }
@@ -2122,7 +2166,7 @@ async function syncFixtureSquads(fixture) {
 }
 
 async function processRosterQueue() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('补全阵容队列');
     return;
   }
@@ -2150,7 +2194,7 @@ async function processRosterQueue() {
 }
 
 async function enrichPublicRosterQueue() {
-  if (STATIC_BUILD) {
+  if (isReadOnlyMode()) {
     staticReadOnlyNotice('公开源补全');
     return;
   }

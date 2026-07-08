@@ -1,0 +1,68 @@
+{
+  "timezone": "Asia/Shanghai",
+  "polling_cadence_minutes": 15,
+  "providers": [
+    {
+      "name": "API-Football",
+      "configured": true,
+      "role": "primary_free_tier"
+    },
+    {
+      "name": "FootballData.io",
+      "configured": false,
+      "role": "supplemental_matches_teams_stats"
+    },
+    {
+      "name": "SportMonks",
+      "configured": true,
+      "role": "supplemental_fixtures_stats_lineups"
+    },
+    {
+      "name": "football-data.org",
+      "configured": false,
+      "role": "free_tier_fixture_scores"
+    },
+    {
+      "name": "ESPN public scoreboard",
+      "configured": true,
+      "role": "free_no_key_live_scoreboard_experimental"
+    },
+    {
+      "name": "sample_fallback",
+      "configured": true,
+      "role": "local_fallback"
+    },
+    {
+      "name": "The Odds API",
+      "configured": true,
+      "role": "odds_paid"
+    },
+    {
+      "name": "Betfair Exchange",
+      "configured": false,
+      "role": "odds_optional_exchange"
+    },
+    {
+      "name": "China Sporttery",
+      "configured": false,
+      "role": "official_cn_odds_public_web_fallback"
+    }
+  ],
+  "public_web_sources": [
+    {
+      "name": "Wikipedia 2026 FIFA World Cup + FIFA match-centre links",
+      "configured": true,
+      "role": "fixture_public_web"
+    },
+    {
+      "name": "martj42 international_results results.csv",
+      "configured": true,
+      "role": "historical_results_public_csv"
+    },
+    {
+      "name": "Kaggle international football results",
+      "configured": false,
+      "role": "optional_historical_import"
+    }
+  ]
+}

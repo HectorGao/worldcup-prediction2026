@@ -98,11 +98,13 @@ def test_static_build_adapter_maps_dynamic_routes_to_json_files():
     source = Path("src/main.js").read_text(encoding="utf-8")
 
     assert "const STATIC_BUILD = Boolean(window.WORLDCUP_STATIC_BUILD);" in source
+    assert "function isReadOnlyMode()" in source
+    assert "await loadDeploymentMeta();" in source
     assert "function staticApiPath(path, options = {})" in source
     assert "return `/api/matches/${clean(url.searchParams.get('date') || selectedDate())}.json`;" in source
     assert "return `/api/predictions/${clean(decodeURIComponent(pathname.split('/').pop()))}.json`;" in source
     assert "return `/api/teams/${clean(decodeURIComponent(match[1]))}/world-cup-detail.json`;" in source
-    assert "公开静态部署为只读模式" in source
+    assert "公开只读部署中禁用" in source
 
 
 def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
@@ -113,3 +115,4 @@ def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
     assert "api/meta.json" in source
     assert "api/teams/rankings.json" in source
     assert "read_only_static_site" in source
+    assert "--precomputed" in source

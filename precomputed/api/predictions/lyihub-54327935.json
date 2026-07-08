@@ -1,0 +1,5654 @@
+{
+  "fixture": {
+    "id": "lyihub-54327935",
+    "date": "2026-06-30",
+    "kickoff": "2026-06-29T17:00:00+00:00",
+    "home_team": "Brazil",
+    "away_team": "Japan",
+    "group": "1/16决赛",
+    "venue": "休斯顿体育场·美国 (Houston, Texas)",
+    "status": "final",
+    "home_score": 2,
+    "away_score": 1,
+    "source_url": null,
+    "source_name": null,
+    "market_home": 1.49,
+    "market_draw": 3.72,
+    "market_away": 5.28,
+    "market_over_2_5": null,
+    "market_under_2_5": null,
+    "market_source": "China Sporttery snapshot 周一074 sales 2026-06-29",
+    "market_handicap": "{\"home\": 2.71, \"draw\": 3.15, \"away\": 2.26}",
+    "market_handicap_line": "-1",
+    "sportmonks_features": null,
+    "home_team_zh": "巴西",
+    "away_team_zh": "日本",
+    "home_flag": "🇧🇷",
+    "away_flag": "🇯🇵",
+    "home_iso2": "BR",
+    "away_iso2": "JP",
+    "odds_available": true,
+    "odds_source": "China Sporttery snapshot 周一074 sales 2026-06-29",
+    "historical_without_odds": false,
+    "has_prediction_record": true
+  },
+  "source_status": {
+    "timezone": "Asia/Shanghai",
+    "polling_cadence_minutes": 15,
+    "providers": [
+      {
+        "name": "API-Football",
+        "configured": true,
+        "role": "primary_free_tier"
+      },
+      {
+        "name": "FootballData.io",
+        "configured": false,
+        "role": "supplemental_matches_teams_stats"
+      },
+      {
+        "name": "SportMonks",
+        "configured": true,
+        "role": "supplemental_fixtures_stats_lineups"
+      },
+      {
+        "name": "football-data.org",
+        "configured": false,
+        "role": "free_tier_fixture_scores"
+      },
+      {
+        "name": "ESPN public scoreboard",
+        "configured": true,
+        "role": "free_no_key_live_scoreboard_experimental"
+      },
+      {
+        "name": "sample_fallback",
+        "configured": true,
+        "role": "local_fallback"
+      },
+      {
+        "name": "The Odds API",
+        "configured": true,
+        "role": "odds_paid"
+      },
+      {
+        "name": "Betfair Exchange",
+        "configured": false,
+        "role": "odds_optional_exchange"
+      },
+      {
+        "name": "China Sporttery",
+        "configured": false,
+        "role": "official_cn_odds_public_web_fallback"
+      }
+    ],
+    "public_web_sources": [
+      {
+        "name": "Wikipedia 2026 FIFA World Cup + FIFA match-centre links",
+        "configured": true,
+        "role": "fixture_public_web"
+      },
+      {
+        "name": "martj42 international_results results.csv",
+        "configured": true,
+        "role": "historical_results_public_csv"
+      },
+      {
+        "name": "Kaggle international football results",
+        "configured": false,
+        "role": "optional_historical_import"
+      }
+    ]
+  },
+  "probabilities": {
+    "home": 0.7219202139349779,
+    "draw": 0.1631099663445941,
+    "away": 0.11496981972042797
+  },
+  "expected_goals": {
+    "home": 2.769140938588469,
+    "away": 1.007184966515691
+  },
+  "score_matrix": [
+    {
+      "home_goals": 0,
+      "away_goals": 0,
+      "probability": 0.02606459418182532
+    },
+    {
+      "home_goals": 0,
+      "away_goals": 1,
+      "probability": 0.0243088074038495
+    },
+    {
+      "home_goals": 0,
+      "away_goals": 2,
+      "probability": 0.011552621864448786
+    },
+    {
+      "home_goals": 0,
+      "away_goals": 3,
+      "probability": 0.0036057370936418472
+    },
+    {
+      "home_goals": 0,
+      "away_goals": 4,
+      "probability": 0.0008440512557028821
+    },
+    {
+      "home_goals": 0,
+      "away_goals": 5,
+      "probability": 0.00015806421904910543
+    },
+    {
+      "home_goals": 0,
+      "away_goals": 6,
+      "probability": 2.466704201393349e-05
+    },
+    {
+      "home_goals": 0,
+      "away_goals": 7,
+      "probability": 3.299542961774454e-06
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 0,
+      "probability": 0.05423845110650562
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 1,
+      "probability": 0.07200445235926384
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 2,
+      "probability": 0.034387330060011996
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 3,
+      "probability": 0.010732773304928618
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 4,
+      "probability": 0.0025123880499145425
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 5,
+      "probability": 0.00047049116078542796
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 6,
+      "probability": 7.34234812919488e-05
+    },
+    {
+      "home_goals": 1,
+      "away_goals": 7,
+      "probability": 9.821361263704911e-06
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 0,
+      "probability": 0.08110230516647311
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 1,
+      "probability": 0.07593953828399609
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 2,
+      "probability": 0.04992130746719579
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 3,
+      "probability": 0.015973491663897534
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 4,
+      "probability": 0.003739164932642043
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 5,
+      "probability": 0.0007002278368529738
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 6,
+      "probability": 0.00010927551836138227
+    },
+    {
+      "home_goals": 2,
+      "away_goals": 7,
+      "probability": 1.4617045177118827e-05
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 0,
+      "probability": 0.08046922938389899
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 1,
+      "probability": 0.07534676249878532
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 2,
+      "probability": 0.03527518942653312
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 3,
+      "probability": 0.015459523169075793
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 4,
+      "probability": 0.0037099774174284223
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 5,
+      "probability": 0.0006947619344364399
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 6,
+      "probability": 0.00010842252553755531
+    },
+    {
+      "home_goals": 3,
+      "away_goals": 7,
+      "probability": 1.450294611057033e-05
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 0,
+      "probability": 0.059880821491576156
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 1,
+      "probability": 0.056068960392712745
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 2,
+      "probability": 0.02624987634782065
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 3,
+      "probability": 0.008192958616789694
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 4,
+      "probability": 0.0026929529426765364
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 5,
+      "probability": 0.0005170040236952348
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 6,
+      "probability": 8.068214331227673e-05
+    },
+    {
+      "home_goals": 4,
+      "away_goals": 7,
+      "probability": 1.0792303266704051e-05
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 0,
+      "probability": 0.03564803898294542
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 1,
+      "probability": 0.03337877530778071
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 2,
+      "probability": 0.015626983599018374
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 3,
+      "probability": 0.004877403163182458
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 4,
+      "probability": 0.0011417300145683544
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 5,
+      "probability": 0.0003002212359450415
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 6,
+      "probability": 4.803140836049215e-05
+    },
+    {
+      "home_goals": 5,
+      "away_goals": 7,
+      "probability": 6.424835831975969e-06
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 0,
+      "probability": 0.01768488713185581
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 1,
+      "probability": 0.01655911210712282
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 2,
+      "probability": 0.007752500531437857
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 3,
+      "probability": 0.002419665342003936
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 4,
+      "probability": 0.000566408897060321
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 5,
+      "probability": 0.00010607054888124024
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 6,
+      "probability": 2.3242966723131232e-05
+    },
+    {
+      "home_goals": 6,
+      "away_goals": 7,
+      "probability": 3.187342130756666e-06
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 0,
+      "probability": 0.007520074638995019
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 1,
+      "probability": 0.0070413657759082465
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 2,
+      "probability": 0.0032965651519622358
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 3,
+      "probability": 0.001028904727386267
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 4,
+      "probability": 0.00024085181603516882
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 5,
+      "probability": 4.510396015755583e-05
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 6,
+      "probability": 7.03879275711076e-06
+    },
+    {
+      "home_goals": 7,
+      "away_goals": 7,
+      "probability": 1.3220507689062415e-06
+    },
+    {
+      "home_goals": "8+",
+      "away_goals": "8+",
+      "probability": 0.011412770705469642
+    }
+  ],
+  "top_scorelines": [
+    {
+      "score": "2-0",
+      "probability": 0.08110230516647311
+    },
+    {
+      "score": "3-0",
+      "probability": 0.08046922938389899
+    },
+    {
+      "score": "2-1",
+      "probability": 0.07593953828399609
+    },
+    {
+      "score": "3-1",
+      "probability": 0.07534676249878532
+    },
+    {
+      "score": "1-1",
+      "probability": 0.07200445235926384
+    },
+    {
+      "score": "4-0",
+      "probability": 0.059880821491576156
+    }
+  ],
+  "model_inputs": {
+    "avg_team_goals": 1.32,
+    "rho": -0.005,
+    "neutral_site": true,
+    "host_adjustment": 0.0,
+    "roster_weight": 0.25,
+    "roster_adjustment": {
+      "available": true,
+      "coverage": 0.45,
+      "home_xg_multiplier": 1.0232,
+      "away_xg_multiplier": 0.9864,
+      "home_attack_vs_away_defense": 0.2063,
+      "away_attack_vs_home_defense": -0.1206
+    },
+    "home": {
+      "team": "Brazil",
+      "elo": 1698.75,
+      "attack_factor": 1.3793,
+      "opponent_defense_factor": 1.3606,
+      "elo_factor": 1.1743,
+      "sample_confidence": 1.0,
+      "xg": 2.9766
+    },
+    "away": {
+      "team": "Japan",
+      "elo": 1594.2857,
+      "attack_factor": 1.1823,
+      "opponent_defense_factor": 0.7143,
+      "elo_factor": 0.8515,
+      "sample_confidence": 1.0,
+      "xg": 0.9363
+    }
+  },
+  "roster_strength": {
+    "home": {
+      "team": "Brazil",
+      "attack_strength": 60.88,
+      "midfield_control_strength": 64.46,
+      "defense_gk_strength": 60.37,
+      "attack_line_strength": 60.88,
+      "midfield_line_strength": 64.46,
+      "defense_line_strength": 60.35,
+      "goalkeeper_strength": 60.39,
+      "squad_overall_strength": 61.93,
+      "squad_depth": 62.75,
+      "starting_xi_strength": 63.25,
+      "bench_strength": 61.81,
+      "coverage": 0.0,
+      "fifa_power_coverage": 0.0,
+      "missing_player_stats": 0,
+      "paper_strength_source": "本届世界杯表现 fallback",
+      "line_strength_source": "本届世界杯表现 fallback",
+      "fallback_fields": [
+        "attack_line_strength",
+        "midfield_line_strength",
+        "defense_line_strength",
+        "goalkeeper_strength"
+      ],
+      "model_version": "world-cup-line-strength-v1",
+      "player_value_score": 68.0,
+      "squad_depth_prior": 65.2,
+      "team_market_value_prior": {
+        "attack": 90,
+        "midfield": 87,
+        "defense": 86,
+        "goalkeeper": 86,
+        "overall": 88,
+        "depth": 87
+      },
+      "roster_quality_prior": {
+        "attack": 84.7,
+        "midfield": 83.65,
+        "defense": 81.25,
+        "goalkeeper": 81.62,
+        "overall": 83.26,
+        "depth": 81.62
+      },
+      "fallback_triggered": true,
+      "fallback_reason": "No player roster available; using team-level roster quality prior.",
+      "roster_data_quality": {
+        "poor": true,
+        "effective_coverage": 0.0,
+        "reason": "No player roster available; using team-level roster quality prior.",
+        "players": 0
+      },
+      "attack_line_strength_raw": 82.0,
+      "midfield_line_strength_raw": 85.0,
+      "defense_line_strength_raw": 77.8,
+      "goalkeeper_strength_raw": 79.3,
+      "squad_overall_strength_raw": 81.03,
+      "starting_xi_strength_raw": 81.03,
+      "bench_strength_raw": 74.03,
+      "strength_baseline": "50 = 本届世界杯48队平均水平",
+      "strength_baseline_value": 50,
+      "standardization_method": "z-score: 50 + (raw - mean) / std * 10, clamped to 30-85",
+      "standardization_pool": "current World Cup teams",
+      "standardization_pool_size": 48,
+      "standardization_scale": 10.0,
+      "standardization_bounds": {
+        "min": 30,
+        "max": 85
+      },
+      "data_source_priority": [
+        "FIFA",
+        "SportMonks",
+        "FootballData.io",
+        "ESPN",
+        "historical/fallback"
+      ],
+      "model_confidence": 0.45
+    },
+    "away": {
+      "team": "Japan",
+      "attack_strength": 56.82,
+      "midfield_control_strength": 51.42,
+      "defense_gk_strength": 50.27,
+      "attack_line_strength": 56.82,
+      "midfield_line_strength": 51.42,
+      "defense_line_strength": 50.21,
+      "goalkeeper_strength": 50.32,
+      "squad_overall_strength": 51.73,
+      "squad_depth": 51.96,
+      "starting_xi_strength": 52.38,
+      "bench_strength": 51.17,
+      "coverage": 0.0,
+      "fifa_power_coverage": 0.0,
+      "missing_player_stats": 0,
+      "paper_strength_source": "本届世界杯表现 fallback",
+      "line_strength_source": "本届世界杯表现 fallback",
+      "fallback_fields": [
+        "attack_line_strength",
+        "midfield_line_strength",
+        "defense_line_strength",
+        "goalkeeper_strength"
+      ],
+      "model_version": "world-cup-line-strength-v1",
+      "player_value_score": 68.0,
+      "squad_depth_prior": 65.2,
+      "team_market_value_prior": null,
+      "roster_quality_prior": {
+        "attack": 73.81,
+        "midfield": 68.86,
+        "defense": 68.91,
+        "goalkeeper": 69.74,
+        "overall": 70.33,
+        "depth": 67.72
+      },
+      "fallback_triggered": true,
+      "fallback_reason": "No player roster available; using team-level roster quality prior.",
+      "roster_data_quality": {
+        "poor": true,
+        "effective_coverage": 0.0,
+        "reason": "No player roster available; using team-level roster quality prior.",
+        "players": 0
+      },
+      "attack_line_strength_raw": 78.57,
+      "midfield_line_strength_raw": 69.57,
+      "defense_line_strength_raw": 69.66,
+      "goalkeeper_strength_raw": 71.16,
+      "squad_overall_strength_raw": 72.24,
+      "starting_xi_strength_raw": 72.24,
+      "bench_strength_raw": 65.24,
+      "strength_baseline": "50 = 本届世界杯48队平均水平",
+      "strength_baseline_value": 50,
+      "standardization_method": "z-score: 50 + (raw - mean) / std * 10, clamped to 30-85",
+      "standardization_pool": "current World Cup teams",
+      "standardization_pool_size": 48,
+      "standardization_scale": 10.0,
+      "standardization_bounds": {
+        "min": 30,
+        "max": 85
+      },
+      "data_source_priority": [
+        "FIFA",
+        "SportMonks",
+        "FootballData.io",
+        "ESPN",
+        "historical/fallback"
+      ],
+      "model_confidence": 0.45
+    }
+  },
+  "roster_weight": 0.25,
+  "roster_coverage": {
+    "home": 0.0,
+    "away": 0.0
+  },
+  "missing_player_stats": {
+    "home": 0,
+    "away": 0
+  },
+  "btts": 0.5223704699467019,
+  "totals": {
+    "1.5": {
+      "over": 0.8183741199029453,
+      "under": 0.18162588009705471
+    },
+    "2.5": {
+      "over": 0.6092067915691809,
+      "under": 0.3907932084308191
+    },
+    "3.5": {
+      "over": 0.38650927101261445,
+      "under": 0.6134907289873855
+    }
+  },
+  "over25_prob": 0.63745768895987,
+  "under25_prob": 0.36254231104013,
+  "xgboost_over25_prob": 0.5985103357759578,
+  "monte_carlo_over25_prob": 0.6321,
+  "score_heatmap_over25_prob": 0.7193159972121639,
+  "final_over25_prob": 0.63745768895987,
+  "over25_market_prob": null,
+  "over25_edge": null,
+  "over25_kelly": null,
+  "over25_value": {
+    "available": false,
+    "reason": "无赔率，仅模型概率。"
+  },
+  "over25_summary": {
+    "poisson_over25_prob": 0.6092067915691809,
+    "under25_prob": 0.36254231104013,
+    "xgboost_over25_prob": 0.5985103357759578,
+    "monte_carlo_over25_prob": 0.6321,
+    "score_heatmap_over25_prob": 0.7193159972121639,
+    "final_over25_prob": 0.63745768895987,
+    "over25_market_prob": null,
+    "over25_edge": null,
+    "over25_kelly": null,
+    "value": {
+      "available": false,
+      "reason": "无赔率，仅模型概率。"
+    }
+  },
+  "model_blend_weights": {
+    "dixon_coles_elo": 0.22737483503764577,
+    "poisson": 0.23559182254826944,
+    "monte_carlo": 0.23636829592326095,
+    "market": 0.04849237670067384,
+    "xgboost": 0.2521726697901501,
+    "draw_adjustment": 0.0,
+    "market_calibration": 0.35,
+    "llm_vote": 0.0,
+    "llm_vote_cap": 0.15
+  },
+  "model_weight_run": {
+    "date": "2026-06-29",
+    "weights": {
+      "elo": 0.22737483503764577,
+      "poisson": 0.23559182254826944,
+      "monte_carlo": 0.23636829592326095,
+      "market": 0.04849237670067384,
+      "xgboost": 0.2521726697901501
+    },
+    "sample_count": 202,
+    "model_losses": {
+      "elo": {
+        "brier_score": 0.146153,
+        "log_loss": 0.736825,
+        "coverage": 1.0,
+        "samples": 202
+      },
+      "poisson": {
+        "brier_score": 0.140642,
+        "log_loss": 0.713423,
+        "coverage": 1.0,
+        "samples": 202
+      },
+      "monte_carlo": {
+        "brier_score": 0.140258,
+        "log_loss": 0.710646,
+        "coverage": 1.0,
+        "samples": 202
+      },
+      "market": {
+        "brier_score": 0.139357,
+        "log_loss": 0.746712,
+        "coverage": 0.079208,
+        "samples": 16
+      },
+      "xgboost": {
+        "brier_score": 0.1315,
+        "log_loss": 0.665928,
+        "coverage": 1.0,
+        "samples": 202
+      }
+    },
+    "reason": "calibrated from completed predictions before target date",
+    "model_version": "ensemble-weight-calibration-v1",
+    "world_cup_data_weight": 0.0,
+    "xgboost_sample_summary": {
+      "sample_count": 180,
+      "world_cup_samples": 136,
+      "historical_samples": 44,
+      "feature_names": [
+        "elo_delta",
+        "lambda_diff",
+        "lambda_total",
+        "low_total_goals",
+        "market_home_edge",
+        "market_draw_edge",
+        "mc_home_edge",
+        "mc_goal_variance",
+        "roster_attack_edge",
+        "form_home_edge",
+        "attack_line_edge",
+        "midfield_line_edge",
+        "defense_line_edge",
+        "starting_xi_edge",
+        "bench_strength_edge",
+        "squad_depth_edge",
+        "fifa_stats_xg_edge",
+        "footballdata_shot_edge",
+        "sportmonks_shot_on_target_edge",
+        "sportmonks_possession_edge",
+        "sportmonks_corner_edge",
+        "sportmonks_lineup_depth",
+        "sportmonks_sidelined_edge",
+        "lineup_missing_edge",
+        "roster_coverage_edge",
+        "over25_attack_edge",
+        "over25_defense_edge",
+        "over25_recent_edge",
+        "over25_adjusted_edge",
+        "under25_stability_edge",
+        "over25_market_edge",
+        "stage_encoded",
+        "knockout_stage_flag",
+        "round_of_32_flag",
+        "draw_tendency_edge",
+        "under25_combined",
+        "defensive_stability_combined",
+        "current_world_cup_form_edge",
+        "group_stage_performance_edge",
+        "team_strength_edge",
+        "attack_defense_matchup",
+        "market_implied_home_prob",
+        "market_implied_draw_prob",
+        "market_implied_away_prob"
+      ],
+      "min_weight": 0.5,
+      "max_weight": 4.0,
+      "mean_weight": 2.394444,
+      "world_cup_weight_policy": "wc2026_r32=4.0 wc2026_other=3.0 historical_knockout=1.2 historical_other=0.5"
+    },
+    "stage": "unknown",
+    "stage_blend_weights": {
+      "elo": 0.22737483503764577,
+      "poisson": 0.23559182254826944,
+      "monte_carlo": 0.23636829592326095,
+      "market": 0.04849237670067384,
+      "xgboost": 0.2521726697901501
+    }
+  },
+  "market_alignment": {
+    "available": true,
+    "totals_available": false,
+    "market_probabilities": {
+      "home": 0.5942707766038559,
+      "draw": 0.23802781105907125,
+      "away": 0.16770141233707295
+    },
+    "totals_market": null,
+    "baseline_probabilities": {
+      "home": 0.781355271680461,
+      "draw": 0.13089180335895995,
+      "away": 0.08775292496057903
+    }
+  },
+  "odds_data_status": {
+    "market_available": true,
+    "source": "China Sporttery snapshot 周一074 sales 2026-06-29",
+    "available_markets": [
+      "h2h",
+      "handicap"
+    ],
+    "providers": [
+      {
+        "name": "China Sporttery",
+        "configured": false,
+        "role": "official_cn_odds_public_web_fallback"
+      }
+    ],
+    "reason": null,
+    "sporttery_priority_note": "赔率仅使用中国体育彩票网页数据；其他历史赔率源不会参与今日比赛或可投注比赛计算。"
+  },
+  "elo": {
+    "home": 0.781355271680461,
+    "draw": 0.13089180335895995,
+    "away": 0.08775292496057903,
+    "calibrated": {
+      "home": 0.7158756984036488,
+      "draw": 0.16838940605399885,
+      "away": 0.11573489554235189
+    },
+    "expected_goals": {
+      "home": 2.769140938588469,
+      "away": 1.007184966515691
+    },
+    "top_scorelines": [
+      {
+        "score": "2-0",
+        "probability": 0.08110230516647311
+      },
+      {
+        "score": "3-0",
+        "probability": 0.08046922938389899
+      },
+      {
+        "score": "2-1",
+        "probability": 0.07593953828399609
+      },
+      {
+        "score": "3-1",
+        "probability": 0.07534676249878532
+      },
+      {
+        "score": "1-1",
+        "probability": 0.07200445235926384
+      },
+      {
+        "score": "4-0",
+        "probability": 0.059880821491576156
+      }
+    ]
+  },
+  "poisson": {
+    "lambda_home": 2.3119,
+    "lambda_away": 0.8821,
+    "home_win": 0.6913955370441026,
+    "draw": 0.1800066178040917,
+    "away_win": 0.1285978451518058,
+    "over_2_5": 0.6092067915691809,
+    "under_2_5": 0.3907932084308191,
+    "btts": 0.5223704699467019,
+    "scorelines": [
+      {
+        "score": "2-0",
+        "probability": 0.10958573607307046
+      },
+      {
+        "score": "2-1",
+        "probability": 0.09666968944687292
+      },
+      {
+        "score": "1-0",
+        "probability": 0.09480061344073129
+      },
+      {
+        "score": "3-0",
+        "probability": 0.0844511662587825
+      },
+      {
+        "score": "1-1",
+        "probability": 0.08362717803508538
+      },
+      {
+        "score": "3-1",
+        "probability": 0.07449754236463009
+      }
+    ],
+    "score_matrix": [
+      {
+        "home_goals": 0,
+        "away_goals": 0,
+        "probability": 0.04100513730521659
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 1,
+        "probability": 0.036172170129683254
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 2,
+        "probability": 0.01595441422560843
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 3,
+        "probability": 0.004691329132676981
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 4,
+        "probability": 0.0010345993616508555
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 5,
+        "probability": 0.0001825317830160538
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 6,
+        "probability": 2.6836355731826637e-05
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 0,
+        "probability": 0.09480061344073129
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 1,
+        "probability": 0.08362717803508538
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 2,
+        "probability": 0.03688533571823434
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 3,
+        "probability": 0.01084597952495022
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 4,
+        "probability": 0.002391911370027591
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 5,
+        "probability": 0.0004219989528031883
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 6,
+        "probability": 6.204351827806694e-05
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 0,
+        "probability": 0.10958573607307046
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 1,
+        "probability": 0.09666968944687292
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 2,
+        "probability": 0.04263798005391732
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 3,
+        "probability": 0.012537520660857365
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 4,
+        "probability": 0.002764954345679369
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 5,
+        "probability": 0.00048781399388216426
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 6,
+        "probability": 7.171983779741793e-05
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 0,
+        "probability": 0.0844511662587825
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 1,
+        "probability": 0.07449754236463009
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 2,
+        "probability": 0.03285853863381486
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 3,
+        "probability": 0.009661916593752543
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 4,
+        "probability": 0.0021307847856149287
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 5,
+        "probability": 0.00037592904128721697
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 6,
+        "probability": 5.527018536284721e-05
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 0,
+        "probability": 0.04881109351936774
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 1,
+        "probability": 0.04305809698566314
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 2,
+        "probability": 0.01899158144542618
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 3,
+        "probability": 0.005584395519048755
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 4,
+        "probability": 0.0012315512034681952
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 5,
+        "probability": 0.00021727950487608982
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 6,
+        "probability": 3.194506726303697e-05
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 0,
+        "probability": 0.022569472570746825
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 1,
+        "probability": 0.01990937856126663
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 2,
+        "probability": 0.008781404914388457
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 3,
+        "probability": 0.0025821355844314817
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 4,
+        "probability": 0.0005694496701885344
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 5,
+        "probability": 0.00010046658396498635
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 6,
+        "probability": 1.477089053695747e-05
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 0,
+        "probability": 0.008696470675591672
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 1,
+        "probability": 0.007671483074519162
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 2,
+        "probability": 0.0033836515270391546
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 3,
+        "probability": 0.000994948655535511
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 4,
+        "probability": 0.00021942038488035747
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 5,
+        "probability": 3.871179083116081e-05
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 6,
+        "probability": 5.691520526426489e-06
+      },
+      {
+        "home_goals": "7+",
+        "away_goals": "7+",
+        "probability": 0.009647959221423696
+      }
+    ],
+    "tail_probability": 0.009647959221423696,
+    "model_explanation": {
+      "stage_bucket": "default",
+      "stage_pace": 1.0,
+      "home_recent_sample": 25.16144231021582,
+      "away_recent_sample": 23.337797000728678,
+      "home_attack_rate": 2.3985,
+      "away_attack_rate": 2.0061,
+      "home_defense_allowed": 0.5567,
+      "away_defense_allowed": 0.9441,
+      "home_elo_factor": 1.1162,
+      "away_elo_factor": 0.8959,
+      "drivers": [
+        "主队 Elo 相对优势推高主队 λ"
+      ],
+      "learning_adjustment": {
+        "available": true,
+        "fixture_date": "2026-06-30",
+        "completed_match_count": 580,
+        "data_leakage_guard": "uses completed World Cup matches strictly before fixture date",
+        "team_form_adjustment": {
+          "Barbados": {
+            "weighted_matches": 3.7515867496065517e-10,
+            "goals_for": 3.7515867496065517e-10,
+            "goals_against": 5.949215387106873e-10,
+            "goals_for_per_match": 1.0,
+            "goals_against_per_match": 1.5858,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Aruba": {
+            "weighted_matches": 3.401936155439155e-10,
+            "goals_for": 1.5539581121062303e-10,
+            "goals_against": 1.0793848328770856e-09,
+            "goals_for_per_match": 0.4568,
+            "goals_against_per_match": 3.1729,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Bermuda": {
+            "weighted_matches": 4.8502263617535095e-06,
+            "goals_for": 4.891727585742689e-06,
+            "goals_against": 1.969955679668282e-05,
+            "goals_for_per_match": 1.0086,
+            "goals_against_per_match": 4.0616,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Cayman Islands": {
+            "weighted_matches": 3.401936155439155e-10,
+            "goals_for": 0.0,
+            "goals_against": 9.617768603864077e-10,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 2.8271,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Dominica": {
+            "weighted_matches": 3.7515867496065517e-10,
+            "goals_for": 4.661874336318691e-10,
+            "goals_against": 1.0988143187501608e-09,
+            "goals_for_per_match": 1.2426,
+            "goals_against_per_match": 2.9289,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "British Virgin Islands": {
+            "weighted_matches": 3.401936155439155e-10,
+            "goals_for": 0.0,
+            "goals_against": 6.509852379651616e-10,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.9136,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Grenada": {
+            "weighted_matches": 3.7515867496065517e-10,
+            "goals_for": 1.5916634585138345e-09,
+            "goals_against": 4.395257275000643e-10,
+            "goals_for_per_match": 4.2426,
+            "goals_against_per_match": 1.1716,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Bahamas": {
+            "weighted_matches": 3.401936155439155e-10,
+            "goals_for": 0.0,
+            "goals_against": 2.4107573019300783e-09,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 7.0864,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Montserrat": {
+            "weighted_matches": 3.7515867496065517e-10,
+            "goals_for": 1.5539581121062303e-10,
+            "goals_against": 6.592885912500964e-10,
+            "goals_for_per_match": 0.4142,
+            "goals_against_per_match": 1.7574,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Belize": {
+            "weighted_matches": 3.401936155439155e-10,
+            "goals_for": 0.0,
+            "goals_against": 5.249914198772081e-10,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.5432,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Saint Vincent and the Grenadines": {
+            "weighted_matches": 3.7515867496065517e-10,
+            "goals_for": 1.1521377310137704e-09,
+            "goals_against": 4.395257275000643e-10,
+            "goals_for_per_match": 3.0711,
+            "goals_against_per_match": 1.1716,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Anguilla": {
+            "weighted_matches": 3.401936155439155e-10,
+            "goals_for": 0.0,
+            "goals_against": 1.4867682802636159e-09,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 4.3704,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Australia": {
+            "weighted_matches": 4.198944194336494,
+            "goals_for": 1.5428540650266025,
+            "goals_against": 2.1819251428884314,
+            "goals_for_per_match": 0.3674,
+            "goals_against_per_match": 0.5196,
+            "goal_delta": -0.0692,
+            "lambda_multiplier": 0.9308
+          },
+          "Japan": {
+            "weighted_matches": 4.309687643065893,
+            "goals_for": 8.59448985958712,
+            "goals_against": 3.9711515318089905,
+            "goals_for_per_match": 1.9942,
+            "goals_against_per_match": 0.9214,
+            "goal_delta": 0.4876,
+            "lambda_multiplier": 1.18
+          },
+          "Bahrain": {
+            "weighted_matches": 3.84398990745712e-10,
+            "goals_for": 0.0,
+            "goals_against": 5.490351177413918e-10,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.4283,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Saudi Arabia": {
+            "weighted_matches": 4.565955549309546,
+            "goals_for": 0.8658982423575794,
+            "goals_against": 5.764154347006086,
+            "goals_for_per_match": 0.1896,
+            "goals_against_per_match": 1.2624,
+            "goal_delta": -0.4876,
+            "lambda_multiplier": 0.82
+          },
+          "Chile": {
+            "weighted_matches": 7.41057081976007e-08,
+            "goals_for": 0.0,
+            "goals_against": 9.532754394237859e-08,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.2864,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Argentina": {
+            "weighted_matches": 5.504880820168589,
+            "goals_for": 14.549841954178953,
+            "goals_against": 2.6226938939010043,
+            "goals_for_per_match": 2.6431,
+            "goals_against_per_match": 0.4764,
+            "goal_delta": 0.9848,
+            "lambda_multiplier": 1.18
+          },
+          "Ecuador": {
+            "weighted_matches": 4.309687716787202,
+            "goals_for": 4.673109222959929,
+            "goals_against": 3.153853061025447,
+            "goals_for_per_match": 1.0843,
+            "goals_against_per_match": 0.7318,
+            "goal_delta": 0.1602,
+            "lambda_multiplier": 1.1602
+          },
+          "Brazil": {
+            "weighted_matches": 4.067803535714492,
+            "goals_for": 10.660556415347054,
+            "goals_against": 0.7714270743580688,
+            "goals_for_per_match": 2.6207,
+            "goals_against_per_match": 0.1896,
+            "goal_delta": 1.105,
+            "lambda_multiplier": 1.18
+          },
+          "Indonesia": {
+            "weighted_matches": 4.930373781241295e-07,
+            "goals_for": 4.502389810870626e-07,
+            "goals_against": 9.440459012759509e-07,
+            "goals_for_per_match": 0.9132,
+            "goals_against_per_match": 1.9148,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "China": {
+            "weighted_matches": 3.84398990745712e-10,
+            "goals_for": 2.1976286375003214e-10,
+            "goals_against": 1.6463612699567982e-10,
+            "goals_for_per_match": 0.5717,
+            "goals_against_per_match": 0.4283,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Iraq": {
+            "weighted_matches": 5.362899258857267,
+            "goals_for": 0.9278218261220531,
+            "goals_against": 21.94663240336982,
+            "goals_for_per_match": 0.173,
+            "goals_against_per_match": 4.0923,
+            "goal_delta": -1.7815,
+            "lambda_multiplier": 0.82
+          },
+          "South Korea": {
+            "weighted_matches": 3.922408759763058,
+            "goals_for": 1.3745267094798885,
+            "goals_against": 3.922408759378659,
+            "goals_for_per_match": 0.3504,
+            "goals_against_per_match": 1.0,
+            "goal_delta": -0.2895,
+            "lambda_multiplier": 0.82
+          },
+          "Kuwait": {
+            "weighted_matches": 3.84398990745712e-10,
+            "goals_for": 0.0,
+            "goals_against": 1.2083237089914882e-09,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 3.1434,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Palestine": {
+            "weighted_matches": 3.84398990745712e-10,
+            "goals_for": 5.490351177413918e-10,
+            "goals_against": 2.1976286375003214e-10,
+            "goals_for_per_match": 1.4283,
+            "goals_against_per_match": 0.5717,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "North Korea": {
+            "weighted_matches": 3.84398990745712e-10,
+            "goals_for": 3.2927225399135965e-10,
+            "goals_against": 9.88560845241456e-10,
+            "goals_for_per_match": 0.8566,
+            "goals_against_per_match": 2.5717,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Kyrgyzstan": {
+            "weighted_matches": 3.84398990745712e-10,
+            "goals_for": 5.490351177413918e-10,
+            "goals_against": 5.490351177413918e-10,
+            "goals_for_per_match": 1.4283,
+            "goals_against_per_match": 1.4283,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Oman": {
+            "weighted_matches": 4.930373781241295e-07,
+            "goals_for": 2.6783556951710034e-07,
+            "goals_against": 5.359452845514377e-07,
+            "goals_for_per_match": 0.5432,
+            "goals_against_per_match": 1.087,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Jordan": {
+            "weighted_matches": 5.50488074644728,
+            "goals_for": 5.504880746556789,
+            "goals_against": 14.549841859290934,
+            "goals_for_per_match": 1.0,
+            "goals_against_per_match": 2.6431,
+            "goal_delta": -0.7469,
+            "lambda_multiplier": 0.82
+          },
+          "Paraguay": {
+            "weighted_matches": 4.1556473956590265,
+            "goals_for": 1.819092773622899,
+            "goals_against": 2.9125206394695393,
+            "goals_for_per_match": 0.4377,
+            "goals_against_per_match": 0.7009,
+            "goal_delta": -0.1196,
+            "lambda_multiplier": 0.8804
+          },
+          "Uruguay": {
+            "weighted_matches": 4.565955079743061,
+            "goals_for": 3.3150258267575285,
+            "goals_against": 5.790519088415423,
+            "goals_for_per_match": 0.726,
+            "goals_against_per_match": 1.2682,
+            "goal_delta": -0.2464,
+            "lambda_multiplier": 0.82
+          },
+          "Qatar": {
+            "weighted_matches": 4.00657298112629,
+            "goals_for": 2.976841526940328,
+            "goals_against": 13.566058208388704,
+            "goals_for_per_match": 0.743,
+            "goals_against_per_match": 3.386,
+            "goal_delta": -1.2013,
+            "lambda_multiplier": 0.82
+          },
+          "Iran": {
+            "weighted_matches": 4.565955006021752,
+            "goals_for": 4.2072884905448715,
+            "goals_against": 4.207288490050218,
+            "goals_for_per_match": 0.9214,
+            "goals_against_per_match": 0.9214,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "United Arab Emirates": {
+            "weighted_matches": 4.789656898812395e-06,
+            "goals_for": 5.0571080693387486e-06,
+            "goals_against": 7.51085157601343e-06,
+            "goals_for_per_match": 1.0558,
+            "goals_against_per_match": 1.5681,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Uzbekistan": {
+            "weighted_matches": 5.676264497717751,
+            "goals_for": 3.5946310085345283,
+            "goals_against": 21.19206047091628,
+            "goals_for_per_match": 0.6333,
+            "goals_against_per_match": 3.7335,
+            "goal_delta": -1.4092,
+            "lambda_multiplier": 0.82
+          },
+          "Antigua and Barbuda": {
+            "weighted_matches": 3.9418876430020524e-10,
+            "goals_for": 0.0,
+            "goals_against": 6.139516280502374e-10,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.5575,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Cuba": {
+            "weighted_matches": 3.9418876430020524e-10,
+            "goals_for": 3.9418876430020524e-10,
+            "goals_against": 4.395257275000643e-10,
+            "goals_for_per_match": 1.0,
+            "goals_against_per_match": 1.115,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Colombia": {
+            "weighted_matches": 5.676264571448851,
+            "goals_for": 4.997445306304889,
+            "goals_against": 0.9719372830011552,
+            "goals_for_per_match": 0.8804,
+            "goals_against_per_match": 0.1712,
+            "goal_delta": 0.3224,
+            "lambda_multiplier": 1.18
+          },
+          "Peru": {
+            "weighted_matches": 7.41154979711552e-08,
+            "goals_for": 0.0,
+            "goals_against": 1.3687023059877688e-07,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.8467,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Curaçao": {
+            "weighted_matches": 1.7072396758304689,
+            "goals_for": 0.3968638167527647,
+            "goals_against": 4.276259320585112,
+            "goals_for_per_match": 0.2325,
+            "goals_against_per_match": 2.5048,
+            "goal_delta": -0.4408,
+            "lambda_multiplier": 0.82
+          },
+          "Saint Lucia": {
+            "weighted_matches": 3.9418876430020524e-10,
+            "goals_for": 4.395257275000643e-10,
+            "goals_against": 9.174664659507246e-10,
+            "goals_for_per_match": 1.115,
+            "goals_against_per_match": 2.3275,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Czech Republic": {
+            "weighted_matches": 3.9315320515730554,
+            "goals_for": 1.7352497980608255,
+            "goals_against": 9.038741334096887,
+            "goals_for_per_match": 0.4414,
+            "goals_against_per_match": 2.299,
+            "goal_delta": -0.8299,
+            "lambda_multiplier": 0.82
+          },
+          "Montenegro": {
+            "weighted_matches": 4.487407506247538e-06,
+            "goals_for": 8.351162395487674e-06,
+            "goals_against": 9.89209875815688e-06,
+            "goals_for_per_match": 1.861,
+            "goals_against_per_match": 2.2044,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Estonia": {
+            "weighted_matches": 2.419997638107169e-06,
+            "goals_for": 2.386338233753525e-06,
+            "goals_against": 8.490278146062448e-06,
+            "goals_for_per_match": 0.9861,
+            "goals_against_per_match": 3.5084,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Israel": {
+            "weighted_matches": 2.8002006106416484e-06,
+            "goals_for": 8.857162304615215e-06,
+            "goals_against": 4.6328384148217725e-06,
+            "goals_for_per_match": 3.163,
+            "goals_against_per_match": 1.6545,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Gibraltar": {
+            "weighted_matches": 4.4992734504527e-06,
+            "goals_for": 1.907556061334475e-06,
+            "goals_against": 1.831609703308e-05,
+            "goals_for_per_match": 0.424,
+            "goals_against_per_match": 4.0709,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Croatia": {
+            "weighted_matches": 5.676269268477358,
+            "goals_for": 9.270909077374808,
+            "goals_against": 6.5104489209189715,
+            "goals_for_per_match": 1.6333,
+            "goals_against_per_match": 1.147,
+            "goal_delta": 0.2211,
+            "lambda_multiplier": 1.18
+          },
+          "Guatemala": {
+            "weighted_matches": 4.846002355866167e-06,
+            "goals_for": 1.1421246173785722e-05,
+            "goals_against": 8.128960445815395e-06,
+            "goals_for_per_match": 2.3568,
+            "goals_against_per_match": 1.6775,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Dominican Republic": {
+            "weighted_matches": 3.9418876430020524e-10,
+            "goals_for": 1.447666119850507e-09,
+            "goals_against": 6.977036022006925e-10,
+            "goals_for_per_match": 3.6725,
+            "goals_against_per_match": 1.77,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Nicaragua": {
+            "weighted_matches": 4.818206250513451e-06,
+            "goals_for": 3.934609747908839e-06,
+            "goals_against": 6.841432428671079e-06,
+            "goals_for_per_match": 0.8166,
+            "goals_against_per_match": 1.4199,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Guyana": {
+            "weighted_matches": 3.9418876430020524e-10,
+            "goals_for": 6.592885912500964e-10,
+            "goals_against": 1.7442590055017313e-10,
+            "goals_for_per_match": 1.6725,
+            "goals_against_per_match": 0.4425,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "North Macedonia": {
+            "weighted_matches": 0.003909244023391767,
+            "goals_for": 2.891621999447336e-06,
+            "goals_against": 0.015642122323856176,
+            "goals_for_per_match": 0.0007,
+            "goals_against_per_match": 4.0013,
+            "goal_delta": -0.0018,
+            "lambda_multiplier": 0.9982
+          },
+          "Belgium": {
+            "weighted_matches": 4.5659600520006896,
+            "goals_for": 13.243384808977689,
+            "goals_against": 3.3413935455279247,
+            "goals_for_per_match": 2.9005,
+            "goals_against_per_match": 0.7318,
+            "goal_delta": 0.9858,
+            "lambda_multiplier": 1.18
+          },
+          "Norway": {
+            "weighted_matches": 5.357684502388359,
+            "goals_for": 12.039458122808414,
+            "goals_against": 14.748964682982754,
+            "goals_for_per_match": 2.2471,
+            "goals_against_per_match": 2.7529,
+            "goal_delta": -0.2299,
+            "lambda_multiplier": 0.82
+          },
+          "Italy": {
+            "weighted_matches": 0.009125068885770702,
+            "goals_for": 0.013034583882223196,
+            "goals_against": 0.00522320915055964,
+            "goals_for_per_match": 1.4284,
+            "goals_against_per_match": 0.5724,
+            "goal_delta": 0.0009,
+            "lambda_multiplier": 1.0009
+          },
+          "Suriname": {
+            "weighted_matches": 0.0039110960023558666,
+            "goals_for": 0.003916505101362361,
+            "goals_against": 0.007820320173473366,
+            "goals_for_per_match": 1.0014,
+            "goals_against_per_match": 1.9995,
+            "goal_delta": -0.0004,
+            "lambda_multiplier": 0.9996
+          },
+          "Puerto Rico": {
+            "weighted_matches": 3.9418876430020524e-10,
+            "goals_for": 4.395257275000643e-10,
+            "goals_against": 3.9418876430020524e-10,
+            "goals_for_per_match": 1.115,
+            "goals_against_per_match": 1.0,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Trinidad and Tobago": {
+            "weighted_matches": 4.850245391842849e-06,
+            "goals_for": 7.683818760107086e-06,
+            "goals_against": 7.009847459687361e-06,
+            "goals_for_per_match": 1.5842,
+            "goals_against_per_match": 1.4453,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Saint Kitts and Nevis": {
+            "weighted_matches": 3.9418876430020524e-10,
+            "goals_for": 7.883775286004105e-10,
+            "goals_against": 1.705843994551135e-09,
+            "goals_for_per_match": 2.0,
+            "goals_against_per_match": 4.3275,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Venezuela": {
+            "weighted_matches": 7.41154979711552e-08,
+            "goals_for": 1.2678939733378246e-07,
+            "goals_against": 3.480439988807471e-07,
+            "goals_for_per_match": 1.7107,
+            "goals_against_per_match": 4.696,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Bolivia": {
+            "weighted_matches": 0.00912054229584967,
+            "goals_for": 0.013026760766725935,
+            "goals_against": 0.014334781432937285,
+            "goals_for_per_match": 1.4283,
+            "goals_against_per_match": 1.5717,
+            "goal_delta": -0.0001,
+            "lambda_multiplier": 0.9999
+          },
+          "Wales": {
+            "weighted_matches": 0.003911006219078124,
+            "goals_for": 0.003925726023525278,
+            "goals_against": 0.003909855492752041,
+            "goals_for_per_match": 1.0038,
+            "goals_against_per_match": 0.9997,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Liechtenstein": {
+            "weighted_matches": 4.745767321986384e-06,
+            "goals_for": 0.0,
+            "goals_against": 2.0230621979030435e-05,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 4.2629,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Albania": {
+            "weighted_matches": 0.003910501391048899,
+            "goals_for": 0.0039083602797978685,
+            "goals_against": 0.007816782072669318,
+            "goals_for_per_match": 0.9995,
+            "goals_against_per_match": 1.9989,
+            "goal_delta": -0.0004,
+            "lambda_multiplier": 0.9996
+          },
+          "Serbia": {
+            "weighted_matches": 4.605082804085807e-06,
+            "goals_for": 5.272705192949978e-06,
+            "goals_against": 6.5381218834745155e-06,
+            "goals_for_per_match": 1.145,
+            "goals_against_per_match": 1.4198,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Andorra": {
+            "weighted_matches": 2.4220095023481104e-06,
+            "goals_for": 8.534822346660575e-07,
+            "goals_against": 3.362007211274726e-06,
+            "goals_for_per_match": 0.3524,
+            "goals_against_per_match": 1.3881,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "England": {
+            "weighted_matches": 5.676268834580587,
+            "goals_for": 9.133146083934253,
+            "goals_against": 1.9438743126816935,
+            "goals_for_per_match": 1.609,
+            "goals_against_per_match": 0.3425,
+            "goal_delta": 0.5757,
+            "lambda_multiplier": 1.18
+          },
+          "El Salvador": {
+            "weighted_matches": 4.8460127277699495e-06,
+            "goals_for": 7.212994464263046e-08,
+            "goals_against": 1.5061144320397725e-05,
+            "goals_for_per_match": 0.0149,
+            "goals_against_per_match": 3.1079,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Haiti": {
+            "weighted_matches": 4.067808279825407,
+            "goals_for": 4.410835165481257,
+            "goals_against": 12.865971207172258,
+            "goals_for_per_match": 1.0843,
+            "goals_against_per_match": 3.1629,
+            "goal_delta": -0.9448,
+            "lambda_multiplier": 0.82
+          },
+          "Austria": {
+            "weighted_matches": 5.50488576987725,
+            "goals_for": 10.62025005064516,
+            "goals_against": 12.715071557218549,
+            "goals_for_per_match": 1.9292,
+            "goals_against_per_match": 2.3098,
+            "goal_delta": -0.173,
+            "lambda_multiplier": 0.827
+          },
+          "Romania": {
+            "weighted_matches": 0.0039109999546563055,
+            "goals_for": 1.9210973419492256e-05,
+            "goals_against": 0.003914800068438223,
+            "goals_for_per_match": 0.0049,
+            "goals_against_per_match": 1.001,
+            "goal_delta": -0.0004,
+            "lambda_multiplier": 0.9996
+          },
+          "Costa Rica": {
+            "weighted_matches": 4.818216622417234e-06,
+            "goals_for": 1.3633647755108542e-06,
+            "goals_against": 2.260798250564453e-06,
+            "goals_for_per_match": 0.283,
+            "goals_against_per_match": 0.4692,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Panama": {
+            "weighted_matches": 5.67626934334608,
+            "goals_for": 1.3221874734223705e-05,
+            "goals_against": 8.298962307494454,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.462,
+            "goal_delta": -0.6646,
+            "lambda_multiplier": 0.82
+          },
+          "Bosnia and Herzegovina": {
+            "weighted_matches": 3.9724007733012083,
+            "goals_for": 8.383232946582885,
+            "goals_against": 7.061595659779647,
+            "goals_for_per_match": 2.1104,
+            "goals_against_per_match": 1.7777,
+            "goal_delta": 0.1502,
+            "lambda_multiplier": 1.1502
+          },
+          "San Marino": {
+            "weighted_matches": 2.960902036181789e-06,
+            "goals_for": 2.403108691968674e-06,
+            "goals_against": 2.0553773569483655e-05,
+            "goals_for_per_match": 0.8116,
+            "goals_against_per_match": 6.9417,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Jamaica": {
+            "weighted_matches": 0.009125318436115444,
+            "goals_for": 0.003909542245552022,
+            "goals_against": 0.005216523669102673,
+            "goals_for_per_match": 0.4284,
+            "goals_against_per_match": 0.5717,
+            "goal_delta": -0.0001,
+            "lambda_multiplier": 0.9999
+          },
+          "Honduras": {
+            "weighted_matches": 4.818216622417234e-06,
+            "goals_for": 9.860837800418741e-07,
+            "goals_against": 3.6005947596805355e-06,
+            "goals_for_per_match": 0.2047,
+            "goals_against_per_match": 0.7473,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Finland": {
+            "weighted_matches": 2.4672494165105736e-06,
+            "goals_for": 5.148252572426356e-07,
+            "goals_against": 3.393118572788179e-06,
+            "goals_for_per_match": 0.2087,
+            "goals_against_per_match": 1.3753,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Netherlands": {
+            "weighted_matches": 4.309692409737937,
+            "goals_for": 14.423446835155044,
+            "goals_against": 5.126988127320642,
+            "goals_for_per_match": 3.3467,
+            "goals_against_per_match": 1.1896,
+            "goal_delta": 0.9805,
+            "lambda_multiplier": 1.18
+          },
+          "Malta": {
+            "weighted_matches": 4.445978798209444e-06,
+            "goals_for": 6.475388223371136e-06,
+            "goals_against": 7.791704574806224e-06,
+            "goals_for_per_match": 1.4565,
+            "goals_against_per_match": 1.7525,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Lithuania": {
+            "weighted_matches": 2.859488046461622e-06,
+            "goals_for": 3.4509018642154454e-07,
+            "goals_against": 1.0261045739793301e-05,
+            "goals_for_per_match": 0.1207,
+            "goals_against_per_match": 3.5884,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Faroe Islands": {
+            "weighted_matches": 2.502737014554043e-06,
+            "goals_for": 3.468277275165454e-06,
+            "goals_against": 6.039234373407561e-06,
+            "goals_for_per_match": 1.3858,
+            "goals_against_per_match": 2.4131,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Moldova": {
+            "weighted_matches": 4.335280707290965e-06,
+            "goals_for": 2.5013239230970536e-06,
+            "goals_against": 1.3080389287937562e-05,
+            "goals_for_per_match": 0.577,
+            "goals_against_per_match": 3.0172,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Kazakhstan": {
+            "weighted_matches": 2.643080219135219e-06,
+            "goals_for": 3.3315368133083355e-06,
+            "goals_against": 2.5782274001275844e-06,
+            "goals_for_per_match": 1.2605,
+            "goals_against_per_match": 0.9755,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Poland": {
+            "weighted_matches": 0.00912499663341693,
+            "goals_for": 0.01825035990511573,
+            "goals_against": 0.019555417917377502,
+            "goals_for_per_match": 2.0,
+            "goals_against_per_match": 2.1431,
+            "goal_delta": -0.0001,
+            "lambda_multiplier": 0.9999
+          },
+          "Latvia": {
+            "weighted_matches": 2.8046006264412056e-06,
+            "goals_for": 2.6763778293972532e-06,
+            "goals_against": 6.4861453717587865e-06,
+            "goals_for_per_match": 0.9543,
+            "goals_against_per_match": 2.3127,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Cyprus": {
+            "weighted_matches": 2.620520879461177e-06,
+            "goals_for": 1.6952471376905818e-06,
+            "goals_against": 4.638542483862467e-06,
+            "goals_for_per_match": 0.6469,
+            "goals_against_per_match": 1.7701,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Seychelles": {
+            "weighted_matches": 6.427954778256337e-07,
+            "goals_for": 0.0,
+            "goals_against": 4.325867680594562e-06,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 6.7298,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Gabon": {
+            "weighted_matches": 2.4430928576659015e-06,
+            "goals_for": 3.566390654380513e-06,
+            "goals_against": 7.958976576064133e-06,
+            "goals_for_per_match": 1.4598,
+            "goals_against_per_match": 3.2577,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Algeria": {
+            "weighted_matches": 5.504881374087869,
+            "goals_for": 11.797683759318485,
+            "goals_against": 12.585041829778783,
+            "goals_for_per_match": 2.1431,
+            "goals_against_per_match": 2.2862,
+            "goal_delta": -0.065,
+            "lambda_multiplier": 0.935
+          },
+          "Botswana": {
+            "weighted_matches": 6.280249888267998e-07,
+            "goals_for": 6.680757034146745e-07,
+            "goals_against": 1.049205859247998e-06,
+            "goals_for_per_match": 1.0638,
+            "goals_against_per_match": 1.6706,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Angola": {
+            "weighted_matches": 5.991470681829726e-07,
+            "goals_for": 5.76514890492749e-07,
+            "goals_against": 5.237956541669219e-07,
+            "goals_for_per_match": 0.9622,
+            "goals_against_per_match": 0.8742,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Libya": {
+            "weighted_matches": 5.967815473419983e-07,
+            "goals_for": 7.862486334759005e-07,
+            "goals_against": 6.751115174401004e-07,
+            "goals_for_per_match": 1.3175,
+            "goals_against_per_match": 1.1313,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Bulgaria": {
+            "weighted_matches": 5.0788636385308536e-06,
+            "goals_for": 5.073833190590698e-06,
+            "goals_against": 9.53070608843312e-06,
+            "goals_for_per_match": 0.999,
+            "goals_against_per_match": 1.8765,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Spain": {
+            "weighted_matches": 4.565960084500992,
+            "goals_for": 7.3737647038149605,
+            "goals_against": 4.806217383937348e-06,
+            "goals_for_per_match": 1.6149,
+            "goals_against_per_match": 0.0,
+            "goal_delta": 0.7341,
+            "lambda_multiplier": 1.18
+          },
+          "Cameroon": {
+            "weighted_matches": 2.3994444480232406e-06,
+            "goals_for": 5.447977270479498e-07,
+            "goals_against": 1.8424442283511617e-06,
+            "goals_for_per_match": 0.2271,
+            "goals_against_per_match": 0.7679,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Eswatini": {
+            "weighted_matches": 5.967815473419983e-07,
+            "goals_for": 4.5007434496006694e-07,
+            "goals_against": 1.5255261418760416e-06,
+            "goals_for_per_match": 0.7542,
+            "goals_against_per_match": 2.5563,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Chad": {
+            "weighted_matches": 5.799220314623313e-07,
+            "goals_for": 6.384139295987149e-07,
+            "goals_against": 1.4515800005150383e-06,
+            "goals_for_per_match": 1.1009,
+            "goals_against_per_match": 2.5031,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Ghana": {
+            "weighted_matches": 5.676265077255384,
+            "goals_for": 3.5946324879459612,
+            "goals_against": 5.245387734643247,
+            "goals_for_per_match": 0.6333,
+            "goals_against_per_match": 0.9241,
+            "goal_delta": -0.1322,
+            "lambda_multiplier": 0.8678
+          },
+          "Georgia": {
+            "weighted_matches": 5.0788636385308536e-06,
+            "goals_for": 2.8971539546559843e-06,
+            "goals_against": 1.4792236802935362e-05,
+            "goals_for_per_match": 0.5704,
+            "goals_against_per_match": 2.9125,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Turkey": {
+            "weighted_matches": 4.208069740996085,
+            "goals_for": 7.018796060569033,
+            "goals_against": 7.306931497094029,
+            "goals_for_per_match": 1.6679,
+            "goals_against_per_match": 1.7364,
+            "goal_delta": -0.0311,
+            "lambda_multiplier": 0.9689
+          },
+          "Guinea-Bissau": {
+            "weighted_matches": 5.799220314623313e-07,
+            "goals_for": 1.1113711603580013e-07,
+            "goals_against": 5.401407037924116e-07,
+            "goals_for_per_match": 0.1916,
+            "goals_against_per_match": 0.9314,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Sierra Leone": {
+            "weighted_matches": 5.822875523033056e-07,
+            "goals_for": 6.829262989505833e-07,
+            "goals_against": 5.401407037924116e-07,
+            "goals_for_per_match": 1.1728,
+            "goals_against_per_match": 0.9276,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Luxembourg": {
+            "weighted_matches": 4.79768850381558e-06,
+            "goals_for": 3.157446069596095e-08,
+            "goals_against": 7.82636170121915e-06,
+            "goals_for_per_match": 0.0066,
+            "goals_against_per_match": 1.6313,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Northern Ireland": {
+            "weighted_matches": 0.0039110476885038156,
+            "goals_for": 2.905695891466606e-06,
+            "goals_against": 0.00781485195739994,
+            "goals_for_per_match": 0.0007,
+            "goals_against_per_match": 1.9981,
+            "goal_delta": -0.0009,
+            "lambda_multiplier": 0.9991
+          },
+          "Madagascar": {
+            "weighted_matches": 5.799220314623313e-07,
+            "goals_for": 9.160963199781648e-07,
+            "goals_against": 1.3989347826156219e-06,
+            "goals_for_per_match": 1.5797,
+            "goals_against_per_match": 2.4123,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Central African Republic": {
+            "weighted_matches": 5.776892771044222e-07,
+            "goals_for": 8.505872118492516e-07,
+            "goals_against": 1.8304900716489447e-06,
+            "goals_for_per_match": 1.4724,
+            "goals_against_per_match": 3.1686,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Mali": {
+            "weighted_matches": 5.799220314623313e-07,
+            "goals_for": 1.6789140095136184e-06,
+            "goals_against": 3.2331039828633675e-07,
+            "goals_for_per_match": 2.8951,
+            "goals_against_per_match": 0.5575,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Comoros": {
+            "weighted_matches": 5.776892771044222e-07,
+            "goals_for": 3.0013431910405453e-07,
+            "goals_against": 8.28326797664367e-07,
+            "goals_for_per_match": 0.5195,
+            "goals_against_per_match": 1.4339,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Mauritius": {
+            "weighted_matches": 5.991470681829726e-07,
+            "goals_for": 4.2146848510894035e-08,
+            "goals_against": 6.39663811884671e-07,
+            "goals_for_per_match": 0.0703,
+            "goals_against_per_match": 1.0676,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Cape Verde": {
+            "weighted_matches": 4.565955604784421,
+            "goals_for": 2.4491298464706412,
+            "goals_against": 2.4491288400091116,
+            "goals_for_per_match": 0.5364,
+            "goals_against_per_match": 0.5364,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Slovakia": {
+            "weighted_matches": 0.0039110476885038156,
+            "goals_for": 0.011721358823300509,
+            "goals_against": 0.015639114586760722,
+            "goals_for_per_match": 2.997,
+            "goals_against_per_match": 3.9987,
+            "goal_delta": -0.0004,
+            "lambda_multiplier": 0.9996
+          },
+          "Germany": {
+            "weighted_matches": 4.309692440369998,
+            "goals_for": 10.36933189556069,
+            "goals_against": 6.64624233378553,
+            "goals_for_per_match": 2.406,
+            "goals_against_per_match": 1.5422,
+            "goal_delta": 0.3927,
+            "lambda_multiplier": 1.18
+          },
+          "São Tomé and Príncipe": {
+            "weighted_matches": 6.267055812706268e-07,
+            "goals_for": 3.6353750788800615e-07,
+            "goals_against": 1.7367380410266905e-06,
+            "goals_for_per_match": 0.5801,
+            "goals_against_per_match": 2.7712,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Equatorial Guinea": {
+            "weighted_matches": 6.101629539635273e-07,
+            "goals_for": 3.951119685839671e-07,
+            "goals_against": 1.1185745728626131e-06,
+            "goals_for_per_match": 0.6476,
+            "goals_against_per_match": 1.8332,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Tunisia": {
+            "weighted_matches": 4.309688267021555,
+            "goals_for": 3.15385561227003,
+            "goals_against": 15.719494450938345,
+            "goals_for_per_match": 0.7318,
+            "goals_against_per_match": 3.6475,
+            "goal_delta": -1.3253,
+            "lambda_multiplier": 0.82
+          },
+          "Liberia": {
+            "weighted_matches": 6.101629539635273e-07,
+            "goals_for": 1.095206979140611e-06,
+            "goals_against": 7.130932030253688e-07,
+            "goals_for_per_match": 1.7949,
+            "goals_against_per_match": 1.1687,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Benin": {
+            "weighted_matches": 6.464451312696072e-07,
+            "goals_for": 4.5463505544293254e-07,
+            "goals_against": 1.273002485437427e-06,
+            "goals_for_per_match": 0.7033,
+            "goals_against_per_match": 1.9692,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Zimbabwe": {
+            "weighted_matches": 6.285830964063347e-07,
+            "goals_for": 0.0,
+            "goals_against": 3.7598741083864705e-07,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 0.5982,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Congo": {
+            "weighted_matches": 5.76739769671059e-07,
+            "goals_for": 2.5848914831170226e-07,
+            "goals_against": 1.026814114631126e-06,
+            "goals_for_per_match": 0.4482,
+            "goals_against_per_match": 1.7804,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Tanzania": {
+            "weighted_matches": 3.006359968225963e-07,
+            "goals_for": 3.345197583166879e-08,
+            "goals_against": 3.006359968225963e-07,
+            "goals_for_per_match": 0.1113,
+            "goals_against_per_match": 1.0,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Denmark": {
+            "weighted_matches": 0.009125487235481428,
+            "goals_for": 0.026064684551725885,
+            "goals_against": 0.010442373855510969,
+            "goals_for_per_match": 2.8563,
+            "goals_against_per_match": 1.1443,
+            "goal_delta": 0.0018,
+            "lambda_multiplier": 1.0018
+          },
+          "Scotland": {
+            "weighted_matches": 4.067808480663913,
+            "goals_for": 0.7714420480534911,
+            "goals_against": 7.707215535985509,
+            "goals_for_per_match": 0.1896,
+            "goals_against_per_match": 1.8947,
+            "goal_delta": -0.775,
+            "lambda_multiplier": 0.82
+          },
+          "Djibouti": {
+            "weighted_matches": 5.817995465980391e-07,
+            "goals_for": 2.835290706164172e-07,
+            "goals_against": 1.5224441690027868e-06,
+            "goals_for_per_match": 0.4873,
+            "goals_against_per_match": 2.6168,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Burkina Faso": {
+            "weighted_matches": 5.841650674390134e-07,
+            "goals_for": 1.2763362393192978e-06,
+            "goals_against": 2.835290706164172e-07,
+            "goals_for_per_match": 2.1849,
+            "goals_against_per_match": 0.4854,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Egypt": {
+            "weighted_matches": 4.56595558980242,
+            "goals_for": 7.015084196079487,
+            "goals_against": 4.565955005637353,
+            "goals_for_per_match": 1.5364,
+            "goals_against_per_match": 1.0,
+            "goal_delta": 0.2438,
+            "lambda_multiplier": 1.18
+          },
+          "Ethiopia": {
+            "weighted_matches": 5.841650674390134e-07,
+            "goals_for": 5.085662430964506e-07,
+            "goals_against": 1.0017848605343772e-06,
+            "goals_for_per_match": 0.8706,
+            "goals_against_per_match": 1.7149,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Greece": {
+            "weighted_matches": 5.019055129729743e-06,
+            "goals_for": 6.751503982500826e-06,
+            "goals_against": 5.7601698770783686e-06,
+            "goals_for_per_match": 1.3452,
+            "goals_against_per_match": 1.1477,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Belarus": {
+            "weighted_matches": 5.019055129729743e-06,
+            "goals_for": 4.358512015531088e-06,
+            "goals_against": 6.2859231194233944e-06,
+            "goals_for_per_match": 0.8684,
+            "goals_against_per_match": 1.2524,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Iceland": {
+            "weighted_matches": 4.569806929473405e-06,
+            "goals_for": 5.1685657170450045e-06,
+            "goals_against": 6.229902204306e-06,
+            "goals_for_per_match": 1.131,
+            "goals_against_per_match": 1.3633,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Azerbaijan": {
+            "weighted_matches": 4.569806929473405e-06,
+            "goals_for": 2.483461888233781e-06,
+            "goals_against": 1.1591345076725412e-05,
+            "goals_for_per_match": 0.5435,
+            "goals_against_per_match": 2.5365,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Ivory Coast": {
+            "weighted_matches": 4.309688289126626,
+            "goals_for": 6.646244989461674,
+            "goals_against": 2.311669163312094,
+            "goals_for_per_match": 1.5422,
+            "goals_against_per_match": 0.5364,
+            "goal_delta": 0.4572,
+            "lambda_multiplier": 1.18
+          },
+          "Burundi": {
+            "weighted_matches": 6.32268024803482e-07,
+            "goals_for": 0.0,
+            "goals_against": 9.926654946737328e-07,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.57,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Kenya": {
+            "weighted_matches": 6.32268024803482e-07,
+            "goals_for": 4.826047974877014e-07,
+            "goals_against": 1.0551077915730765e-06,
+            "goals_for_per_match": 0.7633,
+            "goals_against_per_match": 1.6688,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Gambia": {
+            "weighted_matches": 6.464451312696072e-07,
+            "goals_for": 3.1701910307353546e-06,
+            "goals_against": 1.0438347181024192e-06,
+            "goals_for_per_match": 4.904,
+            "goals_against_per_match": 1.6147,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Mauritania": {
+            "weighted_matches": 6.464451312696072e-07,
+            "goals_for": 6.690395166333758e-08,
+            "goals_against": 1.273002485437427e-06,
+            "goals_for_per_match": 0.1035,
+            "goals_against_per_match": 1.9692,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Togo": {
+            "weighted_matches": 6.285830964063347e-07,
+            "goals_for": 4.2146848510894035e-08,
+            "goals_against": 3.194996372310252e-07,
+            "goals_for_per_match": 0.0671,
+            "goals_against_per_match": 0.5083,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Morocco": {
+            "weighted_matches": 4.067803853092709,
+            "goals_for": 10.684045600871627,
+            "goals_against": 5.182254748337678,
+            "goals_for_per_match": 2.6265,
+            "goals_against_per_match": 1.274,
+            "goal_delta": 0.6148,
+            "lambda_multiplier": 1.18
+          },
+          "Niger": {
+            "weighted_matches": 5.841650674390134e-07,
+            "goals_for": 1.0007874365674117e-06,
+            "goals_against": 3.9229705163837743e-07,
+            "goals_for_per_match": 1.7132,
+            "goals_against_per_match": 0.6716,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Namibia": {
+            "weighted_matches": 6.144059899402096e-07,
+            "goals_for": 3.9831110046591343e-07,
+            "goals_against": 1.6833254484562776e-06,
+            "goals_for_per_match": 0.6483,
+            "goals_against_per_match": 2.7398,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Malawi": {
+            "weighted_matches": 6.120404690992352e-07,
+            "goals_for": 8.617223443078643e-07,
+            "goals_against": 4.134032176675922e-07,
+            "goals_for_per_match": 1.4079,
+            "goals_against_per_match": 0.6755,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Senegal": {
+            "weighted_matches": 5.357680897465148,
+            "goals_for": 17.224456785429012,
+            "goals_against": 8.646560767879159,
+            "goals_for_per_match": 3.2149,
+            "goals_against_per_match": 1.6139,
+            "goal_delta": 0.7277,
+            "lambda_multiplier": 1.18
+          },
+          "Sudan": {
+            "weighted_matches": 6.464451312696072e-07,
+            "goals_for": 0.0,
+            "goals_against": 4.273014215335884e-07,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 0.661,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Slovenia": {
+            "weighted_matches": 5.050091752075535e-06,
+            "goals_for": 2.4700126436320114e-06,
+            "goals_against": 6.630887595724772e-06,
+            "goals_for_per_match": 0.4891,
+            "goals_against_per_match": 1.313,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Sweden": {
+            "weighted_matches": 4.3188131609535985,
+            "goals_for": 7.606247420476307,
+            "goals_against": 8.947372093883581,
+            "goals_for_per_match": 1.7612,
+            "goals_against_per_match": 2.0717,
+            "goal_delta": -0.1412,
+            "lambda_multiplier": 0.8588
+          },
+          "Somalia": {
+            "weighted_matches": 6.299025039625076e-07,
+            "goals_for": 0.0,
+            "goals_against": 1.2134249414988898e-06,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.9264,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Guinea": {
+            "weighted_matches": 6.299025039625076e-07,
+            "goals_for": 1.213694328416845e-06,
+            "goals_against": 8.74919821820276e-07,
+            "goals_for_per_match": 1.9268,
+            "goals_against_per_match": 1.389,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "South Africa": {
+            "weighted_matches": 4.866283718505484,
+            "goals_for": 3.235146502497517,
+            "goals_against": 3.3481326102797544,
+            "goals_for_per_match": 0.6648,
+            "goals_against_per_match": 0.688,
+            "goal_delta": -0.0106,
+            "lambda_multiplier": 0.9894
+          },
+          "Lesotho": {
+            "weighted_matches": 6.285830964063347e-07,
+            "goals_for": 5.529842720637718e-07,
+            "goals_against": 7.741346926739577e-07,
+            "goals_for_per_match": 0.8797,
+            "goals_against_per_match": 1.2316,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "South Sudan": {
+            "weighted_matches": 6.285830964063347e-07,
+            "goals_for": 3.345197583166879e-08,
+            "goals_against": 1.3967863311651134e-06,
+            "goals_for_per_match": 0.0532,
+            "goals_against_per_match": 2.2221,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "DR Congo": {
+            "weighted_matches": 5.681483303182668,
+            "goals_for": 8.845237659296119,
+            "goals_against": 5.6762667981523265,
+            "goals_for_per_match": 1.5569,
+            "goals_against_per_match": 0.9991,
+            "goal_delta": 0.2535,
+            "lambda_multiplier": 1.18
+          },
+          "Switzerland": {
+            "weighted_matches": 4.006577487545849,
+            "goals_for": 9.301192181570157,
+            "goals_against": 4.0065768613282735,
+            "goals_for_per_match": 2.3215,
+            "goals_against_per_match": 1.0,
+            "goal_delta": 0.6007,
+            "lambda_multiplier": 1.18
+          },
+          "Kosovo": {
+            "weighted_matches": 0.009125518272103773,
+            "goals_for": 0.015631824590902888,
+            "goals_against": 0.016935505096946992,
+            "goals_for_per_match": 1.713,
+            "goals_against_per_match": 1.8558,
+            "goal_delta": -0.0001,
+            "lambda_multiplier": 0.9999
+          },
+          "Uganda": {
+            "weighted_matches": 6.299025039625076e-07,
+            "goals_for": 7.700397591274336e-07,
+            "goals_against": 6.365012427187135e-07,
+            "goals_for_per_match": 1.2225,
+            "goals_against_per_match": 1.0105,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Mozambique": {
+            "weighted_matches": 6.299025039625076e-07,
+            "goals_for": 6.362318558007585e-07,
+            "goals_against": 6.106450615298002e-07,
+            "goals_for_per_match": 1.01,
+            "goals_against_per_match": 0.9694,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Ukraine": {
+            "weighted_matches": 0.003910819806929473,
+            "goals_for": 0.003912437755355795,
+            "goals_against": 0.011727118415962735,
+            "goals_for_per_match": 1.0004,
+            "goals_against_per_match": 2.9986,
+            "goal_delta": -0.0009,
+            "lambda_multiplier": 0.9991
+          },
+          "France": {
+            "weighted_matches": 5.357684820826946,
+            "goals_for": 18.548549243282334,
+            "goals_against": 3.39288265575302,
+            "goals_for_per_match": 3.462,
+            "goals_against_per_match": 0.6333,
+            "goal_delta": 1.2858,
+            "lambda_multiplier": 1.18
+          },
+          "Armenia": {
+            "weighted_matches": 4.604678243417724e-06,
+            "goals_for": 2.2252201502485905e-06,
+            "goals_against": 2.2141470211193702e-05,
+            "goals_for_per_match": 0.4833,
+            "goals_against_per_match": 4.8085,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Portugal": {
+            "weighted_matches": 5.676269102011596,
+            "goals_for": 11.380125079732752,
+            "goals_against": 0.9719436186569994,
+            "goals_for_per_match": 2.0049,
+            "goals_against_per_match": 0.1712,
+            "goal_delta": 0.8335,
+            "lambda_multiplier": 1.18
+          },
+          "Nigeria": {
+            "weighted_matches": 4.58965812233206e-06,
+            "goals_for": 1.1197897811498623e-05,
+            "goals_against": 4.235966367145652e-06,
+            "goals_for_per_match": 2.4398,
+            "goals_against_per_match": 0.9229,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Rwanda": {
+            "weighted_matches": 6.484342892649905e-07,
+            "goals_for": 4.2146848510894035e-08,
+            "goals_against": 1.2427886834728099e-06,
+            "goals_for_per_match": 0.065,
+            "goals_against_per_match": 1.9166,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Republic of Ireland": {
+            "weighted_matches": 0.003910854678243418,
+            "goals_for": 0.007822954653856885,
+            "goals_against": 0.007817204644677783,
+            "goals_for_per_match": 2.0003,
+            "goals_against_per_match": 1.9988,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Hungary": {
+            "weighted_matches": 4.604678243417724e-06,
+            "goals_for": 7.4090591069951795e-06,
+            "goals_against": 7.256603415585908e-06,
+            "goals_for_per_match": 1.609,
+            "goals_against_per_match": 1.5759,
+            "goal_delta": 0.0,
+            "lambda_multiplier": 1.0
+          },
+          "Zambia": {
+            "weighted_matches": 5.483475707663703e-07,
+            "goals_for": 2.2503717248003347e-07,
+            "goals_against": 3.630917259562564e-07,
+            "goals_for_per_match": 0.4104,
+            "goals_against_per_match": 0.6622,
+            "goal_delta": -0.0,
+            "lambda_multiplier": 1.0
+          },
+          "New Caledonia": {
+            "weighted_matches": 0.00390625,
+            "goals_for": 0.0,
+            "goals_against": 0.00390625,
+            "goals_for_per_match": 0.0,
+            "goals_against_per_match": 1.0,
+            "goal_delta": -0.0004,
+            "lambda_multiplier": 0.9996
+          },
+          "Mexico": {
+            "weighted_matches": 3.922408759378659,
+            "goals_for": 9.020499829640901,
+            "goals_against": 0.0,
+            "goals_for_per_match": 2.2997,
+            "goals_against_per_match": 0.0,
+            "goal_delta": 1.0251,
+            "lambda_multiplier": 1.18
+          },
+          "Canada": {
+            "weighted_matches": 4.907149877737014,
+            "goals_for": 10.055807613635253,
+            "goals_against": 5.138957875938902,
+            "goals_for_per_match": 2.0492,
+            "goals_against_per_match": 1.0472,
+            "goal_delta": 0.4554,
+            "lambda_multiplier": 1.18
+          },
+          "United States": {
+            "weighted_matches": 4.155647321553318,
+            "goals_for": 9.767554962731527,
+            "goals_against": 7.737793931032066,
+            "goals_for_per_match": 2.3504,
+            "goals_against_per_match": 1.862,
+            "goal_delta": 0.222,
+            "lambda_multiplier": 1.18
+          },
+          "New Zealand": {
+            "weighted_matches": 4.565955005637353,
+            "goals_for": 5.43185257233438,
+            "goals_against": 17.782954163198088,
+            "goals_for_per_match": 1.1896,
+            "goals_against_per_match": 3.8947,
+            "goal_delta": -1.2296,
+            "lambda_multiplier": 0.82
+          },
+          "Curacao": {
+            "weighted_matches": 2.602452817096417,
+            "goals_for": 0.42044820762685725,
+            "goals_against": 6.1179395573244,
+            "goals_for_per_match": 0.1616,
+            "goals_against_per_match": 2.3508,
+            "goal_delta": -0.6474,
+            "lambda_multiplier": 0.82
+          }
+        },
+        "home_lambda_multiplier": 1.18,
+        "away_lambda_multiplier": 1.18
+      },
+      "roster_adjustment": {
+        "available": true,
+        "coverage": 0.45,
+        "home_xg_multiplier": 1.0232,
+        "away_xg_multiplier": 0.9864,
+        "home_attack_vs_away_defense": 0.2063,
+        "away_attack_vs_home_defense": -0.1206
+      }
+    }
+  },
+  "monte_carlo": {
+    "simulations": 10000,
+    "home_win": 0.6989,
+    "draw": 0.1794,
+    "away_win": 0.1217,
+    "confidence_interval": {
+      "home_win": {
+        "low": 0.6899087728553661,
+        "high": 0.7078912271446338
+      },
+      "draw": {
+        "low": 0.17187973668929074,
+        "high": 0.18692026331070927
+      },
+      "away_win": {
+        "low": 0.11529199559163697,
+        "high": 0.12810800440836304
+      }
+    },
+    "over_2_5": 0.6321,
+    "under_2_5": 0.3679,
+    "btts": 0.5525,
+    "scorelines": [
+      {
+        "score": "2-0",
+        "probability": 0.1032
+      },
+      {
+        "score": "2-1",
+        "probability": 0.1029
+      },
+      {
+        "score": "1-0",
+        "probability": 0.0945
+      },
+      {
+        "score": "1-1",
+        "probability": 0.0855
+      },
+      {
+        "score": "3-0",
+        "probability": 0.0796
+      },
+      {
+        "score": "3-1",
+        "probability": 0.0789
+      }
+    ],
+    "average_goals": {
+      "home": 2.3363,
+      "away": 0.912,
+      "total": 3.2483
+    },
+    "goal_variance": {
+      "home": 2.266002309999992,
+      "away": 0.8920559999999267,
+      "total": 3.256247109999883
+    },
+    "typical_script": "强队早进球后控场",
+    "script_distribution": {
+      "开放对攻": 0.1315,
+      "强队早进球后控场": 0.2682,
+      "后段追分": 0.2003,
+      "均衡拉锯": 0.2339,
+      "低比分僵持": 0.1661
+    },
+    "sample_event_sequence": [
+      {
+        "minute": 37,
+        "team": "home",
+        "rhythm": "balanced"
+      },
+      {
+        "minute": 48,
+        "team": "home",
+        "rhythm": "balanced"
+      },
+      {
+        "minute": 51,
+        "team": "home",
+        "rhythm": "balanced"
+      },
+      {
+        "minute": 70,
+        "team": "home",
+        "rhythm": "balanced"
+      }
+    ]
+  },
+  "simulation_request": {
+    "requested": 10000,
+    "used": 10000,
+    "min": 1000,
+    "max": 100000,
+    "clamped": false
+  },
+  "market": {
+    "available": true,
+    "provider": "China Sporttery snapshot 周一074 sales 2026-06-29",
+    "bookmaker": null,
+    "market_key": "h2h",
+    "odds": {
+      "home": 1.49,
+      "draw": 3.72,
+      "away": 5.28
+    },
+    "implied_probability_raw": {
+      "home": 0.6711409395973155,
+      "draw": 0.26881720430107525,
+      "away": 0.1893939393939394
+    },
+    "implied_probability_no_vig": {
+      "home": 0.5942707766038559,
+      "draw": 0.23802781105907125,
+      "away": 0.16770141233707295
+    },
+    "market_probability_no_vig": {
+      "home": 0.5942707766038559,
+      "draw": 0.23802781105907125,
+      "away": 0.16770141233707295
+    },
+    "overround": 0.129352,
+    "checked_at": "2026-07-08T15:30:41.898643+00:00"
+  },
+  "market_available": true,
+  "odds_markets": {
+    "market_available": true,
+    "h2h": {
+      "available": true,
+      "provider": "China Sporttery snapshot 周一074 sales 2026-06-29",
+      "bookmaker": null,
+      "market_key": "h2h",
+      "odds": {
+        "home": 1.49,
+        "draw": 3.72,
+        "away": 5.28
+      },
+      "implied_probability_raw": {
+        "home": 0.6711409395973155,
+        "draw": 0.26881720430107525,
+        "away": 0.1893939393939394
+      },
+      "implied_probability_no_vig": {
+        "home": 0.5942707766038559,
+        "draw": 0.23802781105907125,
+        "away": 0.16770141233707295
+      },
+      "market_probability_no_vig": {
+        "home": 0.5942707766038559,
+        "draw": 0.23802781105907125,
+        "away": 0.16770141233707295
+      },
+      "overround": 0.129352,
+      "checked_at": "2026-07-08T15:30:41.898643+00:00"
+    },
+    "handicap": {
+      "available": true,
+      "provider": "China Sporttery snapshot 周一074 sales 2026-06-29",
+      "bookmaker": null,
+      "market_key": "handicap_1x2",
+      "odds": {
+        "home": 2.71,
+        "draw": 3.15,
+        "away": 2.26
+      },
+      "implied_probability_raw": {
+        "home": 0.36900369003690037,
+        "draw": 0.31746031746031744,
+        "away": 0.4424778761061947
+      },
+      "implied_probability_no_vig": {
+        "home": 0.3268580034067796,
+        "draw": 0.2812016473753564,
+        "away": 0.3919403492178641
+      },
+      "market_probability_no_vig": {
+        "home": 0.3268580034067796,
+        "draw": 0.2812016473753564,
+        "away": 0.3919403492178641
+      },
+      "overround": 0.128942,
+      "checked_at": "2026-07-08T15:30:41.898671+00:00",
+      "line": "-1"
+    },
+    "totals": {
+      "available": false,
+      "provider": "the_odds_api",
+      "reason": "大小球盘口不可用",
+      "odds": {},
+      "implied_probability_raw": {},
+      "implied_probability_no_vig": {},
+      "market_probability_no_vig": {},
+      "overround": null,
+      "checked_at": "2026-07-08T15:30:41.898674+00:00"
+    }
+  },
+  "lottery_market": {
+    "available": true,
+    "source": "China Sporttery snapshot 周一074 sales 2026-06-29",
+    "match_no": "周一074",
+    "league": "世界杯",
+    "sale_status": "selling",
+    "business_date": "2026-06-29",
+    "kickoff_time": "2026-06-29T17:00:00+00:00",
+    "spf": {
+      "home_win": 1.49,
+      "draw": 3.72,
+      "away_win": 5.28
+    },
+    "rqspf": {
+      "home_win": 2.71,
+      "draw": 3.15,
+      "away_win": 2.26,
+      "handicap": "-1"
+    },
+    "updated_at": "2026-07-08T15:30:41.898643+00:00"
+  },
+  "handicap_analysis": {
+    "available": true,
+    "line": -1.0,
+    "model_probabilities": {
+      "home": 0.538956,
+      "draw": 0.17692,
+      "away": 0.284124
+    },
+    "market_probabilities": {
+      "home": 0.3268580034067796,
+      "draw": 0.2812016473753564,
+      "away": 0.3919403492178641
+    },
+    "odds": {
+      "home": 2.71,
+      "draw": 3.15,
+      "away": 2.26
+    },
+    "tail_probability": 0.011413,
+    "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
+    "regions": [
+      {
+        "home_goals": 0,
+        "away_goals": 0,
+        "outcome": "away",
+        "probability": 0.02606459
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 1,
+        "outcome": "away",
+        "probability": 0.02430881
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 2,
+        "outcome": "away",
+        "probability": 0.01155262
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 3,
+        "outcome": "away",
+        "probability": 0.00360574
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 4,
+        "outcome": "away",
+        "probability": 0.00084405
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 5,
+        "outcome": "away",
+        "probability": 0.00015806
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 6,
+        "outcome": "away",
+        "probability": 2.467e-05
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 3.3e-06
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 0,
+        "outcome": "draw",
+        "probability": 0.05423845
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 1,
+        "outcome": "away",
+        "probability": 0.07200445
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 2,
+        "outcome": "away",
+        "probability": 0.03438733
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 3,
+        "outcome": "away",
+        "probability": 0.01073277
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 4,
+        "outcome": "away",
+        "probability": 0.00251239
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 5,
+        "outcome": "away",
+        "probability": 0.00047049
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 6,
+        "outcome": "away",
+        "probability": 7.342e-05
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 9.82e-06
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 0,
+        "outcome": "home",
+        "probability": 0.08110231
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 1,
+        "outcome": "draw",
+        "probability": 0.07593954
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 2,
+        "outcome": "away",
+        "probability": 0.04992131
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 3,
+        "outcome": "away",
+        "probability": 0.01597349
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 4,
+        "outcome": "away",
+        "probability": 0.00373916
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 5,
+        "outcome": "away",
+        "probability": 0.00070023
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 6,
+        "outcome": "away",
+        "probability": 0.00010928
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 1.462e-05
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 0,
+        "outcome": "home",
+        "probability": 0.08046923
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 1,
+        "outcome": "home",
+        "probability": 0.07534676
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 2,
+        "outcome": "draw",
+        "probability": 0.03527519
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 3,
+        "outcome": "away",
+        "probability": 0.01545952
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 4,
+        "outcome": "away",
+        "probability": 0.00370998
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 5,
+        "outcome": "away",
+        "probability": 0.00069476
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 6,
+        "outcome": "away",
+        "probability": 0.00010842
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 1.45e-05
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 0,
+        "outcome": "home",
+        "probability": 0.05988082
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 1,
+        "outcome": "home",
+        "probability": 0.05606896
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 2,
+        "outcome": "home",
+        "probability": 0.02624988
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 3,
+        "outcome": "draw",
+        "probability": 0.00819296
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 4,
+        "outcome": "away",
+        "probability": 0.00269295
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 5,
+        "outcome": "away",
+        "probability": 0.000517
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 6,
+        "outcome": "away",
+        "probability": 8.068e-05
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 1.079e-05
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 0,
+        "outcome": "home",
+        "probability": 0.03564804
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 1,
+        "outcome": "home",
+        "probability": 0.03337878
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 2,
+        "outcome": "home",
+        "probability": 0.01562698
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 3,
+        "outcome": "home",
+        "probability": 0.0048774
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 4,
+        "outcome": "draw",
+        "probability": 0.00114173
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 5,
+        "outcome": "away",
+        "probability": 0.00030022
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 6,
+        "outcome": "away",
+        "probability": 4.803e-05
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 6.42e-06
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 0,
+        "outcome": "home",
+        "probability": 0.01768489
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 1,
+        "outcome": "home",
+        "probability": 0.01655911
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 2,
+        "outcome": "home",
+        "probability": 0.0077525
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 3,
+        "outcome": "home",
+        "probability": 0.00241967
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 4,
+        "outcome": "home",
+        "probability": 0.00056641
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 5,
+        "outcome": "draw",
+        "probability": 0.00010607
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 6,
+        "outcome": "away",
+        "probability": 2.324e-05
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 3.19e-06
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 0,
+        "outcome": "home",
+        "probability": 0.00752007
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 1,
+        "outcome": "home",
+        "probability": 0.00704137
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 2,
+        "outcome": "home",
+        "probability": 0.00329657
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 3,
+        "outcome": "home",
+        "probability": 0.0010289
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 4,
+        "outcome": "home",
+        "probability": 0.00024085
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 5,
+        "outcome": "home",
+        "probability": 4.51e-05
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 6,
+        "outcome": "draw",
+        "probability": 7.04e-06
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 7,
+        "outcome": "away",
+        "probability": 1.32e-06
+      }
+    ],
+    "value_analysis": {
+      "available": true,
+      "line": "-1",
+      "items": [
+        {
+          "outcome": "home",
+          "model_probability": 0.538956,
+          "market_probability": 0.326858,
+          "edge": 0.212098,
+          "decimal_odds": 2.71,
+          "label": "强推荐",
+          "recommendation": "小仓位候选",
+          "kelly": {
+            "full": 0.26934,
+            "half": 0.13467,
+            "quarter": 0.067335
+          }
+        },
+        {
+          "outcome": "draw",
+          "model_probability": 0.17692,
+          "market_probability": 0.281202,
+          "edge": -0.104282,
+          "decimal_odds": 3.15,
+          "label": "不推荐",
+          "recommendation": "不下注",
+          "kelly": {
+            "full": 0.0,
+            "half": 0.0,
+            "quarter": 0.0
+          }
+        },
+        {
+          "outcome": "away",
+          "model_probability": 0.284124,
+          "market_probability": 0.39194,
+          "edge": -0.107816,
+          "decimal_odds": 2.26,
+          "label": "不推荐",
+          "recommendation": "不下注",
+          "kelly": {
+            "full": 0.0,
+            "half": 0.0,
+            "quarter": 0.0
+          }
+        }
+      ],
+      "recommended_options": [
+        {
+          "outcome": "home",
+          "model_probability": 0.538956,
+          "market_probability": 0.326858,
+          "edge": 0.212098,
+          "decimal_odds": 2.71,
+          "label": "强推荐",
+          "recommendation": "小仓位候选",
+          "kelly": {
+            "full": 0.26934,
+            "half": 0.13467,
+            "quarter": 0.067335
+          }
+        }
+      ],
+      "summary": "让球胜 Edge 21.2%，Kelly 26.9%。"
+    }
+  },
+  "score_heatmap": {
+    "matrix": [
+      {
+        "home_goals": 0,
+        "away_goals": 0,
+        "probability": 0.02606459418182532
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 1,
+        "probability": 0.0243088074038495
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 2,
+        "probability": 0.011552621864448786
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 3,
+        "probability": 0.0036057370936418472
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 4,
+        "probability": 0.0008440512557028821
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 5,
+        "probability": 0.00015806421904910543
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 6,
+        "probability": 2.466704201393349e-05
+      },
+      {
+        "home_goals": 0,
+        "away_goals": 7,
+        "probability": 3.299542961774454e-06
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 0,
+        "probability": 0.05423845110650562
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 1,
+        "probability": 0.07200445235926384
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 2,
+        "probability": 0.034387330060011996
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 3,
+        "probability": 0.010732773304928618
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 4,
+        "probability": 0.0025123880499145425
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 5,
+        "probability": 0.00047049116078542796
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 6,
+        "probability": 7.34234812919488e-05
+      },
+      {
+        "home_goals": 1,
+        "away_goals": 7,
+        "probability": 9.821361263704911e-06
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 0,
+        "probability": 0.08110230516647311
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 1,
+        "probability": 0.07593953828399609
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 2,
+        "probability": 0.04992130746719579
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 3,
+        "probability": 0.015973491663897534
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 4,
+        "probability": 0.003739164932642043
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 5,
+        "probability": 0.0007002278368529738
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 6,
+        "probability": 0.00010927551836138227
+      },
+      {
+        "home_goals": 2,
+        "away_goals": 7,
+        "probability": 1.4617045177118827e-05
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 0,
+        "probability": 0.08046922938389899
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 1,
+        "probability": 0.07534676249878532
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 2,
+        "probability": 0.03527518942653312
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 3,
+        "probability": 0.015459523169075793
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 4,
+        "probability": 0.0037099774174284223
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 5,
+        "probability": 0.0006947619344364399
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 6,
+        "probability": 0.00010842252553755531
+      },
+      {
+        "home_goals": 3,
+        "away_goals": 7,
+        "probability": 1.450294611057033e-05
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 0,
+        "probability": 0.059880821491576156
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 1,
+        "probability": 0.056068960392712745
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 2,
+        "probability": 0.02624987634782065
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 3,
+        "probability": 0.008192958616789694
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 4,
+        "probability": 0.0026929529426765364
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 5,
+        "probability": 0.0005170040236952348
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 6,
+        "probability": 8.068214331227673e-05
+      },
+      {
+        "home_goals": 4,
+        "away_goals": 7,
+        "probability": 1.0792303266704051e-05
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 0,
+        "probability": 0.03564803898294542
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 1,
+        "probability": 0.03337877530778071
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 2,
+        "probability": 0.015626983599018374
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 3,
+        "probability": 0.004877403163182458
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 4,
+        "probability": 0.0011417300145683544
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 5,
+        "probability": 0.0003002212359450415
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 6,
+        "probability": 4.803140836049215e-05
+      },
+      {
+        "home_goals": 5,
+        "away_goals": 7,
+        "probability": 6.424835831975969e-06
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 0,
+        "probability": 0.01768488713185581
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 1,
+        "probability": 0.01655911210712282
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 2,
+        "probability": 0.007752500531437857
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 3,
+        "probability": 0.002419665342003936
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 4,
+        "probability": 0.000566408897060321
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 5,
+        "probability": 0.00010607054888124024
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 6,
+        "probability": 2.3242966723131232e-05
+      },
+      {
+        "home_goals": 6,
+        "away_goals": 7,
+        "probability": 3.187342130756666e-06
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 0,
+        "probability": 0.007520074638995019
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 1,
+        "probability": 0.0070413657759082465
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 2,
+        "probability": 0.0032965651519622358
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 3,
+        "probability": 0.001028904727386267
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 4,
+        "probability": 0.00024085181603516882
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 5,
+        "probability": 4.510396015755583e-05
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 6,
+        "probability": 7.03879275711076e-06
+      },
+      {
+        "home_goals": 7,
+        "away_goals": 7,
+        "probability": 1.3220507689062415e-06
+      },
+      {
+        "home_goals": "8+",
+        "away_goals": "8+",
+        "probability": 0.011412770705469642
+      }
+    ],
+    "handicap": -1.0,
+    "handicap_probabilities": {
+      "home": 0.538956,
+      "draw": 0.17692,
+      "away": 0.284124
+    },
+    "handicap_market_probabilities": {
+      "home": 0.3268580034067796,
+      "draw": 0.2812016473753564,
+      "away": 0.3919403492178641
+    },
+    "handicap_regions": {
+      "0-0": "away",
+      "0-1": "away",
+      "0-2": "away",
+      "0-3": "away",
+      "0-4": "away",
+      "0-5": "away",
+      "0-6": "away",
+      "0-7": "away",
+      "1-0": "draw",
+      "1-1": "away",
+      "1-2": "away",
+      "1-3": "away",
+      "1-4": "away",
+      "1-5": "away",
+      "1-6": "away",
+      "1-7": "away",
+      "2-0": "home",
+      "2-1": "draw",
+      "2-2": "away",
+      "2-3": "away",
+      "2-4": "away",
+      "2-5": "away",
+      "2-6": "away",
+      "2-7": "away",
+      "3-0": "home",
+      "3-1": "home",
+      "3-2": "draw",
+      "3-3": "away",
+      "3-4": "away",
+      "3-5": "away",
+      "3-6": "away",
+      "3-7": "away",
+      "4-0": "home",
+      "4-1": "home",
+      "4-2": "home",
+      "4-3": "draw",
+      "4-4": "away",
+      "4-5": "away",
+      "4-6": "away",
+      "4-7": "away",
+      "5-0": "home",
+      "5-1": "home",
+      "5-2": "home",
+      "5-3": "home",
+      "5-4": "draw",
+      "5-5": "away",
+      "5-6": "away",
+      "5-7": "away",
+      "6-0": "home",
+      "6-1": "home",
+      "6-2": "home",
+      "6-3": "home",
+      "6-4": "home",
+      "6-5": "draw",
+      "6-6": "away",
+      "6-7": "away",
+      "7-0": "home",
+      "7-1": "home",
+      "7-2": "home",
+      "7-3": "home",
+      "7-4": "home",
+      "7-5": "home",
+      "7-6": "draw",
+      "7-7": "away"
+    },
+    "tail_probability": 0.011413,
+    "tail_note": "8+ tail 按可见比分让球分布比例分摊。"
+  },
+  "xgboost": {
+    "engine": "trainable_softmax_fallback",
+    "model_version": "xgb-trainable-v2",
+    "home_win": 0.7429716671150284,
+    "draw": 0.14669857146650067,
+    "away_win": 0.11032976141847103,
+    "over25_prob": 0.5985103357759578,
+    "under25_prob": 0.4014896642240422,
+    "features": {
+      "elo_delta": 0.232143,
+      "lambda_diff": 1.4298,
+      "lambda_total": 3.194,
+      "low_total_goals": 0.0,
+      "market_home_edge": -0.097125,
+      "market_draw_edge": 0.058021,
+      "mc_home_edge": 0.007504,
+      "mc_goal_variance": 3.256247,
+      "roster_attack_edge": 0.473333,
+      "form_home_edge": 0.6174,
+      "attack_line_edge": 0.203,
+      "midfield_line_edge": 0.652,
+      "defense_line_edge": 0.507,
+      "starting_xi_edge": 0.5435,
+      "bench_strength_edge": 0.532,
+      "squad_depth_edge": 0.5395,
+      "fifa_stats_xg_edge": 0.0,
+      "footballdata_shot_edge": 0.0,
+      "sportmonks_shot_on_target_edge": 0.0,
+      "sportmonks_possession_edge": 0.0,
+      "sportmonks_corner_edge": 0.0,
+      "sportmonks_lineup_depth": 0.0,
+      "sportmonks_sidelined_edge": 0.0,
+      "lineup_missing_edge": 0.0,
+      "roster_coverage_edge": 0.0,
+      "over25_attack_edge": 0.0,
+      "over25_defense_edge": 0.0,
+      "over25_recent_edge": 0.0,
+      "over25_adjusted_edge": 0.0,
+      "under25_stability_edge": 0.0,
+      "over25_market_edge": -0.609207,
+      "stage_encoded": 0.0,
+      "knockout_stage_flag": 0.0,
+      "round_of_32_flag": 0.0,
+      "draw_tendency_edge": 0.3,
+      "under25_combined": 0.5,
+      "defensive_stability_combined": 0.5,
+      "current_world_cup_form_edge": 0.0,
+      "group_stage_performance_edge": 0.6174,
+      "team_strength_edge": 0.232143,
+      "attack_defense_matchup": 0.11428,
+      "market_implied_home_prob": 0.594271,
+      "market_implied_draw_prob": 0.238028,
+      "market_implied_away_prob": 0.167701
+    },
+    "correction_strength": 0.42,
+    "training": {
+      "engine": "trainable_softmax_fallback",
+      "sample_count": 180,
+      "feature_count": 44,
+      "training_loss": 0.393323,
+      "class_order": [
+        "home",
+        "draw",
+        "away"
+      ],
+      "sample_weight_summary": {
+        "min": 0.5,
+        "max": 4.0,
+        "mean": 2.394444,
+        "weighted_sample_count": 431.0
+      }
+    },
+    "scoreline_correction": {
+      "enabled": false,
+      "note": "XGBoost 层修正 1X2 概率；比分矩阵仍以 Poisson / Dixon-Coles 为主。"
+    }
+  },
+  "ensemble": {
+    "home": 0.7219202139349779,
+    "draw": 0.1631099663445941,
+    "away": 0.11496981972042797,
+    "recommended_result": "主胜",
+    "confidence": "高",
+    "weights": {
+      "elo": 0.22737483503764577,
+      "poisson": 0.23559182254826944,
+      "monte_carlo": 0.23636829592326095,
+      "market": 0.04849237670067384,
+      "xgboost": 0.2521726697901501
+    },
+    "source_probabilities": {
+      "elo": {
+        "home": 0.781355271680461,
+        "draw": 0.13089180335895995,
+        "away": 0.08775292496057903
+      },
+      "poisson": {
+        "home": 0.6913955370441026,
+        "draw": 0.1800066178040917,
+        "away": 0.1285978451518058
+      },
+      "monte_carlo": {
+        "home": 0.6989,
+        "draw": 0.1794,
+        "away": 0.1217
+      },
+      "market": {
+        "home": 0.5942707766038559,
+        "draw": 0.23802781105907125,
+        "away": 0.16770141233707295
+      },
+      "xgboost": {
+        "home": 0.7429716671150284,
+        "draw": 0.14669857146650067,
+        "away": 0.11032976141847103
+      }
+    },
+    "market_included": true
+  },
+  "stage_calibration": {
+    "stage": "unknown",
+    "stage_blend_weights": {
+      "elo": 0.22737483503764577,
+      "poisson": 0.23559182254826944,
+      "monte_carlo": 0.23636829592326095,
+      "market": 0.04849237670067384,
+      "xgboost": 0.2521726697901501
+    },
+    "draw_adjustment": {
+      "applied": false,
+      "weight": 0.0,
+      "probabilities": {
+        "home": 0.7219202139349779,
+        "draw": 0.1631099663445941,
+        "away": 0.11496981972042797
+      }
+    }
+  },
+  "value_analysis": {
+    "available": true,
+    "summary": "主胜相对市场有 12.8% 正向差异。",
+    "items": [
+      {
+        "outcome": "home",
+        "model_probability": 0.72192,
+        "market_probability": 0.594271,
+        "edge": 0.127649,
+        "decimal_odds": 1.49,
+        "label": "有价值",
+        "edge_label": "value bet",
+        "kelly": {
+          "full": 0.15441,
+          "half": 0.077205,
+          "quarter": 0.038603
+        },
+        "recommendation": "小仓位观察"
+      },
+      {
+        "outcome": "draw",
+        "model_probability": 0.16311,
+        "market_probability": 0.238028,
+        "edge": -0.074918,
+        "decimal_odds": 3.72,
+        "label": "不建议",
+        "edge_label": "no edge",
+        "kelly": {
+          "full": 0.0,
+          "half": 0.0,
+          "quarter": 0.0
+        },
+        "recommendation": "不下注"
+      },
+      {
+        "outcome": "away",
+        "model_probability": 0.11497,
+        "market_probability": 0.167701,
+        "edge": -0.052732,
+        "decimal_odds": 5.28,
+        "label": "不建议",
+        "edge_label": "no edge",
+        "kelly": {
+          "full": 0.0,
+          "half": 0.0,
+          "quarter": 0.0
+        },
+        "recommendation": "不下注"
+      }
+    ],
+    "recommended_options": [
+      {
+        "outcome": "home",
+        "model_probability": 0.72192,
+        "market_probability": 0.594271,
+        "edge": 0.127649,
+        "decimal_odds": 1.49,
+        "label": "有价值",
+        "edge_label": "value bet",
+        "kelly": {
+          "full": 0.15441,
+          "half": 0.077205,
+          "quarter": 0.038603
+        },
+        "recommendation": "小仓位观察"
+      }
+    ],
+    "confidence": "高",
+    "risk_warnings": [
+      "roster 不完整"
+    ],
+    "risk_warning": "roster 不完整；Kelly 仅用于仓位上限估算，本系统只做数据分析，不构成投注建议。"
+  },
+  "betting_recommendations": [
+    {
+      "outcome": "home",
+      "model_probability": 0.72192,
+      "market_probability": 0.594271,
+      "edge": 0.127649,
+      "decimal_odds": 1.49,
+      "label": "有价值",
+      "edge_label": "value bet",
+      "kelly": {
+        "full": 0.15441,
+        "half": 0.077205,
+        "quarter": 0.038603
+      },
+      "recommendation": "小仓位观察"
+    },
+    {
+      "outcome": "home",
+      "model_probability": 0.538956,
+      "market_probability": 0.326858,
+      "edge": 0.212098,
+      "decimal_odds": 2.71,
+      "label": "强推荐",
+      "recommendation": "小仓位候选",
+      "kelly": {
+        "full": 0.26934,
+        "half": 0.13467,
+        "quarter": 0.067335
+      },
+      "market_type": "handicap_1x2",
+      "line": -1.0
+    }
+  ],
+  "learning": {
+    "available": true,
+    "fixture_date": "2026-06-30",
+    "completed_match_count": 580,
+    "data_leakage_guard": "uses completed World Cup matches strictly before fixture date",
+    "team_form_adjustment": {
+      "Barbados": {
+        "weighted_matches": 3.7515867496065517e-10,
+        "goals_for": 3.7515867496065517e-10,
+        "goals_against": 5.949215387106873e-10,
+        "goals_for_per_match": 1.0,
+        "goals_against_per_match": 1.5858,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Aruba": {
+        "weighted_matches": 3.401936155439155e-10,
+        "goals_for": 1.5539581121062303e-10,
+        "goals_against": 1.0793848328770856e-09,
+        "goals_for_per_match": 0.4568,
+        "goals_against_per_match": 3.1729,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Bermuda": {
+        "weighted_matches": 4.8502263617535095e-06,
+        "goals_for": 4.891727585742689e-06,
+        "goals_against": 1.969955679668282e-05,
+        "goals_for_per_match": 1.0086,
+        "goals_against_per_match": 4.0616,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Cayman Islands": {
+        "weighted_matches": 3.401936155439155e-10,
+        "goals_for": 0.0,
+        "goals_against": 9.617768603864077e-10,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 2.8271,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Dominica": {
+        "weighted_matches": 3.7515867496065517e-10,
+        "goals_for": 4.661874336318691e-10,
+        "goals_against": 1.0988143187501608e-09,
+        "goals_for_per_match": 1.2426,
+        "goals_against_per_match": 2.9289,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "British Virgin Islands": {
+        "weighted_matches": 3.401936155439155e-10,
+        "goals_for": 0.0,
+        "goals_against": 6.509852379651616e-10,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.9136,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Grenada": {
+        "weighted_matches": 3.7515867496065517e-10,
+        "goals_for": 1.5916634585138345e-09,
+        "goals_against": 4.395257275000643e-10,
+        "goals_for_per_match": 4.2426,
+        "goals_against_per_match": 1.1716,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Bahamas": {
+        "weighted_matches": 3.401936155439155e-10,
+        "goals_for": 0.0,
+        "goals_against": 2.4107573019300783e-09,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 7.0864,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Montserrat": {
+        "weighted_matches": 3.7515867496065517e-10,
+        "goals_for": 1.5539581121062303e-10,
+        "goals_against": 6.592885912500964e-10,
+        "goals_for_per_match": 0.4142,
+        "goals_against_per_match": 1.7574,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Belize": {
+        "weighted_matches": 3.401936155439155e-10,
+        "goals_for": 0.0,
+        "goals_against": 5.249914198772081e-10,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.5432,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Saint Vincent and the Grenadines": {
+        "weighted_matches": 3.7515867496065517e-10,
+        "goals_for": 1.1521377310137704e-09,
+        "goals_against": 4.395257275000643e-10,
+        "goals_for_per_match": 3.0711,
+        "goals_against_per_match": 1.1716,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Anguilla": {
+        "weighted_matches": 3.401936155439155e-10,
+        "goals_for": 0.0,
+        "goals_against": 1.4867682802636159e-09,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 4.3704,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Australia": {
+        "weighted_matches": 4.198944194336494,
+        "goals_for": 1.5428540650266025,
+        "goals_against": 2.1819251428884314,
+        "goals_for_per_match": 0.3674,
+        "goals_against_per_match": 0.5196,
+        "goal_delta": -0.0692,
+        "lambda_multiplier": 0.9308
+      },
+      "Japan": {
+        "weighted_matches": 4.309687643065893,
+        "goals_for": 8.59448985958712,
+        "goals_against": 3.9711515318089905,
+        "goals_for_per_match": 1.9942,
+        "goals_against_per_match": 0.9214,
+        "goal_delta": 0.4876,
+        "lambda_multiplier": 1.18
+      },
+      "Bahrain": {
+        "weighted_matches": 3.84398990745712e-10,
+        "goals_for": 0.0,
+        "goals_against": 5.490351177413918e-10,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.4283,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Saudi Arabia": {
+        "weighted_matches": 4.565955549309546,
+        "goals_for": 0.8658982423575794,
+        "goals_against": 5.764154347006086,
+        "goals_for_per_match": 0.1896,
+        "goals_against_per_match": 1.2624,
+        "goal_delta": -0.4876,
+        "lambda_multiplier": 0.82
+      },
+      "Chile": {
+        "weighted_matches": 7.41057081976007e-08,
+        "goals_for": 0.0,
+        "goals_against": 9.532754394237859e-08,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.2864,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Argentina": {
+        "weighted_matches": 5.504880820168589,
+        "goals_for": 14.549841954178953,
+        "goals_against": 2.6226938939010043,
+        "goals_for_per_match": 2.6431,
+        "goals_against_per_match": 0.4764,
+        "goal_delta": 0.9848,
+        "lambda_multiplier": 1.18
+      },
+      "Ecuador": {
+        "weighted_matches": 4.309687716787202,
+        "goals_for": 4.673109222959929,
+        "goals_against": 3.153853061025447,
+        "goals_for_per_match": 1.0843,
+        "goals_against_per_match": 0.7318,
+        "goal_delta": 0.1602,
+        "lambda_multiplier": 1.1602
+      },
+      "Brazil": {
+        "weighted_matches": 4.067803535714492,
+        "goals_for": 10.660556415347054,
+        "goals_against": 0.7714270743580688,
+        "goals_for_per_match": 2.6207,
+        "goals_against_per_match": 0.1896,
+        "goal_delta": 1.105,
+        "lambda_multiplier": 1.18
+      },
+      "Indonesia": {
+        "weighted_matches": 4.930373781241295e-07,
+        "goals_for": 4.502389810870626e-07,
+        "goals_against": 9.440459012759509e-07,
+        "goals_for_per_match": 0.9132,
+        "goals_against_per_match": 1.9148,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "China": {
+        "weighted_matches": 3.84398990745712e-10,
+        "goals_for": 2.1976286375003214e-10,
+        "goals_against": 1.6463612699567982e-10,
+        "goals_for_per_match": 0.5717,
+        "goals_against_per_match": 0.4283,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Iraq": {
+        "weighted_matches": 5.362899258857267,
+        "goals_for": 0.9278218261220531,
+        "goals_against": 21.94663240336982,
+        "goals_for_per_match": 0.173,
+        "goals_against_per_match": 4.0923,
+        "goal_delta": -1.7815,
+        "lambda_multiplier": 0.82
+      },
+      "South Korea": {
+        "weighted_matches": 3.922408759763058,
+        "goals_for": 1.3745267094798885,
+        "goals_against": 3.922408759378659,
+        "goals_for_per_match": 0.3504,
+        "goals_against_per_match": 1.0,
+        "goal_delta": -0.2895,
+        "lambda_multiplier": 0.82
+      },
+      "Kuwait": {
+        "weighted_matches": 3.84398990745712e-10,
+        "goals_for": 0.0,
+        "goals_against": 1.2083237089914882e-09,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 3.1434,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Palestine": {
+        "weighted_matches": 3.84398990745712e-10,
+        "goals_for": 5.490351177413918e-10,
+        "goals_against": 2.1976286375003214e-10,
+        "goals_for_per_match": 1.4283,
+        "goals_against_per_match": 0.5717,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "North Korea": {
+        "weighted_matches": 3.84398990745712e-10,
+        "goals_for": 3.2927225399135965e-10,
+        "goals_against": 9.88560845241456e-10,
+        "goals_for_per_match": 0.8566,
+        "goals_against_per_match": 2.5717,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Kyrgyzstan": {
+        "weighted_matches": 3.84398990745712e-10,
+        "goals_for": 5.490351177413918e-10,
+        "goals_against": 5.490351177413918e-10,
+        "goals_for_per_match": 1.4283,
+        "goals_against_per_match": 1.4283,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Oman": {
+        "weighted_matches": 4.930373781241295e-07,
+        "goals_for": 2.6783556951710034e-07,
+        "goals_against": 5.359452845514377e-07,
+        "goals_for_per_match": 0.5432,
+        "goals_against_per_match": 1.087,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Jordan": {
+        "weighted_matches": 5.50488074644728,
+        "goals_for": 5.504880746556789,
+        "goals_against": 14.549841859290934,
+        "goals_for_per_match": 1.0,
+        "goals_against_per_match": 2.6431,
+        "goal_delta": -0.7469,
+        "lambda_multiplier": 0.82
+      },
+      "Paraguay": {
+        "weighted_matches": 4.1556473956590265,
+        "goals_for": 1.819092773622899,
+        "goals_against": 2.9125206394695393,
+        "goals_for_per_match": 0.4377,
+        "goals_against_per_match": 0.7009,
+        "goal_delta": -0.1196,
+        "lambda_multiplier": 0.8804
+      },
+      "Uruguay": {
+        "weighted_matches": 4.565955079743061,
+        "goals_for": 3.3150258267575285,
+        "goals_against": 5.790519088415423,
+        "goals_for_per_match": 0.726,
+        "goals_against_per_match": 1.2682,
+        "goal_delta": -0.2464,
+        "lambda_multiplier": 0.82
+      },
+      "Qatar": {
+        "weighted_matches": 4.00657298112629,
+        "goals_for": 2.976841526940328,
+        "goals_against": 13.566058208388704,
+        "goals_for_per_match": 0.743,
+        "goals_against_per_match": 3.386,
+        "goal_delta": -1.2013,
+        "lambda_multiplier": 0.82
+      },
+      "Iran": {
+        "weighted_matches": 4.565955006021752,
+        "goals_for": 4.2072884905448715,
+        "goals_against": 4.207288490050218,
+        "goals_for_per_match": 0.9214,
+        "goals_against_per_match": 0.9214,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "United Arab Emirates": {
+        "weighted_matches": 4.789656898812395e-06,
+        "goals_for": 5.0571080693387486e-06,
+        "goals_against": 7.51085157601343e-06,
+        "goals_for_per_match": 1.0558,
+        "goals_against_per_match": 1.5681,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Uzbekistan": {
+        "weighted_matches": 5.676264497717751,
+        "goals_for": 3.5946310085345283,
+        "goals_against": 21.19206047091628,
+        "goals_for_per_match": 0.6333,
+        "goals_against_per_match": 3.7335,
+        "goal_delta": -1.4092,
+        "lambda_multiplier": 0.82
+      },
+      "Antigua and Barbuda": {
+        "weighted_matches": 3.9418876430020524e-10,
+        "goals_for": 0.0,
+        "goals_against": 6.139516280502374e-10,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.5575,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Cuba": {
+        "weighted_matches": 3.9418876430020524e-10,
+        "goals_for": 3.9418876430020524e-10,
+        "goals_against": 4.395257275000643e-10,
+        "goals_for_per_match": 1.0,
+        "goals_against_per_match": 1.115,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Colombia": {
+        "weighted_matches": 5.676264571448851,
+        "goals_for": 4.997445306304889,
+        "goals_against": 0.9719372830011552,
+        "goals_for_per_match": 0.8804,
+        "goals_against_per_match": 0.1712,
+        "goal_delta": 0.3224,
+        "lambda_multiplier": 1.18
+      },
+      "Peru": {
+        "weighted_matches": 7.41154979711552e-08,
+        "goals_for": 0.0,
+        "goals_against": 1.3687023059877688e-07,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.8467,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Curaçao": {
+        "weighted_matches": 1.7072396758304689,
+        "goals_for": 0.3968638167527647,
+        "goals_against": 4.276259320585112,
+        "goals_for_per_match": 0.2325,
+        "goals_against_per_match": 2.5048,
+        "goal_delta": -0.4408,
+        "lambda_multiplier": 0.82
+      },
+      "Saint Lucia": {
+        "weighted_matches": 3.9418876430020524e-10,
+        "goals_for": 4.395257275000643e-10,
+        "goals_against": 9.174664659507246e-10,
+        "goals_for_per_match": 1.115,
+        "goals_against_per_match": 2.3275,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Czech Republic": {
+        "weighted_matches": 3.9315320515730554,
+        "goals_for": 1.7352497980608255,
+        "goals_against": 9.038741334096887,
+        "goals_for_per_match": 0.4414,
+        "goals_against_per_match": 2.299,
+        "goal_delta": -0.8299,
+        "lambda_multiplier": 0.82
+      },
+      "Montenegro": {
+        "weighted_matches": 4.487407506247538e-06,
+        "goals_for": 8.351162395487674e-06,
+        "goals_against": 9.89209875815688e-06,
+        "goals_for_per_match": 1.861,
+        "goals_against_per_match": 2.2044,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Estonia": {
+        "weighted_matches": 2.419997638107169e-06,
+        "goals_for": 2.386338233753525e-06,
+        "goals_against": 8.490278146062448e-06,
+        "goals_for_per_match": 0.9861,
+        "goals_against_per_match": 3.5084,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Israel": {
+        "weighted_matches": 2.8002006106416484e-06,
+        "goals_for": 8.857162304615215e-06,
+        "goals_against": 4.6328384148217725e-06,
+        "goals_for_per_match": 3.163,
+        "goals_against_per_match": 1.6545,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Gibraltar": {
+        "weighted_matches": 4.4992734504527e-06,
+        "goals_for": 1.907556061334475e-06,
+        "goals_against": 1.831609703308e-05,
+        "goals_for_per_match": 0.424,
+        "goals_against_per_match": 4.0709,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Croatia": {
+        "weighted_matches": 5.676269268477358,
+        "goals_for": 9.270909077374808,
+        "goals_against": 6.5104489209189715,
+        "goals_for_per_match": 1.6333,
+        "goals_against_per_match": 1.147,
+        "goal_delta": 0.2211,
+        "lambda_multiplier": 1.18
+      },
+      "Guatemala": {
+        "weighted_matches": 4.846002355866167e-06,
+        "goals_for": 1.1421246173785722e-05,
+        "goals_against": 8.128960445815395e-06,
+        "goals_for_per_match": 2.3568,
+        "goals_against_per_match": 1.6775,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Dominican Republic": {
+        "weighted_matches": 3.9418876430020524e-10,
+        "goals_for": 1.447666119850507e-09,
+        "goals_against": 6.977036022006925e-10,
+        "goals_for_per_match": 3.6725,
+        "goals_against_per_match": 1.77,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Nicaragua": {
+        "weighted_matches": 4.818206250513451e-06,
+        "goals_for": 3.934609747908839e-06,
+        "goals_against": 6.841432428671079e-06,
+        "goals_for_per_match": 0.8166,
+        "goals_against_per_match": 1.4199,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Guyana": {
+        "weighted_matches": 3.9418876430020524e-10,
+        "goals_for": 6.592885912500964e-10,
+        "goals_against": 1.7442590055017313e-10,
+        "goals_for_per_match": 1.6725,
+        "goals_against_per_match": 0.4425,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "North Macedonia": {
+        "weighted_matches": 0.003909244023391767,
+        "goals_for": 2.891621999447336e-06,
+        "goals_against": 0.015642122323856176,
+        "goals_for_per_match": 0.0007,
+        "goals_against_per_match": 4.0013,
+        "goal_delta": -0.0018,
+        "lambda_multiplier": 0.9982
+      },
+      "Belgium": {
+        "weighted_matches": 4.5659600520006896,
+        "goals_for": 13.243384808977689,
+        "goals_against": 3.3413935455279247,
+        "goals_for_per_match": 2.9005,
+        "goals_against_per_match": 0.7318,
+        "goal_delta": 0.9858,
+        "lambda_multiplier": 1.18
+      },
+      "Norway": {
+        "weighted_matches": 5.357684502388359,
+        "goals_for": 12.039458122808414,
+        "goals_against": 14.748964682982754,
+        "goals_for_per_match": 2.2471,
+        "goals_against_per_match": 2.7529,
+        "goal_delta": -0.2299,
+        "lambda_multiplier": 0.82
+      },
+      "Italy": {
+        "weighted_matches": 0.009125068885770702,
+        "goals_for": 0.013034583882223196,
+        "goals_against": 0.00522320915055964,
+        "goals_for_per_match": 1.4284,
+        "goals_against_per_match": 0.5724,
+        "goal_delta": 0.0009,
+        "lambda_multiplier": 1.0009
+      },
+      "Suriname": {
+        "weighted_matches": 0.0039110960023558666,
+        "goals_for": 0.003916505101362361,
+        "goals_against": 0.007820320173473366,
+        "goals_for_per_match": 1.0014,
+        "goals_against_per_match": 1.9995,
+        "goal_delta": -0.0004,
+        "lambda_multiplier": 0.9996
+      },
+      "Puerto Rico": {
+        "weighted_matches": 3.9418876430020524e-10,
+        "goals_for": 4.395257275000643e-10,
+        "goals_against": 3.9418876430020524e-10,
+        "goals_for_per_match": 1.115,
+        "goals_against_per_match": 1.0,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Trinidad and Tobago": {
+        "weighted_matches": 4.850245391842849e-06,
+        "goals_for": 7.683818760107086e-06,
+        "goals_against": 7.009847459687361e-06,
+        "goals_for_per_match": 1.5842,
+        "goals_against_per_match": 1.4453,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Saint Kitts and Nevis": {
+        "weighted_matches": 3.9418876430020524e-10,
+        "goals_for": 7.883775286004105e-10,
+        "goals_against": 1.705843994551135e-09,
+        "goals_for_per_match": 2.0,
+        "goals_against_per_match": 4.3275,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Venezuela": {
+        "weighted_matches": 7.41154979711552e-08,
+        "goals_for": 1.2678939733378246e-07,
+        "goals_against": 3.480439988807471e-07,
+        "goals_for_per_match": 1.7107,
+        "goals_against_per_match": 4.696,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Bolivia": {
+        "weighted_matches": 0.00912054229584967,
+        "goals_for": 0.013026760766725935,
+        "goals_against": 0.014334781432937285,
+        "goals_for_per_match": 1.4283,
+        "goals_against_per_match": 1.5717,
+        "goal_delta": -0.0001,
+        "lambda_multiplier": 0.9999
+      },
+      "Wales": {
+        "weighted_matches": 0.003911006219078124,
+        "goals_for": 0.003925726023525278,
+        "goals_against": 0.003909855492752041,
+        "goals_for_per_match": 1.0038,
+        "goals_against_per_match": 0.9997,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Liechtenstein": {
+        "weighted_matches": 4.745767321986384e-06,
+        "goals_for": 0.0,
+        "goals_against": 2.0230621979030435e-05,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 4.2629,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Albania": {
+        "weighted_matches": 0.003910501391048899,
+        "goals_for": 0.0039083602797978685,
+        "goals_against": 0.007816782072669318,
+        "goals_for_per_match": 0.9995,
+        "goals_against_per_match": 1.9989,
+        "goal_delta": -0.0004,
+        "lambda_multiplier": 0.9996
+      },
+      "Serbia": {
+        "weighted_matches": 4.605082804085807e-06,
+        "goals_for": 5.272705192949978e-06,
+        "goals_against": 6.5381218834745155e-06,
+        "goals_for_per_match": 1.145,
+        "goals_against_per_match": 1.4198,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Andorra": {
+        "weighted_matches": 2.4220095023481104e-06,
+        "goals_for": 8.534822346660575e-07,
+        "goals_against": 3.362007211274726e-06,
+        "goals_for_per_match": 0.3524,
+        "goals_against_per_match": 1.3881,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "England": {
+        "weighted_matches": 5.676268834580587,
+        "goals_for": 9.133146083934253,
+        "goals_against": 1.9438743126816935,
+        "goals_for_per_match": 1.609,
+        "goals_against_per_match": 0.3425,
+        "goal_delta": 0.5757,
+        "lambda_multiplier": 1.18
+      },
+      "El Salvador": {
+        "weighted_matches": 4.8460127277699495e-06,
+        "goals_for": 7.212994464263046e-08,
+        "goals_against": 1.5061144320397725e-05,
+        "goals_for_per_match": 0.0149,
+        "goals_against_per_match": 3.1079,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Haiti": {
+        "weighted_matches": 4.067808279825407,
+        "goals_for": 4.410835165481257,
+        "goals_against": 12.865971207172258,
+        "goals_for_per_match": 1.0843,
+        "goals_against_per_match": 3.1629,
+        "goal_delta": -0.9448,
+        "lambda_multiplier": 0.82
+      },
+      "Austria": {
+        "weighted_matches": 5.50488576987725,
+        "goals_for": 10.62025005064516,
+        "goals_against": 12.715071557218549,
+        "goals_for_per_match": 1.9292,
+        "goals_against_per_match": 2.3098,
+        "goal_delta": -0.173,
+        "lambda_multiplier": 0.827
+      },
+      "Romania": {
+        "weighted_matches": 0.0039109999546563055,
+        "goals_for": 1.9210973419492256e-05,
+        "goals_against": 0.003914800068438223,
+        "goals_for_per_match": 0.0049,
+        "goals_against_per_match": 1.001,
+        "goal_delta": -0.0004,
+        "lambda_multiplier": 0.9996
+      },
+      "Costa Rica": {
+        "weighted_matches": 4.818216622417234e-06,
+        "goals_for": 1.3633647755108542e-06,
+        "goals_against": 2.260798250564453e-06,
+        "goals_for_per_match": 0.283,
+        "goals_against_per_match": 0.4692,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Panama": {
+        "weighted_matches": 5.67626934334608,
+        "goals_for": 1.3221874734223705e-05,
+        "goals_against": 8.298962307494454,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.462,
+        "goal_delta": -0.6646,
+        "lambda_multiplier": 0.82
+      },
+      "Bosnia and Herzegovina": {
+        "weighted_matches": 3.9724007733012083,
+        "goals_for": 8.383232946582885,
+        "goals_against": 7.061595659779647,
+        "goals_for_per_match": 2.1104,
+        "goals_against_per_match": 1.7777,
+        "goal_delta": 0.1502,
+        "lambda_multiplier": 1.1502
+      },
+      "San Marino": {
+        "weighted_matches": 2.960902036181789e-06,
+        "goals_for": 2.403108691968674e-06,
+        "goals_against": 2.0553773569483655e-05,
+        "goals_for_per_match": 0.8116,
+        "goals_against_per_match": 6.9417,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Jamaica": {
+        "weighted_matches": 0.009125318436115444,
+        "goals_for": 0.003909542245552022,
+        "goals_against": 0.005216523669102673,
+        "goals_for_per_match": 0.4284,
+        "goals_against_per_match": 0.5717,
+        "goal_delta": -0.0001,
+        "lambda_multiplier": 0.9999
+      },
+      "Honduras": {
+        "weighted_matches": 4.818216622417234e-06,
+        "goals_for": 9.860837800418741e-07,
+        "goals_against": 3.6005947596805355e-06,
+        "goals_for_per_match": 0.2047,
+        "goals_against_per_match": 0.7473,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Finland": {
+        "weighted_matches": 2.4672494165105736e-06,
+        "goals_for": 5.148252572426356e-07,
+        "goals_against": 3.393118572788179e-06,
+        "goals_for_per_match": 0.2087,
+        "goals_against_per_match": 1.3753,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Netherlands": {
+        "weighted_matches": 4.309692409737937,
+        "goals_for": 14.423446835155044,
+        "goals_against": 5.126988127320642,
+        "goals_for_per_match": 3.3467,
+        "goals_against_per_match": 1.1896,
+        "goal_delta": 0.9805,
+        "lambda_multiplier": 1.18
+      },
+      "Malta": {
+        "weighted_matches": 4.445978798209444e-06,
+        "goals_for": 6.475388223371136e-06,
+        "goals_against": 7.791704574806224e-06,
+        "goals_for_per_match": 1.4565,
+        "goals_against_per_match": 1.7525,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Lithuania": {
+        "weighted_matches": 2.859488046461622e-06,
+        "goals_for": 3.4509018642154454e-07,
+        "goals_against": 1.0261045739793301e-05,
+        "goals_for_per_match": 0.1207,
+        "goals_against_per_match": 3.5884,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Faroe Islands": {
+        "weighted_matches": 2.502737014554043e-06,
+        "goals_for": 3.468277275165454e-06,
+        "goals_against": 6.039234373407561e-06,
+        "goals_for_per_match": 1.3858,
+        "goals_against_per_match": 2.4131,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Moldova": {
+        "weighted_matches": 4.335280707290965e-06,
+        "goals_for": 2.5013239230970536e-06,
+        "goals_against": 1.3080389287937562e-05,
+        "goals_for_per_match": 0.577,
+        "goals_against_per_match": 3.0172,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Kazakhstan": {
+        "weighted_matches": 2.643080219135219e-06,
+        "goals_for": 3.3315368133083355e-06,
+        "goals_against": 2.5782274001275844e-06,
+        "goals_for_per_match": 1.2605,
+        "goals_against_per_match": 0.9755,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Poland": {
+        "weighted_matches": 0.00912499663341693,
+        "goals_for": 0.01825035990511573,
+        "goals_against": 0.019555417917377502,
+        "goals_for_per_match": 2.0,
+        "goals_against_per_match": 2.1431,
+        "goal_delta": -0.0001,
+        "lambda_multiplier": 0.9999
+      },
+      "Latvia": {
+        "weighted_matches": 2.8046006264412056e-06,
+        "goals_for": 2.6763778293972532e-06,
+        "goals_against": 6.4861453717587865e-06,
+        "goals_for_per_match": 0.9543,
+        "goals_against_per_match": 2.3127,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Cyprus": {
+        "weighted_matches": 2.620520879461177e-06,
+        "goals_for": 1.6952471376905818e-06,
+        "goals_against": 4.638542483862467e-06,
+        "goals_for_per_match": 0.6469,
+        "goals_against_per_match": 1.7701,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Seychelles": {
+        "weighted_matches": 6.427954778256337e-07,
+        "goals_for": 0.0,
+        "goals_against": 4.325867680594562e-06,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 6.7298,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Gabon": {
+        "weighted_matches": 2.4430928576659015e-06,
+        "goals_for": 3.566390654380513e-06,
+        "goals_against": 7.958976576064133e-06,
+        "goals_for_per_match": 1.4598,
+        "goals_against_per_match": 3.2577,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Algeria": {
+        "weighted_matches": 5.504881374087869,
+        "goals_for": 11.797683759318485,
+        "goals_against": 12.585041829778783,
+        "goals_for_per_match": 2.1431,
+        "goals_against_per_match": 2.2862,
+        "goal_delta": -0.065,
+        "lambda_multiplier": 0.935
+      },
+      "Botswana": {
+        "weighted_matches": 6.280249888267998e-07,
+        "goals_for": 6.680757034146745e-07,
+        "goals_against": 1.049205859247998e-06,
+        "goals_for_per_match": 1.0638,
+        "goals_against_per_match": 1.6706,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Angola": {
+        "weighted_matches": 5.991470681829726e-07,
+        "goals_for": 5.76514890492749e-07,
+        "goals_against": 5.237956541669219e-07,
+        "goals_for_per_match": 0.9622,
+        "goals_against_per_match": 0.8742,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Libya": {
+        "weighted_matches": 5.967815473419983e-07,
+        "goals_for": 7.862486334759005e-07,
+        "goals_against": 6.751115174401004e-07,
+        "goals_for_per_match": 1.3175,
+        "goals_against_per_match": 1.1313,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Bulgaria": {
+        "weighted_matches": 5.0788636385308536e-06,
+        "goals_for": 5.073833190590698e-06,
+        "goals_against": 9.53070608843312e-06,
+        "goals_for_per_match": 0.999,
+        "goals_against_per_match": 1.8765,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Spain": {
+        "weighted_matches": 4.565960084500992,
+        "goals_for": 7.3737647038149605,
+        "goals_against": 4.806217383937348e-06,
+        "goals_for_per_match": 1.6149,
+        "goals_against_per_match": 0.0,
+        "goal_delta": 0.7341,
+        "lambda_multiplier": 1.18
+      },
+      "Cameroon": {
+        "weighted_matches": 2.3994444480232406e-06,
+        "goals_for": 5.447977270479498e-07,
+        "goals_against": 1.8424442283511617e-06,
+        "goals_for_per_match": 0.2271,
+        "goals_against_per_match": 0.7679,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Eswatini": {
+        "weighted_matches": 5.967815473419983e-07,
+        "goals_for": 4.5007434496006694e-07,
+        "goals_against": 1.5255261418760416e-06,
+        "goals_for_per_match": 0.7542,
+        "goals_against_per_match": 2.5563,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Chad": {
+        "weighted_matches": 5.799220314623313e-07,
+        "goals_for": 6.384139295987149e-07,
+        "goals_against": 1.4515800005150383e-06,
+        "goals_for_per_match": 1.1009,
+        "goals_against_per_match": 2.5031,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Ghana": {
+        "weighted_matches": 5.676265077255384,
+        "goals_for": 3.5946324879459612,
+        "goals_against": 5.245387734643247,
+        "goals_for_per_match": 0.6333,
+        "goals_against_per_match": 0.9241,
+        "goal_delta": -0.1322,
+        "lambda_multiplier": 0.8678
+      },
+      "Georgia": {
+        "weighted_matches": 5.0788636385308536e-06,
+        "goals_for": 2.8971539546559843e-06,
+        "goals_against": 1.4792236802935362e-05,
+        "goals_for_per_match": 0.5704,
+        "goals_against_per_match": 2.9125,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Turkey": {
+        "weighted_matches": 4.208069740996085,
+        "goals_for": 7.018796060569033,
+        "goals_against": 7.306931497094029,
+        "goals_for_per_match": 1.6679,
+        "goals_against_per_match": 1.7364,
+        "goal_delta": -0.0311,
+        "lambda_multiplier": 0.9689
+      },
+      "Guinea-Bissau": {
+        "weighted_matches": 5.799220314623313e-07,
+        "goals_for": 1.1113711603580013e-07,
+        "goals_against": 5.401407037924116e-07,
+        "goals_for_per_match": 0.1916,
+        "goals_against_per_match": 0.9314,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Sierra Leone": {
+        "weighted_matches": 5.822875523033056e-07,
+        "goals_for": 6.829262989505833e-07,
+        "goals_against": 5.401407037924116e-07,
+        "goals_for_per_match": 1.1728,
+        "goals_against_per_match": 0.9276,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Luxembourg": {
+        "weighted_matches": 4.79768850381558e-06,
+        "goals_for": 3.157446069596095e-08,
+        "goals_against": 7.82636170121915e-06,
+        "goals_for_per_match": 0.0066,
+        "goals_against_per_match": 1.6313,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Northern Ireland": {
+        "weighted_matches": 0.0039110476885038156,
+        "goals_for": 2.905695891466606e-06,
+        "goals_against": 0.00781485195739994,
+        "goals_for_per_match": 0.0007,
+        "goals_against_per_match": 1.9981,
+        "goal_delta": -0.0009,
+        "lambda_multiplier": 0.9991
+      },
+      "Madagascar": {
+        "weighted_matches": 5.799220314623313e-07,
+        "goals_for": 9.160963199781648e-07,
+        "goals_against": 1.3989347826156219e-06,
+        "goals_for_per_match": 1.5797,
+        "goals_against_per_match": 2.4123,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Central African Republic": {
+        "weighted_matches": 5.776892771044222e-07,
+        "goals_for": 8.505872118492516e-07,
+        "goals_against": 1.8304900716489447e-06,
+        "goals_for_per_match": 1.4724,
+        "goals_against_per_match": 3.1686,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Mali": {
+        "weighted_matches": 5.799220314623313e-07,
+        "goals_for": 1.6789140095136184e-06,
+        "goals_against": 3.2331039828633675e-07,
+        "goals_for_per_match": 2.8951,
+        "goals_against_per_match": 0.5575,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Comoros": {
+        "weighted_matches": 5.776892771044222e-07,
+        "goals_for": 3.0013431910405453e-07,
+        "goals_against": 8.28326797664367e-07,
+        "goals_for_per_match": 0.5195,
+        "goals_against_per_match": 1.4339,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Mauritius": {
+        "weighted_matches": 5.991470681829726e-07,
+        "goals_for": 4.2146848510894035e-08,
+        "goals_against": 6.39663811884671e-07,
+        "goals_for_per_match": 0.0703,
+        "goals_against_per_match": 1.0676,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Cape Verde": {
+        "weighted_matches": 4.565955604784421,
+        "goals_for": 2.4491298464706412,
+        "goals_against": 2.4491288400091116,
+        "goals_for_per_match": 0.5364,
+        "goals_against_per_match": 0.5364,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Slovakia": {
+        "weighted_matches": 0.0039110476885038156,
+        "goals_for": 0.011721358823300509,
+        "goals_against": 0.015639114586760722,
+        "goals_for_per_match": 2.997,
+        "goals_against_per_match": 3.9987,
+        "goal_delta": -0.0004,
+        "lambda_multiplier": 0.9996
+      },
+      "Germany": {
+        "weighted_matches": 4.309692440369998,
+        "goals_for": 10.36933189556069,
+        "goals_against": 6.64624233378553,
+        "goals_for_per_match": 2.406,
+        "goals_against_per_match": 1.5422,
+        "goal_delta": 0.3927,
+        "lambda_multiplier": 1.18
+      },
+      "São Tomé and Príncipe": {
+        "weighted_matches": 6.267055812706268e-07,
+        "goals_for": 3.6353750788800615e-07,
+        "goals_against": 1.7367380410266905e-06,
+        "goals_for_per_match": 0.5801,
+        "goals_against_per_match": 2.7712,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Equatorial Guinea": {
+        "weighted_matches": 6.101629539635273e-07,
+        "goals_for": 3.951119685839671e-07,
+        "goals_against": 1.1185745728626131e-06,
+        "goals_for_per_match": 0.6476,
+        "goals_against_per_match": 1.8332,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Tunisia": {
+        "weighted_matches": 4.309688267021555,
+        "goals_for": 3.15385561227003,
+        "goals_against": 15.719494450938345,
+        "goals_for_per_match": 0.7318,
+        "goals_against_per_match": 3.6475,
+        "goal_delta": -1.3253,
+        "lambda_multiplier": 0.82
+      },
+      "Liberia": {
+        "weighted_matches": 6.101629539635273e-07,
+        "goals_for": 1.095206979140611e-06,
+        "goals_against": 7.130932030253688e-07,
+        "goals_for_per_match": 1.7949,
+        "goals_against_per_match": 1.1687,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Benin": {
+        "weighted_matches": 6.464451312696072e-07,
+        "goals_for": 4.5463505544293254e-07,
+        "goals_against": 1.273002485437427e-06,
+        "goals_for_per_match": 0.7033,
+        "goals_against_per_match": 1.9692,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Zimbabwe": {
+        "weighted_matches": 6.285830964063347e-07,
+        "goals_for": 0.0,
+        "goals_against": 3.7598741083864705e-07,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 0.5982,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Congo": {
+        "weighted_matches": 5.76739769671059e-07,
+        "goals_for": 2.5848914831170226e-07,
+        "goals_against": 1.026814114631126e-06,
+        "goals_for_per_match": 0.4482,
+        "goals_against_per_match": 1.7804,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Tanzania": {
+        "weighted_matches": 3.006359968225963e-07,
+        "goals_for": 3.345197583166879e-08,
+        "goals_against": 3.006359968225963e-07,
+        "goals_for_per_match": 0.1113,
+        "goals_against_per_match": 1.0,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Denmark": {
+        "weighted_matches": 0.009125487235481428,
+        "goals_for": 0.026064684551725885,
+        "goals_against": 0.010442373855510969,
+        "goals_for_per_match": 2.8563,
+        "goals_against_per_match": 1.1443,
+        "goal_delta": 0.0018,
+        "lambda_multiplier": 1.0018
+      },
+      "Scotland": {
+        "weighted_matches": 4.067808480663913,
+        "goals_for": 0.7714420480534911,
+        "goals_against": 7.707215535985509,
+        "goals_for_per_match": 0.1896,
+        "goals_against_per_match": 1.8947,
+        "goal_delta": -0.775,
+        "lambda_multiplier": 0.82
+      },
+      "Djibouti": {
+        "weighted_matches": 5.817995465980391e-07,
+        "goals_for": 2.835290706164172e-07,
+        "goals_against": 1.5224441690027868e-06,
+        "goals_for_per_match": 0.4873,
+        "goals_against_per_match": 2.6168,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Burkina Faso": {
+        "weighted_matches": 5.841650674390134e-07,
+        "goals_for": 1.2763362393192978e-06,
+        "goals_against": 2.835290706164172e-07,
+        "goals_for_per_match": 2.1849,
+        "goals_against_per_match": 0.4854,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Egypt": {
+        "weighted_matches": 4.56595558980242,
+        "goals_for": 7.015084196079487,
+        "goals_against": 4.565955005637353,
+        "goals_for_per_match": 1.5364,
+        "goals_against_per_match": 1.0,
+        "goal_delta": 0.2438,
+        "lambda_multiplier": 1.18
+      },
+      "Ethiopia": {
+        "weighted_matches": 5.841650674390134e-07,
+        "goals_for": 5.085662430964506e-07,
+        "goals_against": 1.0017848605343772e-06,
+        "goals_for_per_match": 0.8706,
+        "goals_against_per_match": 1.7149,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Greece": {
+        "weighted_matches": 5.019055129729743e-06,
+        "goals_for": 6.751503982500826e-06,
+        "goals_against": 5.7601698770783686e-06,
+        "goals_for_per_match": 1.3452,
+        "goals_against_per_match": 1.1477,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Belarus": {
+        "weighted_matches": 5.019055129729743e-06,
+        "goals_for": 4.358512015531088e-06,
+        "goals_against": 6.2859231194233944e-06,
+        "goals_for_per_match": 0.8684,
+        "goals_against_per_match": 1.2524,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Iceland": {
+        "weighted_matches": 4.569806929473405e-06,
+        "goals_for": 5.1685657170450045e-06,
+        "goals_against": 6.229902204306e-06,
+        "goals_for_per_match": 1.131,
+        "goals_against_per_match": 1.3633,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Azerbaijan": {
+        "weighted_matches": 4.569806929473405e-06,
+        "goals_for": 2.483461888233781e-06,
+        "goals_against": 1.1591345076725412e-05,
+        "goals_for_per_match": 0.5435,
+        "goals_against_per_match": 2.5365,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Ivory Coast": {
+        "weighted_matches": 4.309688289126626,
+        "goals_for": 6.646244989461674,
+        "goals_against": 2.311669163312094,
+        "goals_for_per_match": 1.5422,
+        "goals_against_per_match": 0.5364,
+        "goal_delta": 0.4572,
+        "lambda_multiplier": 1.18
+      },
+      "Burundi": {
+        "weighted_matches": 6.32268024803482e-07,
+        "goals_for": 0.0,
+        "goals_against": 9.926654946737328e-07,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.57,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Kenya": {
+        "weighted_matches": 6.32268024803482e-07,
+        "goals_for": 4.826047974877014e-07,
+        "goals_against": 1.0551077915730765e-06,
+        "goals_for_per_match": 0.7633,
+        "goals_against_per_match": 1.6688,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Gambia": {
+        "weighted_matches": 6.464451312696072e-07,
+        "goals_for": 3.1701910307353546e-06,
+        "goals_against": 1.0438347181024192e-06,
+        "goals_for_per_match": 4.904,
+        "goals_against_per_match": 1.6147,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Mauritania": {
+        "weighted_matches": 6.464451312696072e-07,
+        "goals_for": 6.690395166333758e-08,
+        "goals_against": 1.273002485437427e-06,
+        "goals_for_per_match": 0.1035,
+        "goals_against_per_match": 1.9692,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Togo": {
+        "weighted_matches": 6.285830964063347e-07,
+        "goals_for": 4.2146848510894035e-08,
+        "goals_against": 3.194996372310252e-07,
+        "goals_for_per_match": 0.0671,
+        "goals_against_per_match": 0.5083,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Morocco": {
+        "weighted_matches": 4.067803853092709,
+        "goals_for": 10.684045600871627,
+        "goals_against": 5.182254748337678,
+        "goals_for_per_match": 2.6265,
+        "goals_against_per_match": 1.274,
+        "goal_delta": 0.6148,
+        "lambda_multiplier": 1.18
+      },
+      "Niger": {
+        "weighted_matches": 5.841650674390134e-07,
+        "goals_for": 1.0007874365674117e-06,
+        "goals_against": 3.9229705163837743e-07,
+        "goals_for_per_match": 1.7132,
+        "goals_against_per_match": 0.6716,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Namibia": {
+        "weighted_matches": 6.144059899402096e-07,
+        "goals_for": 3.9831110046591343e-07,
+        "goals_against": 1.6833254484562776e-06,
+        "goals_for_per_match": 0.6483,
+        "goals_against_per_match": 2.7398,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Malawi": {
+        "weighted_matches": 6.120404690992352e-07,
+        "goals_for": 8.617223443078643e-07,
+        "goals_against": 4.134032176675922e-07,
+        "goals_for_per_match": 1.4079,
+        "goals_against_per_match": 0.6755,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Senegal": {
+        "weighted_matches": 5.357680897465148,
+        "goals_for": 17.224456785429012,
+        "goals_against": 8.646560767879159,
+        "goals_for_per_match": 3.2149,
+        "goals_against_per_match": 1.6139,
+        "goal_delta": 0.7277,
+        "lambda_multiplier": 1.18
+      },
+      "Sudan": {
+        "weighted_matches": 6.464451312696072e-07,
+        "goals_for": 0.0,
+        "goals_against": 4.273014215335884e-07,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 0.661,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Slovenia": {
+        "weighted_matches": 5.050091752075535e-06,
+        "goals_for": 2.4700126436320114e-06,
+        "goals_against": 6.630887595724772e-06,
+        "goals_for_per_match": 0.4891,
+        "goals_against_per_match": 1.313,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Sweden": {
+        "weighted_matches": 4.3188131609535985,
+        "goals_for": 7.606247420476307,
+        "goals_against": 8.947372093883581,
+        "goals_for_per_match": 1.7612,
+        "goals_against_per_match": 2.0717,
+        "goal_delta": -0.1412,
+        "lambda_multiplier": 0.8588
+      },
+      "Somalia": {
+        "weighted_matches": 6.299025039625076e-07,
+        "goals_for": 0.0,
+        "goals_against": 1.2134249414988898e-06,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.9264,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Guinea": {
+        "weighted_matches": 6.299025039625076e-07,
+        "goals_for": 1.213694328416845e-06,
+        "goals_against": 8.74919821820276e-07,
+        "goals_for_per_match": 1.9268,
+        "goals_against_per_match": 1.389,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "South Africa": {
+        "weighted_matches": 4.866283718505484,
+        "goals_for": 3.235146502497517,
+        "goals_against": 3.3481326102797544,
+        "goals_for_per_match": 0.6648,
+        "goals_against_per_match": 0.688,
+        "goal_delta": -0.0106,
+        "lambda_multiplier": 0.9894
+      },
+      "Lesotho": {
+        "weighted_matches": 6.285830964063347e-07,
+        "goals_for": 5.529842720637718e-07,
+        "goals_against": 7.741346926739577e-07,
+        "goals_for_per_match": 0.8797,
+        "goals_against_per_match": 1.2316,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "South Sudan": {
+        "weighted_matches": 6.285830964063347e-07,
+        "goals_for": 3.345197583166879e-08,
+        "goals_against": 1.3967863311651134e-06,
+        "goals_for_per_match": 0.0532,
+        "goals_against_per_match": 2.2221,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "DR Congo": {
+        "weighted_matches": 5.681483303182668,
+        "goals_for": 8.845237659296119,
+        "goals_against": 5.6762667981523265,
+        "goals_for_per_match": 1.5569,
+        "goals_against_per_match": 0.9991,
+        "goal_delta": 0.2535,
+        "lambda_multiplier": 1.18
+      },
+      "Switzerland": {
+        "weighted_matches": 4.006577487545849,
+        "goals_for": 9.301192181570157,
+        "goals_against": 4.0065768613282735,
+        "goals_for_per_match": 2.3215,
+        "goals_against_per_match": 1.0,
+        "goal_delta": 0.6007,
+        "lambda_multiplier": 1.18
+      },
+      "Kosovo": {
+        "weighted_matches": 0.009125518272103773,
+        "goals_for": 0.015631824590902888,
+        "goals_against": 0.016935505096946992,
+        "goals_for_per_match": 1.713,
+        "goals_against_per_match": 1.8558,
+        "goal_delta": -0.0001,
+        "lambda_multiplier": 0.9999
+      },
+      "Uganda": {
+        "weighted_matches": 6.299025039625076e-07,
+        "goals_for": 7.700397591274336e-07,
+        "goals_against": 6.365012427187135e-07,
+        "goals_for_per_match": 1.2225,
+        "goals_against_per_match": 1.0105,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Mozambique": {
+        "weighted_matches": 6.299025039625076e-07,
+        "goals_for": 6.362318558007585e-07,
+        "goals_against": 6.106450615298002e-07,
+        "goals_for_per_match": 1.01,
+        "goals_against_per_match": 0.9694,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Ukraine": {
+        "weighted_matches": 0.003910819806929473,
+        "goals_for": 0.003912437755355795,
+        "goals_against": 0.011727118415962735,
+        "goals_for_per_match": 1.0004,
+        "goals_against_per_match": 2.9986,
+        "goal_delta": -0.0009,
+        "lambda_multiplier": 0.9991
+      },
+      "France": {
+        "weighted_matches": 5.357684820826946,
+        "goals_for": 18.548549243282334,
+        "goals_against": 3.39288265575302,
+        "goals_for_per_match": 3.462,
+        "goals_against_per_match": 0.6333,
+        "goal_delta": 1.2858,
+        "lambda_multiplier": 1.18
+      },
+      "Armenia": {
+        "weighted_matches": 4.604678243417724e-06,
+        "goals_for": 2.2252201502485905e-06,
+        "goals_against": 2.2141470211193702e-05,
+        "goals_for_per_match": 0.4833,
+        "goals_against_per_match": 4.8085,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Portugal": {
+        "weighted_matches": 5.676269102011596,
+        "goals_for": 11.380125079732752,
+        "goals_against": 0.9719436186569994,
+        "goals_for_per_match": 2.0049,
+        "goals_against_per_match": 0.1712,
+        "goal_delta": 0.8335,
+        "lambda_multiplier": 1.18
+      },
+      "Nigeria": {
+        "weighted_matches": 4.58965812233206e-06,
+        "goals_for": 1.1197897811498623e-05,
+        "goals_against": 4.235966367145652e-06,
+        "goals_for_per_match": 2.4398,
+        "goals_against_per_match": 0.9229,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Rwanda": {
+        "weighted_matches": 6.484342892649905e-07,
+        "goals_for": 4.2146848510894035e-08,
+        "goals_against": 1.2427886834728099e-06,
+        "goals_for_per_match": 0.065,
+        "goals_against_per_match": 1.9166,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Republic of Ireland": {
+        "weighted_matches": 0.003910854678243418,
+        "goals_for": 0.007822954653856885,
+        "goals_against": 0.007817204644677783,
+        "goals_for_per_match": 2.0003,
+        "goals_against_per_match": 1.9988,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Hungary": {
+        "weighted_matches": 4.604678243417724e-06,
+        "goals_for": 7.4090591069951795e-06,
+        "goals_against": 7.256603415585908e-06,
+        "goals_for_per_match": 1.609,
+        "goals_against_per_match": 1.5759,
+        "goal_delta": 0.0,
+        "lambda_multiplier": 1.0
+      },
+      "Zambia": {
+        "weighted_matches": 5.483475707663703e-07,
+        "goals_for": 2.2503717248003347e-07,
+        "goals_against": 3.630917259562564e-07,
+        "goals_for_per_match": 0.4104,
+        "goals_against_per_match": 0.6622,
+        "goal_delta": -0.0,
+        "lambda_multiplier": 1.0
+      },
+      "New Caledonia": {
+        "weighted_matches": 0.00390625,
+        "goals_for": 0.0,
+        "goals_against": 0.00390625,
+        "goals_for_per_match": 0.0,
+        "goals_against_per_match": 1.0,
+        "goal_delta": -0.0004,
+        "lambda_multiplier": 0.9996
+      },
+      "Mexico": {
+        "weighted_matches": 3.922408759378659,
+        "goals_for": 9.020499829640901,
+        "goals_against": 0.0,
+        "goals_for_per_match": 2.2997,
+        "goals_against_per_match": 0.0,
+        "goal_delta": 1.0251,
+        "lambda_multiplier": 1.18
+      },
+      "Canada": {
+        "weighted_matches": 4.907149877737014,
+        "goals_for": 10.055807613635253,
+        "goals_against": 5.138957875938902,
+        "goals_for_per_match": 2.0492,
+        "goals_against_per_match": 1.0472,
+        "goal_delta": 0.4554,
+        "lambda_multiplier": 1.18
+      },
+      "United States": {
+        "weighted_matches": 4.155647321553318,
+        "goals_for": 9.767554962731527,
+        "goals_against": 7.737793931032066,
+        "goals_for_per_match": 2.3504,
+        "goals_against_per_match": 1.862,
+        "goal_delta": 0.222,
+        "lambda_multiplier": 1.18
+      },
+      "New Zealand": {
+        "weighted_matches": 4.565955005637353,
+        "goals_for": 5.43185257233438,
+        "goals_against": 17.782954163198088,
+        "goals_for_per_match": 1.1896,
+        "goals_against_per_match": 3.8947,
+        "goal_delta": -1.2296,
+        "lambda_multiplier": 0.82
+      },
+      "Curacao": {
+        "weighted_matches": 2.602452817096417,
+        "goals_for": 0.42044820762685725,
+        "goals_against": 6.1179395573244,
+        "goals_for_per_match": 0.1616,
+        "goals_against_per_match": 2.3508,
+        "goal_delta": -0.6474,
+        "lambda_multiplier": 0.82
+      }
+    },
+    "home_lambda_multiplier": 1.18,
+    "away_lambda_multiplier": 1.18
+  },
+  "llm_vote_audit": {
+    "enabled": false,
+    "weight_cap": 0.15,
+    "votes": [],
+    "note": "多模型投票接口已预留；未配置模型 API 时不影响数值预测。"
+  },
+  "chinese_report": "🇧🇷巴西 vs 🇯🇵日本 数据分析：融合模型给出主胜 72.2%，平局 16.3%，客胜 11.5%，信心 高。最可能比分为 2-0，概率 11.0%。主胜相对市场有 12.8% 正向差异。 本结论用于参考和赛后复盘，不构成投注建议。",
+  "post_match_evaluation": {
+    "actual_outcome": "home",
+    "brier_score": 0.039050429328483606,
+    "log_loss": 0.32584065321092703
+  }
+}

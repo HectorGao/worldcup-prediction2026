@@ -14,6 +14,7 @@ from worldcup_predictor.team_metadata import display_team
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DIST_DIR = PROJECT_ROOT / "dist"
+PRECOMPUTED_DIR = PROJECT_ROOT / "precomputed"
 STATIC_BOOTSTRAP = """    <script>
       window.WORLDCUP_STATIC_BUILD = true;
       window.WORLDCUP_STATIC_META_URL = "/api/meta.json";
@@ -112,6 +113,7 @@ def export_static_data(
     simulations: int,
     max_dates: int | None,
     full_team_details: bool,
+    output_dir: Path = DIST_DIR,
 ) -> dict[str, Any]:
     now = datetime.now(ZoneInfo("Asia/Shanghai")).isoformat()
     today = datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
@@ -124,13 +126,13 @@ def export_static_data(
     exported_teams: set[str] = set()
 
     write_json(
-        DIST_DIR / "api/matches/available-dates.json",
+        output_dir / "api/matches/available-dates.json",
         {"dates": dates, "default_date": exported_default_date},
     )
 
     for date in dates:
         payload = matches_payload(service, date)
-        write_json(DIST_DIR / f"api/matches/{date}.json", payload)
+        write_json(output_dir / f"api/matches/{date}.json", payload)
         for match in payload.get("matches", []):
             fixture_id = str(match.get("id") or "")
             if fixture_id:
@@ -140,44 +142,44 @@ def export_static_data(
                     exported_teams.add(str(match[side]))
 
     rounds = service.lyihub_rounds()
-    write_json(DIST_DIR / "api/lyihub/rounds.json", rounds)
+    write_json(output_dir / "api/lyihub/rounds.json", rounds)
     all_lyihub_matches = service.lyihub_matches()
-    write_json(DIST_DIR / "api/lyihub/matches/all.json", all_lyihub_matches)
+    write_json(output_dir / "api/lyihub/matches/all.json", all_lyihub_matches)
     stages = sorted({str(item.get("stage")) for item in rounds.get("rounds", []) if item.get("stage")})
     for stage in stages:
         write_json(
-            DIST_DIR / f"api/lyihub/matches/stage-{encode_name(stage)}.json",
+            output_dir / f"api/lyihub/matches/stage-{encode_name(stage)}.json",
             service.lyihub_matches(stage=stage),
         )
 
     for fixture_id in sorted(exported_fixture_ids):
         try:
             prediction = service.predict_fixture(fixture_id, simulations=simulations)
-            write_json(DIST_DIR / f"api/predictions/{encode_name(fixture_id)}.json", prediction)
+            write_json(output_dir / f"api/predictions/{encode_name(fixture_id)}.json", prediction)
         except (KeyError, ValueError, TypeError) as exc:
             write_json(
-                DIST_DIR / f"api/predictions/{encode_name(fixture_id)}.json",
+                output_dir / f"api/predictions/{encode_name(fixture_id)}.json",
                 {"available": False, "fixture_id": fixture_id, "error": str(exc)},
             )
         try:
             write_json(
-                DIST_DIR / f"api/matches/{encode_name(fixture_id)}/analysis.json",
+                output_dir / f"api/matches/{encode_name(fixture_id)}/analysis.json",
                 service.match_analysis(fixture_id),
             )
         except (KeyError, ValueError, TypeError) as exc:
             write_json(
-                DIST_DIR / f"api/matches/{encode_name(fixture_id)}/analysis.json",
+                output_dir / f"api/matches/{encode_name(fixture_id)}/analysis.json",
                 {"available": False, "fixture_id": fixture_id, "error": str(exc)},
             )
 
     for date in dates:
         write_json(
-            DIST_DIR / f"api/reports/daily/{date}.json",
+            output_dir / f"api/reports/daily/{date}.json",
             {"date": date, "requested_date": date, "report": service.daily_report(date)},
         )
 
     rankings = service.team_rankings()
-    write_json(DIST_DIR / "api/teams/rankings.json", {"teams": rankings})
+    write_json(output_dir / "api/teams/rankings.json", {"teams": rankings})
 
     for team in sorted(exported_teams):
         encoded = encode_name(team)
@@ -188,12 +190,12 @@ def export_static_data(
                 detail = {"team": team, "available": False, "error": str(exc)}
         else:
             detail = static_team_detail(service, team)
-        write_json(DIST_DIR / f"api/teams/{encoded}/world-cup-detail.json", detail)
-        write_json(DIST_DIR / f"api/teams/{encoded}/squad.json", service.get_team_squad(team, allow_empty=True))
+        write_json(output_dir / f"api/teams/{encoded}/world-cup-detail.json", detail)
+        write_json(output_dir / f"api/teams/{encoded}/squad.json", service.get_team_squad(team, allow_empty=True))
 
-    write_json(DIST_DIR / "api/health/data-sources.json", service.data_source_health())
-    write_json(DIST_DIR / "api/health/roster-data.json", service.roster_data_health())
-    write_json(DIST_DIR / "api/knockout.json", service.knockout())
+    write_json(output_dir / "api/health/data-sources.json", service.data_source_health())
+    write_json(output_dir / "api/health/roster-data.json", service.roster_data_health())
+    write_json(output_dir / "api/knockout.json", service.knockout())
 
     meta = service.meta()
     meta["static_export"] = {
@@ -208,7 +210,12 @@ def export_static_data(
         "full_team_details": full_team_details,
         "mode": "read_only_static_site",
     }
-    write_json(DIST_DIR / "api/meta.json", meta)
+    meta["deployment"] = {
+        "read_only": True,
+        "use_precomputed": True,
+        "precomputed_root": str(output_dir.relative_to(PROJECT_ROOT)) if output_dir.is_relative_to(PROJECT_ROOT) else str(output_dir),
+    }
+    write_json(output_dir / "api/meta.json", meta)
     return meta
 
 
@@ -219,9 +226,26 @@ def main() -> None:
     parser.add_argument("--max-dates", type=int, default=1, help="Maximum nearby match dates to export by default.")
     parser.add_argument("--all-dates", action="store_true", help="Export every available match date.")
     parser.add_argument("--full-team-details", action="store_true", help="Export expensive full team detail payloads.")
+    parser.add_argument(
+        "--precomputed",
+        action="store_true",
+        help="Export only API JSON into precomputed/ for Render read-only deployment.",
+    )
+    parser.add_argument(
+        "--precomputed-dir",
+        default=str(PRECOMPUTED_DIR),
+        help="Directory used with --precomputed. JSON is written below <dir>/api.",
+    )
     args = parser.parse_args()
 
-    copy_frontend()
+    output_dir = Path(args.precomputed_dir) if args.precomputed else DIST_DIR
+    if args.precomputed:
+        api_dir = output_dir / "api"
+        if api_dir.exists():
+            shutil.rmtree(api_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        copy_frontend()
     service = WorldCupService(db_path=args.db_path)
     max_dates = None if args.all_dates else args.max_dates
     meta = export_static_data(
@@ -229,6 +253,7 @@ def main() -> None:
         simulations=args.simulations,
         max_dates=max_dates,
         full_team_details=args.full_team_details,
+        output_dir=output_dir,
     )
     static = meta["static_export"]
     print(

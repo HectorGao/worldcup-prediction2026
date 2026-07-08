@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Any
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI, HTTPException
@@ -16,6 +19,10 @@ from .service import WorldCupService
 
 def _default_db_path() -> Path:
     return Path(os.getenv("WORLDCUP_DB_PATH") or os.getenv("DATABASE_PATH") or "data/worldcup.sqlite3")
+
+
+def _env_flag(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def _cors_origins() -> list[str]:
@@ -34,12 +41,68 @@ def _cors_origins() -> list[str]:
     return list(dict.fromkeys([*defaults, *extra]))
 
 
+def _encode_path_part(value: str) -> str:
+    return quote(value, safe="")
+
+
 def create_app(db_path: str | Path | None = None) -> FastAPI:
     app = FastAPI(title="World Cup Prediction System", version="0.1.0")
     service = WorldCupService(db_path=db_path or _default_db_path())
     app.state.service = service
     project_root = Path(__file__).resolve().parents[2]
     src_dir = project_root / "src"
+    precomputed_root = Path(os.getenv("WORLDCUP_PRECOMPUTED_DIR") or project_root / "precomputed").resolve()
+    use_precomputed = _env_flag("WORLDCUP_USE_PRECOMPUTED")
+    read_only = _env_flag("WORLDCUP_READ_ONLY") or use_precomputed
+
+    def precomputed_path(relative_path: str) -> Path:
+        candidate = (precomputed_root / relative_path).resolve()
+        try:
+            candidate.relative_to(precomputed_root)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid precomputed path.") from exc
+        return candidate
+
+    def load_precomputed(relative_path: str) -> Any:
+        path = precomputed_path(relative_path)
+        if not path.exists():
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "precomputed_json_missing",
+                    "message": "线上只读模式缺少预计算 JSON；请在本地重新导出 precomputed/api 并提交。",
+                    "path": str(path.relative_to(project_root)) if path.is_relative_to(project_root) else str(path),
+                },
+            )
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "precomputed_json_invalid",
+                    "message": "预计算 JSON 无法解析；请在本地重新导出并提交。",
+                    "path": str(path.relative_to(project_root)) if path.is_relative_to(project_root) else str(path),
+                },
+            ) from exc
+
+    def deployment_meta() -> dict[str, Any]:
+        return {
+            "read_only": read_only,
+            "use_precomputed": use_precomputed,
+            "precomputed_root": str(precomputed_root.relative_to(project_root))
+            if precomputed_root.is_relative_to(project_root)
+            else str(precomputed_root),
+        }
+
+    def read_only_error(action: str) -> None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "read_only_deployment",
+                "message": f"线上部署为只读预计算模式，已禁用{action}。请在本地完成更新、导出 precomputed/api 后提交。",
+            },
+        )
 
     app.add_middleware(
         CORSMiddleware,
@@ -60,6 +123,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/matches")
     def matches(date: str):
+        if use_precomputed:
+            return load_precomputed(f"api/matches/{_encode_path_part(date)}.json")
         effective_date = service.default_match_date(date)
         matches = service.list_matches_with_prediction_summary(effective_date)
         is_lottery_window = (
@@ -84,11 +149,15 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/matches/available-dates")
     def available_dates():
+        if use_precomputed:
+            return load_precomputed("api/matches/available-dates.json")
         today = datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
         return {"dates": service.available_dates(), "default_date": service.default_match_date(today)}
 
     @app.get("/api/predictions/{fixture_id}")
     def get_prediction(fixture_id: str):
+        if use_precomputed:
+            return load_precomputed(f"api/predictions/{_encode_path_part(fixture_id)}.json")
         try:
             return service.get_prediction(fixture_id)
         except KeyError as exc:
@@ -96,6 +165,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/matches/{fixture_id}/analysis")
     def match_analysis(fixture_id: str):
+        if use_precomputed:
+            return load_precomputed(f"api/matches/{_encode_path_part(fixture_id)}/analysis.json")
         try:
             return service.match_analysis(fixture_id)
         except KeyError as exc:
@@ -103,6 +174,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.post("/api/sync")
     def sync(date: str):
+        if read_only:
+            read_only_error("赛果同步")
         result = service.sync_date(date)
         if result["fixture_count"] == 0:
             public_result = service.scrape_public_sources()
@@ -111,6 +184,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.post("/api/refresh/current")
     def refresh_current(date: str):
+        if read_only:
+            read_only_error("当前数据刷新")
         return service.refresh_current_data(date)
 
     @app.post("/api/results/update")
@@ -129,6 +204,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         backfill_historical_matches: bool = False,
         train_over25: bool = False,
     ):
+        if read_only:
+            read_only_error("赛果同步和模型重训")
         return service.update_after_results(
             fetch_online_results=fetch_online_results,
             use_xgboost=use_xgboost,
@@ -151,6 +228,8 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         history_start: str = "2026-06-23",
         history_end: str = "2026-06-28",
     ):
+        if read_only:
+            read_only_error("赔率刷新")
         return app.state.service.refresh_sporttery_odds(
             include_history=include_history,
             history_start=history_start,
@@ -159,30 +238,48 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.post("/api/rounds/sync")
     def sync_round_overview(date: str | None = None):
+        if read_only:
+            read_only_error("赛程同步")
         return service.sync_round_overview(date=date)
 
     @app.post("/api/rounds/regress")
     def regress_round_overview(date: str | None = None, auto_sync: bool = True):
+        if read_only:
+            read_only_error("回归训练")
         return service.regress_round_overview(date=date, auto_sync=auto_sync)
 
     @app.post("/api/scrape/public-web")
     def scrape_public_web():
+        if read_only:
+            read_only_error("公开网页抓取")
         return service.scrape_public_sources()
 
     @app.post("/api/scrape/reference-site")
     def scrape_reference_site(include_details: bool = True, detail_limit: int = 120):
+        if read_only:
+            read_only_error("参考站抓取")
         return service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit)
 
     @app.post("/api/scrape/lyihub")
     def scrape_lyihub(include_details: bool = True, detail_limit: int = 120):
+        if read_only:
+            read_only_error("lyihub 抓取")
         return service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit)
 
     @app.get("/api/lyihub/matches")
     def lyihub_matches(date: str | None = None, stage: str | None = None):
+        if use_precomputed:
+            if stage:
+                return load_precomputed(f"api/lyihub/matches/stage-{_encode_path_part(stage)}.json")
+            if date:
+                return load_precomputed(f"api/lyihub/matches/date-{_encode_path_part(date)}.json")
+            return load_precomputed("api/lyihub/matches/all.json")
         return service.lyihub_matches(date=date, stage=stage)
 
     @app.get("/api/lyihub/rounds")
     def lyihub_rounds():
+        if use_precomputed:
+            return load_precomputed("api/lyihub/rounds.json")
         return service.lyihub_rounds()
 
     @app.get("/api/lyihub/coverage")
@@ -191,6 +288,10 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.post("/api/predict/{fixture_id}")
     def predict(fixture_id: str, roster_weight: float = 0.25, simulations: int | None = None):
+        if use_precomputed:
+            return load_precomputed(f"api/predictions/{_encode_path_part(fixture_id)}.json")
+        if read_only:
+            read_only_error("实时预测")
         try:
             return service.predict_fixture(fixture_id, roster_weight=roster_weight, simulations=simulations)
         except KeyError as exc:
@@ -198,19 +299,27 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/reports/daily")
     def daily_report(date: str):
+        if use_precomputed:
+            return load_precomputed(f"api/reports/daily/{_encode_path_part(date)}.json")
         effective_date = service.default_match_date(date)
         return {"date": effective_date, "requested_date": date, "report": service.daily_report(effective_date)}
 
     @app.get("/api/health/data-sources")
     def health():
+        if use_precomputed:
+            return load_precomputed("api/health/data-sources.json")
         return service.data_source_health()
 
     @app.post("/api/health/validate-sources")
     def validate_sources():
+        if read_only:
+            read_only_error("数据源校验")
         return service.validate_data_sources()
 
     @app.post("/api/models/recalibrate")
     def recalibrate_models(date: str):
+        if read_only:
+            read_only_error("模型校准")
         return service.recalibrate_model_weights(date)
 
     @app.get("/api/models/weights")
@@ -219,10 +328,14 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/health/roster-data")
     def roster_health():
+        if use_precomputed:
+            return load_precomputed("api/health/roster-data.json")
         return service.roster_data_health()
 
     @app.post("/api/squads/sync")
     def sync_squad(team: str):
+        if read_only:
+            read_only_error("阵容同步")
         try:
             return service.sync_squad(team)
         except KeyError as exc:
@@ -230,18 +343,26 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.post("/api/squads/sync-all")
     def sync_all_squads():
+        if read_only:
+            read_only_error("全量阵容同步")
         return service.sync_all_squads()
 
     @app.post("/api/squads/process-queue")
     def process_roster_queue(limit: int = 20):
+        if read_only:
+            read_only_error("阵容补全队列")
         return service.process_roster_queue(limit=limit)
 
     @app.post("/api/squads/enrich-public")
     def enrich_public_roster_queue(limit: int = 20):
+        if read_only:
+            read_only_error("公开源阵容补全")
         return service.enrich_roster_queue_from_public(limit=limit)
 
     @app.get("/api/teams/{team}/squad")
     def team_squad(team: str):
+        if use_precomputed:
+            return load_precomputed(f"api/teams/{_encode_path_part(team)}/squad.json")
         return service.get_team_squad(team, allow_empty=True)
 
     @app.get("/api/teams/{team}/strength")
@@ -253,25 +374,37 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @app.get("/api/teams/{team}/world-cup-detail")
     def team_world_cup_detail(team: str):
+        if use_precomputed:
+            return load_precomputed(f"api/teams/{_encode_path_part(team)}/world-cup-detail.json")
         return service.team_world_cup_detail(team)
 
     @app.get("/api/teams/rankings")
     def team_rankings(alive_only: bool = False):
+        if use_precomputed and not alive_only:
+            return load_precomputed("api/teams/rankings.json")
         if alive_only:
             return service.simulation_rankings()
         return {"teams": service.team_rankings()}
 
     @app.get("/api/knockout")
     def knockout():
+        if use_precomputed:
+            return load_precomputed("api/knockout.json")
         return service.knockout()
 
     @app.get("/api/meta")
     def meta():
-        return service.meta()
+        if use_precomputed:
+            payload = load_precomputed("api/meta.json")
+        else:
+            payload = service.meta()
+        payload = dict(payload)
+        payload["deployment"] = deployment_meta()
+        return payload
 
     @app.get("/healthz")
     def healthz():
-        return {"status": "ok"}
+        return {"status": "ok", "deployment": deployment_meta()}
 
     if src_dir.exists():
         app.mount("/src", StaticFiles(directory=src_dir), name="src")

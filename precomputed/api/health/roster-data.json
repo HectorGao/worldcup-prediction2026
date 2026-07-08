@@ -1,0 +1,37 @@
+{
+  "queue_pending": 120,
+  "queue_done": 82,
+  "queue_failed": 6,
+  "players_total": 208,
+  "players_with_stats": 82,
+  "provider": {
+    "name": "API-Football rosters",
+    "configured": true,
+    "docs": "https://www.api-football.com/documentation-v3",
+    "season_priority": [
+      2026,
+      2025,
+      2024
+    ],
+    "manual_keys": [
+      {
+        "source": "football-data.org",
+        "env_var": "FOOTBALL_DATA_API_KEY",
+        "purpose": "optional fixture/result fallback"
+      }
+    ]
+  },
+  "public_provider": {
+    "name": "TheSportsDB public player search",
+    "configured": true,
+    "docs": "https://www.thesportsdb.com/documentation",
+    "rate_limit": "30 requests/minute on free key 123",
+    "fields": [
+      "club",
+      "league",
+      "position",
+      "photo",
+      "source_confidence"
+    ]
+  }
+}
