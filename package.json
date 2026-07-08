@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "api": ".venv/bin/uvicorn worldcup_predictor.api:app --app-dir backend --host 127.0.0.1 --port 8000",
+    "start": "uvicorn worldcup_predictor.api:app --app-dir backend --host 0.0.0.0 --port ${PORT:-8000}",
     "dev": "npm run api",
     "test": ".venv/bin/pytest -q",
     "test:all": ".venv/bin/pytest -q"

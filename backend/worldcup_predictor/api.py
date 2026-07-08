@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -13,21 +14,36 @@ from .data.sporttery_snapshot import sporttery_snapshot_ids, sporttery_window_an
 from .service import WorldCupService
 
 
-def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
+def _default_db_path() -> Path:
+    return Path(os.getenv("WORLDCUP_DB_PATH") or os.getenv("DATABASE_PATH") or "data/worldcup.sqlite3")
+
+
+def _cors_origins() -> list[str]:
+    defaults = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8000",
+        "https://worldcup.hectorgao.com",
+        "null",
+    ]
+    extra = [
+        origin.strip()
+        for origin in os.getenv("WORLDCUP_CORS_ORIGINS", "").split(",")
+        if origin.strip()
+    ]
+    return list(dict.fromkeys([*defaults, *extra]))
+
+
+def create_app(db_path: str | Path | None = None) -> FastAPI:
     app = FastAPI(title="World Cup Prediction System", version="0.1.0")
-    service = WorldCupService(db_path=db_path)
+    service = WorldCupService(db_path=db_path or _default_db_path())
     app.state.service = service
     project_root = Path(__file__).resolve().parents[2]
     src_dir = project_root / "src"
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
-            "http://127.0.0.1:8000",
-            "null",
-        ],
+        allow_origins=_cors_origins(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -252,6 +268,10 @@ def create_app(db_path: str | Path = "data/worldcup.sqlite3") -> FastAPI:
     @app.get("/api/meta")
     def meta():
         return service.meta()
+
+    @app.get("/healthz")
+    def healthz():
+        return {"status": "ok"}
 
     if src_dir.exists():
         app.mount("/src", StaticFiles(directory=src_dir), name="src")
