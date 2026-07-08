@@ -110,6 +110,20 @@ def test_fastapi_endpoints_expose_matches_predictions_reports_and_health(tmp_pat
     assert "weights" in weights_response.json()
 
 
+def test_deployment_healthcheck_and_env_db_path(tmp_path: Path, monkeypatch):
+    db_path = tmp_path / "render" / "worldcup.sqlite3"
+    monkeypatch.setenv("WORLDCUP_DB_PATH", str(db_path))
+    monkeypatch.setenv("WORLDCUP_CORS_ORIGINS", "https://preview.example.com")
+    app = create_app()
+    client = TestClient(app)
+
+    response = client.get("/healthz")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+    assert db_path.exists()
+
+
 def test_default_match_date_skips_completed_day_and_shows_sporttery_window(tmp_path: Path):
     db_path = tmp_path / "worldcup.sqlite3"
     service = WorldCupService(db_path=db_path)
