@@ -11,6 +11,7 @@ if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
 from worldcup_predictor.service import WorldCupService  # noqa: E402
+from export_static_site import export_static_data  # noqa: E402
 
 
 def main() -> None:
@@ -32,6 +33,23 @@ def main() -> None:
     parser.add_argument("--stage", default=None, help="Stage diagnostics to run, e.g. round_of_32.")
     parser.add_argument("--db-path", default="data/worldcup.sqlite3", help="SQLite database path.")
     parser.add_argument("--output-dir", default="outputs", help="Directory for updated prediction outputs.")
+    parser.add_argument(
+        "--skip-precomputed-export",
+        action="store_true",
+        help="Do not refresh precomputed/api after the local update.",
+    )
+    parser.add_argument("--precomputed-dir", default="precomputed", help="Directory for Render read-only API JSON.")
+    parser.add_argument(
+        "--precomputed-simulations",
+        type=int,
+        default=10000,
+        help="Monte Carlo simulations per exported precomputed prediction.",
+    )
+    parser.add_argument(
+        "--precomputed-full-team-details",
+        action="store_true",
+        help="Export full team detail payloads for the precomputed API cache.",
+    )
     args = parser.parse_args()
 
     service = WorldCupService(db_path=args.db_path)
@@ -53,7 +71,27 @@ def main() -> None:
     )
     if args.regression and (args.stage or "").lower() in {"round_of_32", "r32", "1/16"}:
         result["r32_regression"] = service.run_round_of_32_regression(output_dir=args.output_dir)
-    print(json.dumps({"outputs": result["outputs"], "prediction_count": result["prediction_count"], "r32_regression": result.get("r32_regression")}, ensure_ascii=False, indent=2))
+    if not args.skip_precomputed_export:
+        meta = export_static_data(
+            service,
+            simulations=args.precomputed_simulations,
+            max_dates=None,
+            full_team_details=args.precomputed_full_team_details,
+            output_dir=Path(args.precomputed_dir),
+        )
+        result["precomputed_export"] = meta.get("static_export")
+    print(
+        json.dumps(
+            {
+                "outputs": result["outputs"],
+                "prediction_count": result["prediction_count"],
+                "r32_regression": result.get("r32_regression"),
+                "precomputed_export": result.get("precomputed_export"),
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import importlib.util
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -54,6 +55,11 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     precomputed_root = Path(os.getenv("WORLDCUP_PRECOMPUTED_DIR") or project_root / "precomputed").resolve()
     use_precomputed = _env_flag("WORLDCUP_USE_PRECOMPUTED")
     read_only = _env_flag("WORLDCUP_READ_ONLY") or use_precomputed
+    auto_export_precomputed = (
+        not read_only
+        and os.getenv("WORLDCUP_AUTO_EXPORT_PRECOMPUTED", "1").strip().lower() not in {"0", "false", "no", "off"}
+        and (db_path is None or _env_flag("WORLDCUP_AUTO_EXPORT_PRECOMPUTED"))
+    )
 
     def precomputed_path(relative_path: str) -> Path:
         candidate = (precomputed_root / relative_path).resolve()
@@ -93,6 +99,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             "precomputed_root": str(precomputed_root.relative_to(project_root))
             if precomputed_root.is_relative_to(project_root)
             else str(precomputed_root),
+            "auto_export_precomputed": auto_export_precomputed,
         }
 
     def read_only_error(action: str) -> None:
@@ -103,6 +110,46 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
                 "message": f"线上部署为只读预计算模式，已禁用{action}。请在本地完成更新、导出 precomputed/api 后提交。",
             },
         )
+
+    def maybe_export_precomputed(payload: Any, action: str) -> Any:
+        if not auto_export_precomputed or not isinstance(payload, dict):
+            return payload
+        export_script = project_root / "scripts" / "export_static_site.py"
+        try:
+            spec = importlib.util.spec_from_file_location("worldcup_static_export", export_script)
+            if spec is None or spec.loader is None:
+                raise RuntimeError(f"Cannot load export script: {export_script}")
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            simulations = int(os.getenv("WORLDCUP_PRECOMPUTED_SIMULATIONS", "10000"))
+            meta = module.export_static_data(
+                service,
+                simulations=simulations,
+                max_dates=None,
+                full_team_details=_env_flag("WORLDCUP_PRECOMPUTED_FULL_TEAM_DETAILS"),
+                output_dir=precomputed_root,
+            )
+            static = meta.get("static_export") or {}
+            payload["precomputed_export"] = {
+                "ok": True,
+                "action": action,
+                "output_dir": str(precomputed_root.relative_to(project_root))
+                if precomputed_root.is_relative_to(project_root)
+                else str(precomputed_root),
+                "generated_at": static.get("generated_at"),
+                "default_date": static.get("default_date"),
+                "exported_dates": static.get("exported_dates"),
+                "fixture_count": static.get("fixture_count"),
+                "team_count": static.get("team_count"),
+            }
+        except Exception as exc:  # pragma: no cover - exercised through API behavior.
+            payload["precomputed_export"] = {
+                "ok": False,
+                "action": action,
+                "output_dir": str(precomputed_root),
+                "error": str(exc),
+            }
+        return payload
 
     app.add_middleware(
         CORSMiddleware,
@@ -180,13 +227,13 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         if result["fixture_count"] == 0:
             public_result = service.scrape_public_sources()
             result["public_scrape"] = public_result
-        return result
+        return maybe_export_precomputed(result, "sync")
 
     @app.post("/api/refresh/current")
     def refresh_current(date: str):
         if read_only:
             read_only_error("当前数据刷新")
-        return service.refresh_current_data(date)
+        return maybe_export_precomputed(service.refresh_current_data(date), "refresh_current")
 
     @app.post("/api/results/update")
     def update_after_results(
@@ -206,7 +253,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     ):
         if read_only:
             read_only_error("赛果同步和模型重训")
-        return service.update_after_results(
+        result = service.update_after_results(
             fetch_online_results=fetch_online_results,
             use_xgboost=use_xgboost,
             recalculate=recalculate,
@@ -221,6 +268,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             backfill_historical_matches=backfill_historical_matches,
             train_over25=train_over25,
         )
+        return maybe_export_precomputed(result, "results_update")
 
     @app.post("/api/odds/sporttery/refresh")
     def refresh_sporttery_odds(
@@ -230,41 +278,47 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     ):
         if read_only:
             read_only_error("赔率刷新")
-        return app.state.service.refresh_sporttery_odds(
+        return maybe_export_precomputed(app.state.service.refresh_sporttery_odds(
             include_history=include_history,
             history_start=history_start,
             history_end=history_end,
-        )
+        ), "sporttery_refresh")
 
     @app.post("/api/rounds/sync")
     def sync_round_overview(date: str | None = None):
         if read_only:
             read_only_error("赛程同步")
-        return service.sync_round_overview(date=date)
+        return maybe_export_precomputed(service.sync_round_overview(date=date), "round_sync")
 
     @app.post("/api/rounds/regress")
     def regress_round_overview(date: str | None = None, auto_sync: bool = True):
         if read_only:
             read_only_error("回归训练")
-        return service.regress_round_overview(date=date, auto_sync=auto_sync)
+        return maybe_export_precomputed(service.regress_round_overview(date=date, auto_sync=auto_sync), "round_regress")
 
     @app.post("/api/scrape/public-web")
     def scrape_public_web():
         if read_only:
             read_only_error("公开网页抓取")
-        return service.scrape_public_sources()
+        return maybe_export_precomputed(service.scrape_public_sources(), "public_web_scrape")
 
     @app.post("/api/scrape/reference-site")
     def scrape_reference_site(include_details: bool = True, detail_limit: int = 120):
         if read_only:
             read_only_error("参考站抓取")
-        return service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit)
+        return maybe_export_precomputed(
+            service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit),
+            "reference_site_scrape",
+        )
 
     @app.post("/api/scrape/lyihub")
     def scrape_lyihub(include_details: bool = True, detail_limit: int = 120):
         if read_only:
             read_only_error("lyihub 抓取")
-        return service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit)
+        return maybe_export_precomputed(
+            service.scrape_lyihub(include_details=include_details, detail_limit=detail_limit),
+            "lyihub_scrape",
+        )
 
     @app.get("/api/lyihub/matches")
     def lyihub_matches(date: str | None = None, stage: str | None = None):

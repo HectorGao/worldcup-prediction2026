@@ -135,7 +135,9 @@ FOOTBALL_DATA_API_KEY=...
 SPORTTERY_ENABLE_LIVE=1 .venv/bin/python scripts/update_after_results.py --fetch-online-results --use-xgboost --recalculate --sync-fifa --sync-fifa-rosters --sync-sportmonks --use-sportmonks --sync-footballdata-io --sync-sporttery --sync-sporttery-history --backfill-historical --train-over25 --date 2026-07-08
 ```
 
-然后导出线上只读 API 缓存：
+脚本会默认导出线上只读 API 缓存到 `precomputed/api/`。如果只想更新本地输出、不刷新部署缓存，可额外加 `--skip-precomputed-export`。
+
+也可以单独导出线上只读 API 缓存：
 
 ```bash
 PYTHONPATH=backend .venv/bin/python scripts/export_static_site.py --precomputed --all-dates --simulations 10000
@@ -148,6 +150,8 @@ git add outputs precomputed render.yaml DEPLOYMENT.md backend src scripts tests
 git commit -m "fix: resolve render api 502 and support precomputed match data"
 git push origin main
 ```
+
+本地网页按钮同样会自动刷新部署缓存：在非只读本地服务中点击“同步”“回归”“刷新赔率”“刷新参考信息”后，后端会在操作完成时重新写入 `precomputed/api/`，响应中的 `precomputed_export` 字段会记录导出状态。
 
 ## 5. 绑定 `worldcup.hectorgao.com`
 
@@ -254,7 +258,7 @@ Render Free 服务首次访问可能冷启动，等待 30-60 秒后刷新即可�
 处理方式：
 
 - 本地运行同步、赔率刷新和回归流程；
-- 运行 `scripts/export_static_site.py --precomputed --all-dates`；
+- 确认 `precomputed/api` 已由本地 API 操作或 `scripts/update_after_results.py` 自动刷新；必要时手动运行 `scripts/export_static_site.py --precomputed --all-dates`；
 - 提交 `precomputed/api` 后重新部署；
 - 不要提交 `data/*.sqlite3`。
 

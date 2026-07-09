@@ -186,6 +186,24 @@ def test_precomputed_mode_reports_missing_json(tmp_path: Path, monkeypatch):
     assert response.json()["detail"]["error"] == "precomputed_json_missing"
 
 
+def test_local_mutation_auto_exports_precomputed_cache(tmp_path: Path, monkeypatch):
+    precomputed = tmp_path / "precomputed"
+    monkeypatch.setenv("WORLDCUP_AUTO_EXPORT_PRECOMPUTED", "1")
+    monkeypatch.setenv("WORLDCUP_PRECOMPUTED_DIR", str(precomputed))
+    app = create_app(db_path=tmp_path / "worldcup.sqlite3")
+    client = TestClient(app)
+
+    response = client.post("/api/sync", params={"date": "2026-06-15"})
+
+    assert response.status_code == 200
+    export = response.json()["precomputed_export"]
+    assert export["ok"] is True
+    assert export["action"] == "sync"
+    assert export["default_date"] == "2026-06-15"
+    assert (precomputed / "api" / "matches" / "2026-06-15.json").exists()
+    assert (precomputed / "api" / "meta.json").exists()
+
+
 def test_default_match_date_skips_completed_day_and_shows_sporttery_window(tmp_path: Path):
     db_path = tmp_path / "worldcup.sqlite3"
     service = WorldCupService(db_path=db_path)
