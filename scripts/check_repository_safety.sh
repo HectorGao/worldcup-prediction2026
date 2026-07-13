@@ -104,6 +104,7 @@ fi
 
 find . \
   -path './.git' -prune -o \
+  -path './.private_data' -prune -o \
   -path './.venv' -prune -o \
   -type f -size +50M -print >"$file_list"
 while IFS= read -r path; do

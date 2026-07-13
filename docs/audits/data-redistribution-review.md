@@ -39,15 +39,19 @@ Text searches found provider labels across the precomputed snapshots and outputs
 
 ## Blocking release risks
 
-The full current `data/worldcup.sqlite3`, `outputs/`, and `precomputed/api/` publication set is **not cleared for public push**. It contains or embeds data from providers whose terms restrict automated extraction or redistribution, and it contains Lyihub material with no located public license.
+The original local `data/worldcup.sqlite3`, `outputs/`, and `precomputed/api/` collection was **not cleared for public push**. The maintainer selected a sanitized public snapshot on 2026-07-13 rather than publishing restricted raw provider data.
 
-The following paths must remain unstaged until the maintainer chooses a compliant treatment:
+The original versions of the following paths are preserved under ignored `.private_data/` and must remain unstaged:
 
-- `data/worldcup.sqlite3`;
-- modified and untracked files under `precomputed/api/`;
-- modified files under `outputs/` that embed provider odds, raw payload fields, or restricted source data.
+- `.private_data/data/worldcup.sqlite3`;
+- `.private_data/precomputed/api/`;
+- `.private_data/outputs/`.
 
-No file has been deleted or reverted.
+The canonical public paths are generated with `scripts/build_public_data_snapshot.py`. The generated database retains CC0 historical matches, factual match fields, and sanitized project predictions while clearing restricted raw payload, odds, roster, lineup, and player-source tables. JSON/CSV snapshots remove restricted provider, market, source, image, player, roster, and raw-payload fields. No private source file is deleted or modified by the builder.
+
+## Maintainer decision
+
+The maintainer approved option 2 below: publish a sanitized data export while retaining restricted raw provider inputs locally. This clears the generated public snapshot for technical publication subject to final scanner, integrity, JSON, application, and staged-diff validation. It is not a legal opinion or permission from any provider.
 
 ## Maintainer decision options
 

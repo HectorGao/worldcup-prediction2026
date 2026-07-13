@@ -39,9 +39,26 @@ Provider names and links are for attribution and provenance. No provider sponsor
 
 ## Included data snapshots
 
-The maintainer intends the repository to include the current SQLite database, public prediction outputs, and precomputed API snapshots so that local cards and the hosted read-only site are populated. Inclusion is subject to the release gate in `docs/audits/data-redistribution-review.md`.
+The repository includes a compliant SQLite database, public prediction outputs, and precomputed API snapshots so that local cards and the hosted read-only site remain populated. Restricted source snapshots are retained locally under ignored `.private_data/` and are not committed.
 
-At the current gate, CC0 historical match data and project-authored code/structure are cleared. Several live-provider payload categories are not cleared for open redistribution. They remain present locally while the maintainer chooses a compliant treatment; they must not be inferred to be open-licensed merely because a file is visible in a Git checkout.
+The public snapshot retains CC0 historical match data, necessary factual match fields, and project-authored prediction/model outputs. It removes raw provider payload rows, provider odds snapshots, unlicensed roster/player tables, image fields, provider URLs, and restricted embedded market/source fields. Provider integration names may remain in capability metadata and project-authored model feature names; they do not include provider payloads or credentials.
+
+Create the private source tree once, before sanitizing a new local collection:
+
+```bash
+mkdir -p .private_data/data .private_data/outputs .private_data/precomputed/api
+cp data/worldcup.sqlite3 .private_data/data/worldcup.sqlite3
+cp -R outputs/. .private_data/outputs/
+cp -R precomputed/api/. .private_data/precomputed/api/
+```
+
+Then build the public snapshot:
+
+```bash
+.venv/bin/python scripts/build_public_data_snapshot.py
+```
+
+The builder does not delete private inputs. It writes the canonical public database, outputs, precomputed API files, and `data/public_snapshot_manifest.json`.
 
 ## Data users must obtain themselves
 
@@ -58,7 +75,7 @@ Do not commit `.env`.
 
 ## SQLite snapshot
 
-The default database path is `data/worldcup.sqlite3`. It is required for the full local dynamic experience and supplies historical training data, current match state, predictions, team/player cards, and other locally synchronized content.
+The default database path is `data/worldcup.sqlite3`. It supplies CC0 historical training data, current factual match state, sanitized predictions, team profiles, and other cleared project outputs. Restricted live-provider roster, odds, and raw-payload details are intentionally unavailable in a clean public clone until a user configures and runs an authorized local provider sync.
 
 Validate it before committing:
 
@@ -121,7 +138,7 @@ The repository does not promise a fixed update schedule. Maintainers may update 
 - validation results;
 - any provider-term or attribution change.
 
-Use `scripts/review_daily_update.sh` before staging an update. Stage reviewed paths explicitly; never use an unattended commit-and-push workflow.
+After updating private local data, rerun `scripts/build_public_data_snapshot.py`, then use `scripts/review_daily_update.sh` before staging an update. Stage reviewed paths explicitly; never use an unattended commit-and-push workflow.
 
 ## Reporting data-rights concerns
 

@@ -31,13 +31,14 @@ The baseline test run completed with 116 passing tests and three failures caused
 
 ## Data intended for publication
 
-The maintainer selected a full-data Git repository. The current publication set is:
+The maintainer initially selected a full-data Git repository, then approved a compliant public snapshot after the provider-terms audit identified redistribution restrictions. The publication set is now:
 
 | Path | Approximate size | Files/status | Role |
 | --- | ---: | --- | --- |
-| `data/worldcup.sqlite3` | 41 MB | one currently ignored database | Local dynamic application data, including fixtures, historical matches, predictions, team/player records, odds snapshots, and model records |
-| `outputs/` | 7.4 MB | 16 files; 14 modified at baseline | Current predictions, model evaluation, update reports, strength data, and reproducibility outputs |
-| `precomputed/api/` | 14 MB | 198 files; 141 modified and four untracked files at baseline | Read-only API snapshots used by hosted/static operation |
+| `data/worldcup.sqlite3` | about 18 MB after sanitization | one public database | CC0 historical matches, necessary factual match fields, and sanitized project outputs |
+| `outputs/` | about 7.3 MB after sanitization | 16 public files | Predictions, evaluation reports, and model outputs with restricted embedded fields removed |
+| `precomputed/api/` | about 12 MB after sanitization | 197 public JSON files | Read-only API snapshots with restricted raw/provider fields removed |
+| `.private_data/` | about 62 MB locally | ignored private source tree | Original database, outputs, and precomputed snapshots; never staged or published |
 
 Across `data/`, `outputs/`, and `precomputed/`, 209 files were already tracked, 155 tracked files were modified, and four files in two new percent-encoded team directories were untracked. The untracked files are two `squad.json` files and two `world-cup-detail.json` files.
 

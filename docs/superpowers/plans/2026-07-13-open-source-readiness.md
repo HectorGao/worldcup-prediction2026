@@ -16,7 +16,7 @@
 - Do not delete data with uncertain redistribution status; report it and wait for the maintainer's decision.
 - Do not expose secret values in terminal output, documentation, commits, or reports.
 - Do not force-push, rewrite history, automatically stage every file, automatically commit, or automatically push.
-- Keep `data/worldcup.sqlite3`, `precomputed/api/`, and reviewed `outputs/` in Git unless a blocking security or redistribution finding requires a maintainer decision.
+- Keep compliant public snapshots at `data/worldcup.sqlite3`, `precomputed/api/`, and `outputs/`; preserve restricted raw provider data only in ignored `.private_data/` after a blocking redistribution finding.
 
 ---
 
@@ -262,16 +262,22 @@ Expected: no placeholders; whitespace check passes.
 - Modify/Add: `outputs/**`
 - Modify/Add: `precomputed/api/**`
 - Modify: `DATA.md`
+- Create: `scripts/build_public_data_snapshot.py`
+- Create: `tests/test_public_data_snapshot.py`
 
 **Interfaces:**
-- Consumes: approved redistribution review and current local data state.
-- Produces: the complete data snapshot required for local cards, reproducibility, and hosted read-only API responses.
+- Consumes: approved redistribution review, ignored `.private_data/`, and current local data state.
+- Produces: a compliant public data snapshot required for local cards, reproducibility, and hosted read-only API responses while preserving restricted raw data locally.
 
-- [ ] **Step 1: Confirm approval for every risky data category**
+- [ ] **Step 1: Preserve the private source snapshot**
 
-Expected: no unresolved `restricted` or `unclear` row affects files proposed for staging. If unresolved, stop this task without deleting files.
+Copy `data/worldcup.sqlite3`, `outputs/`, and `precomputed/api/` to the ignored `.private_data/` tree without deleting the originals. Verify `.private_data/` is ignored.
 
-- [ ] **Step 2: Validate data integrity and JSON syntax**
+- [ ] **Step 2: Build and test the compliant public snapshot generator**
+
+Use test-driven development to verify that CC0 history and project-authored probabilities remain, restricted raw payloads and provider odds are excluded, private inputs are unchanged, and no file is deleted.
+
+- [ ] **Step 3: Generate and validate public data**
 
 Run:
 
@@ -282,7 +288,7 @@ find outputs precomputed/api -type f -name '*.json' -print0 | xargs -0 -n1 pytho
 
 Expected: SQLite reports `ok`; every JSON file parses.
 
-- [ ] **Step 3: Review all data changes before staging**
+- [ ] **Step 4: Review all data changes before staging**
 
 Run:
 
@@ -294,19 +300,19 @@ find data outputs precomputed/api -type f -size +50M -print
 
 Expected: current SQLite snapshot, 155 reviewed modifications, and two reviewed team directories are accounted for; every file over 50 MB is explained.
 
-- [ ] **Step 4: Stage explicit data roots only after audit approval**
+- [ ] **Step 5: Stage explicit public data roots only after audit approval**
 
 Run:
 
 ```bash
-git add data/worldcup.sqlite3 outputs precomputed/api DATA.md docs/audits/data-redistribution-review.md docs/audits/open-source-readiness-baseline.md
+git add data/worldcup.sqlite3 data/public_snapshot_manifest.json outputs precomputed/api scripts/build_public_data_snapshot.py tests/test_public_data_snapshot.py DATA.md docs/audits/data-redistribution-review.md docs/audits/open-source-readiness-baseline.md
 scripts/check_repository_safety.sh --staged
 git diff --cached --stat
 ```
 
 Expected: only reviewed data and data documentation are staged; safety scan passes.
 
-- [ ] **Step 5: Commit the data snapshot and documentation**
+- [ ] **Step 6: Commit the data snapshot and documentation**
 
 ```bash
 git commit -m "data: publish reproducible project snapshots"

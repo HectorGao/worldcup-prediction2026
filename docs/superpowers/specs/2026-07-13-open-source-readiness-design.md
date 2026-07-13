@@ -15,14 +15,16 @@ Publish `worldcup-prediction2026` as a complete, continuously maintained open-so
 
 ## Repository publication model
 
-Use a full-data Git repository. Version the application source, tests, deployment configuration, reproducibility inputs, current public outputs, precomputed web snapshots, and the current SQLite data snapshot.
+Use a self-contained public-data Git repository. Version the application source, tests, deployment configuration, CC0 inputs, sanitized project outputs, sanitized precomputed web snapshots, and a compliant SQLite data snapshot. Preserve restricted raw provider data in an ignored local `.private_data/` tree; do not delete or publish it.
 
 The intended versioned data includes:
 
-- `data/worldcup.sqlite3`, because the local dynamic application depends on its fixtures, historical matches, predictions, player and team information, odds snapshots, and model records;
+- `data/worldcup.sqlite3`, because the local dynamic application depends on its fixtures, historical matches, predictions, and model records; the published copy must exclude restricted raw provider payloads, odds snapshots, and unlicensed player/roster feeds;
 - `precomputed/api/`, because the read-only hosted site uses these JSON snapshots;
 - `outputs/`, when the files are current predictions, evaluation results, update reports, or other artifacts needed for presentation or reproducibility;
-- new team snapshot directories currently present under `precomputed/api/teams/`, subject to the same security and redistribution audit as other data.
+- new team snapshot directories currently present under `precomputed/api/teams/`, after restricted roster/player and provider fields are removed.
+
+Before generating the public snapshot, copy the private source database, outputs, and precomputed snapshots into `.private_data/`. The public snapshot builder reads from that ignored source tree, never deletes it, and overwrites only the canonical public snapshot paths with sanitized data.
 
 Do not classify a file as disposable solely because it is generated. Ignore only secrets, virtual environments, Python caches, operating-system files, editor state, build directories, SQLite transient files, and demonstrably disposable temporary files.
 
