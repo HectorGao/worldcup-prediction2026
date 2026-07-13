@@ -91,8 +91,9 @@ def test_team_profiles_exclude_matches_older_than_sixteen_years_from_decisions()
     assert profiles["Belgium"]["h2h"]["Egypt"]["matches"] == 1
 
 
-def test_public_data_api_endpoints_and_date_fallback(tmp_path: Path):
+def test_public_data_api_endpoints_and_date_fallback(tmp_path: Path, monkeypatch):
     service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    monkeypatch.setattr(service, "sync_date", lambda _date: {"source": "test", "count": 0})
     service.save_web_fixtures(
         [
             {

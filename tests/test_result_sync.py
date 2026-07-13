@@ -554,6 +554,7 @@ def test_update_after_results_does_not_500_when_online_source_fails(tmp_path: Pa
         }
     )
     monkeypatch.setattr(service_module, "fetch_latest_finished_matches", lambda **_kwargs: [])
+    monkeypatch.setattr(service, "_fetch_reference_finished_matches", lambda _target_date: [])
 
     result = service.update_after_results(
         fetch_online_results=True,
