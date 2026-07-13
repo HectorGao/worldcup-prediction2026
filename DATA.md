@@ -17,7 +17,7 @@ Files in `data/`, `outputs/`, and `precomputed/` are not automatically covered b
 | `precomputed/api/` | Read-only JSON API snapshots used by hosted/static operation | Exported from the local service and database |
 | `dist/` | Reproducible static-site build | Generated locally and intentionally ignored |
 
-The SQLite snapshot includes fixtures, historical results, predictions, team and player records, odds snapshots, model records, provider payloads, and source URLs. It must be audited as a data collection rather than treated as a project-authored binary.
+The local private source database may include fixtures, historical results, predictions, team and player records, odds snapshots, model records, provider payloads, and source URLs. The committed public SQLite snapshot is a sanitized derivative with restricted raw payload, odds, roster, player, image, and provider-source fields removed. Both must be audited as data collections rather than treated as project-authored binaries.
 
 ## Data-source register
 
