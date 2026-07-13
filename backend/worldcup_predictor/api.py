@@ -26,6 +26,10 @@ def _env_flag(name: str) -> bool:
     return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _env_false(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"0", "false", "no", "off"}
+
+
 def _cors_origins() -> list[str]:
     defaults = [
         "http://localhost:5173",
@@ -53,7 +57,22 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     project_root = Path(__file__).resolve().parents[2]
     src_dir = project_root / "src"
     precomputed_root = Path(os.getenv("WORLDCUP_PRECOMPUTED_DIR") or project_root / "precomputed").resolve()
-    use_precomputed = _env_flag("WORLDCUP_USE_PRECOMPUTED")
+    precomputed_api_exists = (precomputed_root / "api" / "meta.json").exists()
+    render_environment = any(
+        [
+            _env_flag("RENDER"),
+            bool(os.getenv("RENDER_SERVICE_ID")),
+            bool(os.getenv("RENDER_EXTERNAL_URL")),
+            project_root.as_posix().startswith("/opt/render/"),
+        ]
+    )
+    use_precomputed = _env_flag("WORLDCUP_USE_PRECOMPUTED") or (
+        "WORLDCUP_USE_PRECOMPUTED" not in os.environ
+        and render_environment
+        and precomputed_api_exists
+    )
+    if _env_false("WORLDCUP_USE_PRECOMPUTED"):
+        use_precomputed = False
     read_only = _env_flag("WORLDCUP_READ_ONLY") or use_precomputed
     auto_export_precomputed = (
         not read_only
@@ -100,6 +119,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             if precomputed_root.is_relative_to(project_root)
             else str(precomputed_root),
             "auto_export_precomputed": auto_export_precomputed,
+            "render_environment": render_environment,
         }
 
     def read_only_error(action: str) -> None:
@@ -151,6 +171,36 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             }
         return payload
 
+    def load_precomputed_match_day(date: str) -> Any:
+        path = precomputed_path(f"api/matches/{_encode_path_part(date)}.json")
+        if path.exists():
+            return load_precomputed(f"api/matches/{_encode_path_part(date)}.json")
+        index = load_precomputed("api/matches/available-dates.json")
+        dates = [str(item) for item in index.get("dates") or []]
+        fallback_date = str(index.get("default_date") or "")
+        if not fallback_date and dates:
+            past_or_today = [item for item in dates if item <= date]
+            fallback_date = past_or_today[-1] if past_or_today else dates[-1]
+        if not fallback_date:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "precomputed_match_date_missing",
+                    "message": "线上只读模式没有可用比赛日缓存；请在本地重新导出 precomputed/api 并提交。",
+                    "requested_date": date,
+                },
+            )
+        payload = load_precomputed(f"api/matches/{_encode_path_part(fallback_date)}.json")
+        if isinstance(payload, dict):
+            payload = dict(payload)
+            payload["requested_date"] = date
+            payload["date_fallback"] = {
+                "requested_date": date,
+                "served_date": fallback_date,
+                "reason": "requested precomputed match date is not exported",
+            }
+        return payload
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_cors_origins(),
@@ -171,7 +221,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
     @app.get("/api/matches")
     def matches(date: str):
         if use_precomputed:
-            return load_precomputed(f"api/matches/{_encode_path_part(date)}.json")
+            return load_precomputed_match_day(date)
         effective_date = service.default_match_date(date)
         matches = service.list_matches_with_prediction_summary(effective_date)
         is_lottery_window = (

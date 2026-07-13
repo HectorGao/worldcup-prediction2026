@@ -186,6 +186,39 @@ def test_precomputed_mode_reports_missing_json(tmp_path: Path, monkeypatch):
     assert response.json()["detail"]["error"] == "precomputed_json_missing"
 
 
+def test_render_environment_auto_uses_precomputed_cache_and_falls_back_date(tmp_path: Path, monkeypatch):
+    precomputed = tmp_path / "precomputed"
+    api_root = precomputed / "api" / "matches"
+    api_root.mkdir(parents=True)
+    (precomputed / "api" / "meta.json").write_text(json.dumps({"static_export": {}}), encoding="utf-8")
+    (api_root / "available-dates.json").write_text(
+        json.dumps({"dates": ["2026-07-08"], "default_date": "2026-07-08"}),
+        encoding="utf-8",
+    )
+    (api_root / "2026-07-08.json").write_text(
+        json.dumps({"date": "2026-07-08", "requested_date": "2026-07-08", "matches": [{"id": "cached"}]}),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("WORLDCUP_USE_PRECOMPUTED", raising=False)
+    monkeypatch.delenv("WORLDCUP_READ_ONLY", raising=False)
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://worldcup-prediction2026.onrender.com")
+    monkeypatch.setenv("WORLDCUP_PRECOMPUTED_DIR", str(precomputed))
+    client = TestClient(create_app(db_path=tmp_path / "empty.sqlite3"))
+
+    health = client.get("/healthz").json()["deployment"]
+    assert health["render_environment"] is True
+    assert health["use_precomputed"] is True
+    assert health["read_only"] is True
+    response = client.get("/api/matches", params={"date": "2026-07-09"})
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["date"] == "2026-07-08"
+    assert payload["requested_date"] == "2026-07-09"
+    assert payload["date_fallback"]["served_date"] == "2026-07-08"
+    assert payload["matches"][0]["id"] == "cached"
+
+
 def test_local_mutation_auto_exports_precomputed_cache(tmp_path: Path, monkeypatch):
     precomputed = tmp_path / "precomputed"
     monkeypatch.setenv("WORLDCUP_AUTO_EXPORT_PRECOMPUTED", "1")

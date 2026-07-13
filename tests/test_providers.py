@@ -250,6 +250,7 @@ def test_provider_registry_continues_when_public_provider_fails(monkeypatch):
     registry.providers[1].fetch_fixtures = broken_fetch
     registry.providers[2].configured = lambda: False
     registry.providers[3].configured = lambda: False
+    registry.providers[4].configured = lambda: False
 
     source, fixtures = registry.fetch_fixtures("2026-06-15")
 

@@ -10,25 +10,12 @@
     "status": "scheduled",
     "home_score": null,
     "away_score": null,
-    "source_url": null,
-    "source_name": null,
-    "market_home": 3.32,
-    "market_draw": 2.9,
-    "market_away": 2.07,
-    "market_over_2_5": null,
-    "market_under_2_5": null,
-    "market_source": "China Sporttery live 周二096",
-    "market_handicap": "{\"home\": 1.59, \"draw\": 3.33, \"away\": 5.0}",
-    "market_handicap_line": "+1",
-    "sportmonks_features": null,
     "home_team_zh": "瑞士",
     "away_team_zh": "哥伦比亚",
     "home_flag": "🇨🇭",
     "away_flag": "🇨🇴",
     "home_iso2": "CH",
     "away_iso2": "CO",
-    "odds_available": true,
-    "odds_source": "China Sporttery live 周二096",
     "historical_without_odds": false,
     "has_prediction_record": true
   },
@@ -44,95 +31,14 @@
       "status": "scheduled",
       "home_score": null,
       "away_score": null,
-      "source_url": null,
-      "source_name": null,
-      "market_home": 3.32,
-      "market_draw": 2.9,
-      "market_away": 2.07,
-      "market_over_2_5": null,
-      "market_under_2_5": null,
-      "market_source": "China Sporttery live 周二096",
-      "market_handicap": "{\"home\": 1.59, \"draw\": 3.33, \"away\": 5.0}",
-      "market_handicap_line": "+1",
-      "sportmonks_features": null,
       "home_team_zh": "瑞士",
       "away_team_zh": "哥伦比亚",
       "home_flag": "🇨🇭",
       "away_flag": "🇨🇴",
       "home_iso2": "CH",
       "away_iso2": "CO",
-      "odds_available": true,
-      "odds_source": "China Sporttery live 周二096",
       "historical_without_odds": false,
       "has_prediction_record": true
-    },
-    "source_status": {
-      "timezone": "Asia/Shanghai",
-      "polling_cadence_minutes": 15,
-      "providers": [
-        {
-          "name": "API-Football",
-          "configured": true,
-          "role": "primary_free_tier"
-        },
-        {
-          "name": "FootballData.io",
-          "configured": false,
-          "role": "supplemental_matches_teams_stats"
-        },
-        {
-          "name": "SportMonks",
-          "configured": true,
-          "role": "supplemental_fixtures_stats_lineups"
-        },
-        {
-          "name": "football-data.org",
-          "configured": false,
-          "role": "free_tier_fixture_scores"
-        },
-        {
-          "name": "ESPN public scoreboard",
-          "configured": true,
-          "role": "free_no_key_live_scoreboard_experimental"
-        },
-        {
-          "name": "sample_fallback",
-          "configured": true,
-          "role": "local_fallback"
-        },
-        {
-          "name": "The Odds API",
-          "configured": true,
-          "role": "odds_paid"
-        },
-        {
-          "name": "Betfair Exchange",
-          "configured": false,
-          "role": "odds_optional_exchange"
-        },
-        {
-          "name": "China Sporttery",
-          "configured": false,
-          "role": "official_cn_odds_public_web_fallback"
-        }
-      ],
-      "public_web_sources": [
-        {
-          "name": "Wikipedia 2026 FIFA World Cup + FIFA match-centre links",
-          "configured": true,
-          "role": "fixture_public_web"
-        },
-        {
-          "name": "martj42 international_results results.csv",
-          "configured": true,
-          "role": "historical_results_public_csv"
-        },
-        {
-          "name": "Kaggle international football results",
-          "configured": false,
-          "role": "optional_historical_import"
-        }
-      ]
     },
     "probabilities": {
       "home": 0.29767276807053505,
@@ -501,15 +407,6 @@
       "rho": -0.035,
       "neutral_site": true,
       "host_adjustment": 0.0,
-      "roster_weight": 0.25,
-      "roster_adjustment": {
-        "available": true,
-        "coverage": 0.45,
-        "home_xg_multiplier": 0.998,
-        "away_xg_multiplier": 0.9931,
-        "home_attack_vs_away_defense": -0.0175,
-        "away_attack_vs_home_defense": -0.0612
-      },
       "home": {
         "team": "Switzerland",
         "elo": 1728.5714,
@@ -528,171 +425,6 @@
         "sample_confidence": 1.0,
         "xg": 0.5693
       }
-    },
-    "roster_strength": {
-      "home": {
-        "team": "Switzerland",
-        "attack_strength": 45.13,
-        "midfield_control_strength": 52.13,
-        "defense_gk_strength": 43.76,
-        "attack_line_strength": 45.13,
-        "midfield_line_strength": 52.13,
-        "defense_line_strength": 44.4,
-        "goalkeeper_strength": 43.12,
-        "squad_depth": 48.35,
-        "starting_xi_strength": 46.23,
-        "bench_strength": 52.29,
-        "coverage": 0.0,
-        "fifa_power_coverage": 0.0,
-        "missing_player_stats": 26,
-        "paper_strength_source": "roster quality prior + 本届世界杯表现 fallback",
-        "fallback_fields": [
-          "attack_line_strength",
-          "bench_strength",
-          "defense_line_strength",
-          "goalkeeper_strength",
-          "midfield_line_strength",
-          "squad_overall_strength",
-          "starting_xi_strength"
-        ],
-        "model_version": "world-cup-line-strength-v1",
-        "player_value_score": 50.0,
-        "squad_depth_prior": 50.0,
-        "team_market_value_prior": null,
-        "roster_quality_prior": {
-          "attack": 69.49,
-          "midfield": 71.61,
-          "defense": 64.58,
-          "goalkeeper": 65.41,
-          "overall": 67.77,
-          "depth": 66.42
-        },
-        "squad_overall_strength": 46.54,
-        "fallback_triggered": true,
-        "fallback_reason": "Player feed has no FIFA power ratings and no usable club minutes/ratings; identical enriched strengths indicate placeholder data.",
-        "line_strength_source": "FIFA/SportMonks/FootballData missing or sparse; blended roster quality prior",
-        "roster_data_quality": {
-          "poor": true,
-          "effective_coverage": 0.35,
-          "reason": "Player feed has no FIFA power ratings and no usable club minutes/ratings; identical enriched strengths indicate placeholder data.",
-          "players": 26,
-          "players_with_strength": 0,
-          "fifa_power_count": 0,
-          "players_with_real_stats": 0,
-          "identical_strengths": false
-        },
-        "attack_line_strength_raw": 68.68,
-        "midfield_line_strength_raw": 70.42,
-        "defense_line_strength_raw": 65.0,
-        "goalkeeper_strength_raw": 65.34,
-        "squad_overall_strength_raw": 67.77,
-        "starting_xi_strength_raw": 67.27,
-        "bench_strength_raw": 66.16,
-        "strength_baseline": "50 = 本届世界杯48队平均水平",
-        "strength_baseline_value": 50,
-        "standardization_method": "z-score: 50 + (raw - mean) / std * 10, clamped to 30-85",
-        "standardization_pool": "current World Cup teams",
-        "standardization_pool_size": 48,
-        "standardization_scale": 10.0,
-        "standardization_bounds": {
-          "min": 30,
-          "max": 85
-        },
-        "data_source_priority": [
-          "FIFA",
-          "SportMonks",
-          "FootballData.io",
-          "ESPN",
-          "historical/fallback"
-        ],
-        "model_confidence": 0.45
-      },
-      "away": {
-        "team": "Colombia",
-        "attack_strength": 40.78,
-        "midfield_control_strength": 49.17,
-        "defense_gk_strength": 47.62,
-        "attack_line_strength": 40.78,
-        "midfield_line_strength": 49.17,
-        "defense_line_strength": 48.07,
-        "goalkeeper_strength": 47.17,
-        "squad_depth": 46.89,
-        "starting_xi_strength": 44.74,
-        "bench_strength": 50.88,
-        "coverage": 0.0,
-        "fifa_power_coverage": 0.0,
-        "missing_player_stats": 26,
-        "paper_strength_source": "roster quality prior + 本届世界杯表现 fallback",
-        "fallback_fields": [
-          "attack_line_strength",
-          "bench_strength",
-          "defense_line_strength",
-          "goalkeeper_strength",
-          "midfield_line_strength",
-          "squad_overall_strength",
-          "starting_xi_strength"
-        ],
-        "model_version": "world-cup-line-strength-v1",
-        "player_value_score": 50.0,
-        "squad_depth_prior": 50.0,
-        "team_market_value_prior": null,
-        "roster_quality_prior": {
-          "attack": 59.9,
-          "midfield": 67.33,
-          "defense": 68.59,
-          "goalkeeper": 69.41,
-          "overall": 66.31,
-          "depth": 64.96
-        },
-        "squad_overall_strength": 44.84,
-        "fallback_triggered": true,
-        "fallback_reason": "Player feed has no FIFA power ratings and no usable club minutes/ratings; identical enriched strengths indicate placeholder data.",
-        "line_strength_source": "FIFA/SportMonks/FootballData missing or sparse; blended roster quality prior",
-        "roster_data_quality": {
-          "poor": true,
-          "effective_coverage": 0.35,
-          "reason": "Player feed has no FIFA power ratings and no usable club minutes/ratings; identical enriched strengths indicate placeholder data.",
-          "players": 26,
-          "players_with_strength": 0,
-          "fifa_power_count": 0,
-          "players_with_real_stats": 0,
-          "identical_strengths": false
-        },
-        "attack_line_strength_raw": 65.0,
-        "midfield_line_strength_raw": 66.91,
-        "defense_line_strength_raw": 67.94,
-        "goalkeeper_strength_raw": 68.62,
-        "squad_overall_strength_raw": 66.31,
-        "starting_xi_strength_raw": 66.07,
-        "bench_strength_raw": 65.0,
-        "strength_baseline": "50 = 本届世界杯48队平均水平",
-        "strength_baseline_value": 50,
-        "standardization_method": "z-score: 50 + (raw - mean) / std * 10, clamped to 30-85",
-        "standardization_pool": "current World Cup teams",
-        "standardization_pool_size": 48,
-        "standardization_scale": 10.0,
-        "standardization_bounds": {
-          "min": 30,
-          "max": 85
-        },
-        "data_source_priority": [
-          "FIFA",
-          "SportMonks",
-          "FootballData.io",
-          "ESPN",
-          "historical/fallback"
-        ],
-        "model_confidence": 0.45
-      }
-    },
-    "roster_weight": 0.25,
-    "roster_coverage": {
-      "home": 0.0,
-      "away": 0.0
-    },
-    "missing_player_stats": {
-      "home": 26,
-      "away": 26
     },
     "btts": 0.39832634821071794,
     "totals": {
@@ -715,7 +447,6 @@
     "monte_carlo_over25_prob": 0.3433,
     "score_heatmap_over25_prob": 0.10780618817360439,
     "final_over25_prob": 0.2801841978042721,
-    "over25_market_prob": null,
     "over25_edge": null,
     "over25_kelly": null,
     "over25_value": {
@@ -729,7 +460,6 @@
       "monte_carlo_over25_prob": 0.3433,
       "score_heatmap_over25_prob": 0.10780618817360439,
       "final_over25_prob": 0.2801841978042721,
-      "over25_market_prob": null,
       "over25_edge": null,
       "over25_kelly": null,
       "value": {
@@ -741,10 +471,8 @@
       "dixon_coles_elo": 0.19635405606698106,
       "poisson": 0.20405201682864937,
       "monte_carlo": 0.20119661868677627,
-      "market": 0.1668806908364481,
       "xgboost": 0.23151661758114514,
       "draw_adjustment": 0.0,
-      "market_calibration": 0.35,
       "llm_vote": 0.0,
       "llm_vote_cap": 0.15
     },
@@ -754,7 +482,6 @@
         "elo": 0.19635405606698106,
         "poisson": 0.20405201682864937,
         "monte_carlo": 0.20119661868677627,
-        "market": 0.1668806908364481,
         "xgboost": 0.23151661758114514
       },
       "sample_count": 16,
@@ -776,12 +503,6 @@
           "log_loss": 1.059583,
           "coverage": 1.0,
           "samples": 16
-        },
-        "market": {
-          "brier_score": 0.200541,
-          "log_loss": 1.015796,
-          "coverage": 0.8125,
-          "samples": 13
         },
         "xgboost": {
           "brier_score": 0.175747,
@@ -853,41 +574,8 @@
         "elo": 0.19635405606698106,
         "poisson": 0.20405201682864937,
         "monte_carlo": 0.20119661868677627,
-        "market": 0.1668806908364481,
         "xgboost": 0.23151661758114514
       }
-    },
-    "market_alignment": {
-      "available": true,
-      "totals_available": false,
-      "market_probabilities": {
-        "home": 0.26675968964689784,
-        "draw": 0.3053938515957589,
-        "away": 0.4278464587573434
-      },
-      "totals_market": null,
-      "baseline_probabilities": {
-        "home": 0.26474209930553133,
-        "draw": 0.4475900568849407,
-        "away": 0.28766784380952826
-      }
-    },
-    "odds_data_status": {
-      "market_available": true,
-      "source": "China Sporttery live 周二096",
-      "available_markets": [
-        "h2h",
-        "handicap"
-      ],
-      "providers": [
-        {
-          "name": "China Sporttery",
-          "configured": false,
-          "role": "official_cn_odds_public_web_fallback"
-        }
-      ],
-      "reason": null,
-      "sporttery_priority_note": "赔率仅使用中国体育彩票网页数据；其他历史赔率源不会参与今日比赛或可投注比赛计算。"
     },
     "elo": {
       "home": 0.26474209930553133,
@@ -2779,14 +2467,6 @@
           },
           "home_lambda_multiplier": 1.18,
           "away_lambda_multiplier": 1.18
-        },
-        "roster_adjustment": {
-          "available": true,
-          "coverage": 0.45,
-          "home_xg_multiplier": 0.998,
-          "away_xg_multiplier": 0.9931,
-          "home_attack_vs_away_defense": -0.0175,
-          "away_attack_vs_home_defense": -0.0612
         }
       }
     },
@@ -2881,127 +2561,6 @@
       "max": 100000,
       "clamped": false
     },
-    "market": {
-      "available": true,
-      "provider": "China Sporttery live 周二096",
-      "bookmaker": null,
-      "market_key": "h2h",
-      "odds": {
-        "home": 3.32,
-        "draw": 2.9,
-        "away": 2.07
-      },
-      "implied_probability_raw": {
-        "home": 0.30120481927710846,
-        "draw": 0.3448275862068966,
-        "away": 0.48309178743961356
-      },
-      "implied_probability_no_vig": {
-        "home": 0.26675968964689784,
-        "draw": 0.3053938515957589,
-        "away": 0.4278464587573434
-      },
-      "market_probability_no_vig": {
-        "home": 0.26675968964689784,
-        "draw": 0.3053938515957589,
-        "away": 0.4278464587573434
-      },
-      "overround": 0.129124,
-      "checked_at": "2026-07-08T15:30:51.921112+00:00"
-    },
-    "market_available": true,
-    "odds_markets": {
-      "market_available": true,
-      "h2h": {
-        "available": true,
-        "provider": "China Sporttery live 周二096",
-        "bookmaker": null,
-        "market_key": "h2h",
-        "odds": {
-          "home": 3.32,
-          "draw": 2.9,
-          "away": 2.07
-        },
-        "implied_probability_raw": {
-          "home": 0.30120481927710846,
-          "draw": 0.3448275862068966,
-          "away": 0.48309178743961356
-        },
-        "implied_probability_no_vig": {
-          "home": 0.26675968964689784,
-          "draw": 0.3053938515957589,
-          "away": 0.4278464587573434
-        },
-        "market_probability_no_vig": {
-          "home": 0.26675968964689784,
-          "draw": 0.3053938515957589,
-          "away": 0.4278464587573434
-        },
-        "overround": 0.129124,
-        "checked_at": "2026-07-08T15:30:51.921112+00:00"
-      },
-      "handicap": {
-        "available": true,
-        "provider": "China Sporttery live 周二096",
-        "bookmaker": null,
-        "market_key": "handicap_1x2",
-        "odds": {
-          "home": 1.59,
-          "draw": 3.33,
-          "away": 5.0
-        },
-        "implied_probability_raw": {
-          "home": 0.6289308176100629,
-          "draw": 0.3003003003003003,
-          "away": 0.2
-        },
-        "implied_probability_no_vig": {
-          "home": 0.5569549117402082,
-          "draw": 0.2659334263264057,
-          "away": 0.1771116619333862
-        },
-        "market_probability_no_vig": {
-          "home": 0.5569549117402082,
-          "draw": 0.2659334263264057,
-          "away": 0.1771116619333862
-        },
-        "overround": 0.129231,
-        "checked_at": "2026-07-08T15:30:51.921135+00:00",
-        "line": "+1"
-      },
-      "totals": {
-        "available": false,
-        "provider": "the_odds_api",
-        "reason": "大小球盘口不可用",
-        "odds": {},
-        "implied_probability_raw": {},
-        "implied_probability_no_vig": {},
-        "market_probability_no_vig": {},
-        "overround": null,
-        "checked_at": "2026-07-08T15:30:51.921139+00:00"
-      }
-    },
-    "lottery_market": {
-      "available": true,
-      "source": "China Sporttery live 周二096",
-      "match_no": null,
-      "league": "1/8决赛",
-      "sale_status": "selling",
-      "business_date": null,
-      "kickoff_time": "2026-07-07T20:00:00+00:00",
-      "spf": {
-        "home_win": 3.32,
-        "draw": 2.9,
-        "away_win": 2.07
-      },
-      "rqspf": {
-        "home_win": 1.59,
-        "draw": 3.33,
-        "away_win": 5.0,
-        "handicap": "+1"
-      },
-      "updated_at": "2026-07-08T15:30:51.921112+00:00"
-    },
     "handicap_analysis": {
       "available": true,
       "line": 1.0,
@@ -3009,16 +2568,6 @@
         "home": 0.66327,
         "draw": 0.252278,
         "away": 0.084452
-      },
-      "market_probabilities": {
-        "home": 0.5569549117402082,
-        "draw": 0.2659334263264057,
-        "away": 0.1771116619333862
-      },
-      "odds": {
-        "home": 1.59,
-        "draw": 3.33,
-        "away": 5.0
       },
       "tail_probability": 0.0,
       "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
@@ -3415,7 +2964,6 @@
           {
             "outcome": "home",
             "model_probability": 0.66327,
-            "market_probability": 0.556955,
             "edge": 0.106315,
             "decimal_odds": 1.59,
             "label": "强推荐",
@@ -3429,7 +2977,6 @@
           {
             "outcome": "draw",
             "model_probability": 0.252278,
-            "market_probability": 0.265933,
             "edge": -0.013655,
             "decimal_odds": 3.33,
             "label": "不推荐",
@@ -3443,7 +2990,6 @@
           {
             "outcome": "away",
             "model_probability": 0.084452,
-            "market_probability": 0.177112,
             "edge": -0.09266,
             "decimal_odds": 5.0,
             "label": "不推荐",
@@ -3459,7 +3005,6 @@
           {
             "outcome": "home",
             "model_probability": 0.66327,
-            "market_probability": 0.556955,
             "edge": 0.106315,
             "decimal_odds": 1.59,
             "label": "强推荐",
@@ -3808,11 +3353,6 @@
         "draw": 0.252278,
         "away": 0.084452
       },
-      "handicap_market_probabilities": {
-        "home": 0.5569549117402082,
-        "draw": 0.2659334263264057,
-        "away": 0.1771116619333862
-      },
       "handicap_regions": {
         "0-0": "home",
         "0-1": "draw",
@@ -3895,33 +3435,19 @@
         "lambda_diff": -0.0194,
         "lambda_total": 1.9952,
         "low_total_goals": 1.0,
-        "market_home_edge": -0.073671,
-        "market_draw_edge": -0.003591,
         "mc_home_edge": -0.008931,
         "mc_goal_variance": 2.09208,
-        "roster_attack_edge": 0.022667,
         "form_home_edge": 0.4924,
         "attack_line_edge": 0.2175,
         "midfield_line_edge": 0.148,
         "defense_line_edge": -0.1835,
         "starting_xi_edge": 0.0745,
         "bench_strength_edge": 0.0705,
-        "squad_depth_edge": 0.073,
-        "fifa_stats_xg_edge": 0.0,
-        "footballdata_shot_edge": 0.0,
-        "sportmonks_shot_on_target_edge": 0.0,
-        "sportmonks_possession_edge": 0.0,
-        "sportmonks_corner_edge": 0.0,
-        "sportmonks_lineup_depth": 0.0,
-        "sportmonks_sidelined_edge": 0.0,
-        "lineup_missing_edge": 0.0,
-        "roster_coverage_edge": 0.0,
         "over25_attack_edge": 0.0,
         "over25_defense_edge": 0.0,
         "over25_recent_edge": 0.0,
         "over25_adjusted_edge": 0.0,
         "under25_stability_edge": 0.0,
-        "over25_market_edge": -0.321866,
         "stage_encoded": 0.0,
         "knockout_stage_flag": 0.0,
         "round_of_32_flag": 0.0,
@@ -3931,10 +3457,7 @@
         "current_world_cup_form_edge": 0.0,
         "group_stage_performance_edge": 0.4924,
         "team_strength_edge": 0.11164,
-        "attack_defense_matchup": 0.58096,
-        "market_implied_home_prob": 0.26676,
-        "market_implied_draw_prob": 0.305394,
-        "market_implied_away_prob": 0.427846
+        "attack_defense_matchup": 0.58096
       },
       "correction_strength": 0.42,
       "training": {
@@ -3969,37 +3492,8 @@
         "elo": 0.19635405606698106,
         "poisson": 0.20405201682864937,
         "monte_carlo": 0.20119661868677627,
-        "market": 0.1668806908364481,
         "xgboost": 0.23151661758114514
-      },
-      "source_probabilities": {
-        "elo": {
-          "home": 0.2647420993055312,
-          "draw": 0.44759005688494047,
-          "away": 0.28766784380952815
-        },
-        "poisson": {
-          "home": 0.34043083609983604,
-          "draw": 0.3089852514225128,
-          "away": 0.3505839124776511
-        },
-        "monte_carlo": {
-          "home": 0.3315,
-          "draw": 0.3252,
-          "away": 0.3433
-        },
-        "market": {
-          "home": 0.26675968964689784,
-          "draw": 0.3053938515957589,
-          "away": 0.4278464587573434
-        },
-        "xgboost": {
-          "home": 0.2808017180465619,
-          "draw": 0.21107806296740203,
-          "away": 0.5081202189860361
-        }
-      },
-      "market_included": true
+      }
     },
     "stage_calibration": {
       "stage": "unknown",
@@ -4007,7 +3501,6 @@
         "elo": 0.19635405606698106,
         "poisson": 0.20405201682864937,
         "monte_carlo": 0.20119661868677627,
-        "market": 0.1668806908364481,
         "xgboost": 0.23151661758114514
       },
       "draw_adjustment": {
@@ -4027,7 +3520,6 @@
         {
           "outcome": "home",
           "model_probability": 0.297673,
-          "market_probability": 0.26676,
           "edge": 0.030913,
           "decimal_odds": 3.32,
           "label": "不建议",
@@ -4042,7 +3534,6 @@
         {
           "outcome": "draw",
           "model_probability": 0.316197,
-          "market_probability": 0.305394,
           "edge": 0.010803,
           "decimal_odds": 2.9,
           "label": "市场共识",
@@ -4057,7 +3548,6 @@
         {
           "outcome": "away",
           "model_probability": 0.38613,
-          "market_probability": 0.427846,
           "edge": -0.041716,
           "decimal_odds": 2.07,
           "label": "不建议",
@@ -4082,7 +3572,6 @@
       {
         "outcome": "home",
         "model_probability": 0.66327,
-        "market_probability": 0.556955,
         "edge": 0.106315,
         "decimal_odds": 1.59,
         "label": "强推荐",
@@ -4092,7 +3581,6 @@
           "half": 0.046271,
           "quarter": 0.023135
         },
-        "market_type": "handicap_1x2",
         "line": 1.0
       }
     ],

@@ -1,0 +1,45 @@
+name: Validate repository
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Check repository safety
+        run: scripts/check_repository_safety.sh
+
+      - name: Check SQLite integrity
+        run: sqlite3 data/worldcup.sqlite3 'PRAGMA integrity_check;'
+
+      - name: Run tests
+        run: pytest -q
+
+      - name: Build static site
+        run: PYTHONPATH=backend python scripts/export_static_site.py

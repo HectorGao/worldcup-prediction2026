@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose an improvement to the application, models, data workflow, or documentation.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or maintainer problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe behavior, scope, and alternatives.
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: Data and licensing impact
+      description: Identify new sources, redistribution rights, credentials, or snapshot changes.
+  - type: textarea
+    id: validation
+    attributes:
+      label: Acceptance criteria
+      description: How should the change be tested or verified?
