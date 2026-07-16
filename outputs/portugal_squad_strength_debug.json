@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-12T08:43:43.807421+00:00",
+  "generated_at": "2026-07-16T18:14:19.336495+00:00",
   "team_id": "Portugal",
   "canonical_team_id": "Portugal",
   "team_name": {
@@ -19,36 +19,36 @@
   "substitutes": [],
   "power_rankings": [],
   "fallback_triggered": true,
-  "fallback_reason": "Player feed has no FIFA power ratings and no usable club minutes/ratings; identical enriched strengths indicate placeholder data.",
+  "fallback_reason": "No player roster available; using team-level roster quality prior.",
   "raw_scores": {
-    "attack_line_strength": 80.79,
-    "midfield_line_strength": 81.9,
-    "defense_line_strength": 80.73,
-    "goalkeeper_strength": 79.14
+    "attack_line_strength": 79.0,
+    "midfield_line_strength": 81.25,
+    "defense_line_strength": 80.8,
+    "goalkeeper_strength": 82.3
   },
   "raw_pool_stats_48": {
     "attack_line_strength": {
-      "mean": 72.7567,
-      "std": 8.5141
+      "mean": 73.8629,
+      "std": 8.5254
     },
     "midfield_line_strength": {
-      "mean": 67.4819,
-      "std": 11.64
+      "mean": 68.6415,
+      "std": 12.7165
     },
     "defense_line_strength": {
-      "mean": 69.2698,
-      "std": 7.8367
+      "mean": 69.8504,
+      "std": 8.0673
     },
     "goalkeeper_strength": {
-      "mean": 70.6706,
-      "std": 7.9019
+      "mean": 71.3504,
+      "std": 8.0673
     }
   },
   "normalized_scores": {
-    "attack_line_strength": 59.44,
-    "midfield_line_strength": 62.39,
-    "defense_line_strength": 64.62,
-    "goalkeeper_strength": 60.72
+    "attack_line_strength": 56.03,
+    "midfield_line_strength": 59.92,
+    "defense_line_strength": 63.57,
+    "goalkeeper_strength": 63.57
   },
   "strong_team_sanity_warnings": [],
   "standardization": "z-score: 50 + (raw - mean) / std * 10, clamped to 30-85",
