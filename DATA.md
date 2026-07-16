@@ -108,6 +108,23 @@ SPORTTERY_ENABLE_LIVE=1 .venv/bin/python scripts/update_after_results.py \
 
 Review provider terms each time the source or subscription changes. The script updates the local database and output files; it does not grant redistribution rights.
 
+## Preserving regression runs
+
+The top-level files in `outputs/` represent the latest reviewed run and may be
+replaced by a later synchronization or retraining operation. Before publishing
+an update, preserve each significant regression under:
+
+```text
+outputs/regressions/YYYY-MM-DD-short-label/
+```
+
+Copy the reviewed synchronization log, retraining report, aggregate regression
+evaluation, specialized error analyses, weighting comparison, updated
+predictions, and bracket output into that directory. Add a short `README.md`
+that records the effective match dates, important aggregate metrics, snapshot
+command, and data-rights boundary. Run the public snapshot builder before
+creating the archive so restricted provider fields are not copied into Git.
+
 ## Reproducing precomputed API data
 
 Export read-only API snapshots from the local database:
