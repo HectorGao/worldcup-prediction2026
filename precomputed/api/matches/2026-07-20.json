@@ -10,15 +10,17 @@
       "id": "lyihub-54328033",
       "date": "2026-07-20",
       "kickoff": "2026-07-19T19:00:00+00:00",
-      "home_team": "第1场半决赛胜者",
-      "away_team": "第2场半决赛胜者",
+      "home_team": "法国/西班牙 胜者",
+      "away_team": "英格兰/阿根廷 胜者",
       "group": "决赛",
       "venue": "待定",
       "status": "scheduled",
       "home_score": null,
       "away_score": null,
-      "home_team_zh": "第1场半决赛胜者",
-      "away_team_zh": "第2场半决赛胜者",
+      "source_url": "https://worldcup.lyihub.com/match.html?id=54328033",
+      "source_name": "lyihub_worldcup_static_json",
+      "home_team_zh": "法国/西班牙 胜者",
+      "away_team_zh": "英格兰/阿根廷 胜者",
       "home_flag": "🏳️",
       "away_flag": "🏳️",
       "home_iso2": "",
@@ -26,9 +28,67 @@
       "match_id": "54328033",
       "stage": "决赛",
       "has_predict": false,
+      "source_home_team_zh": "法国/西班牙 胜者",
+      "source_away_team_zh": "英格兰/阿根廷 胜者",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": false,
       "has_prediction_record": true,
       "actual_score": null,
+      "odds_markets": {
+        "market_available": false,
+        "h2h": {
+          "available": false,
+          "provider": "the_odds_api",
+          "reason": "中国体育彩票当前没有该比赛胜平负赔率，或网页抓取失败。",
+          "odds": {},
+          "implied_probability_raw": {},
+          "implied_probability_no_vig": {},
+          "market_probability_no_vig": {},
+          "overround": null,
+          "checked_at": "2026-07-14T13:05:43.149680+00:00"
+        },
+        "handicap": {
+          "available": false,
+          "provider": "the_odds_api",
+          "reason": "让球胜平负盘口不可用：当前数据源未返回 handicap market。",
+          "odds": {},
+          "implied_probability_raw": {},
+          "implied_probability_no_vig": {},
+          "market_probability_no_vig": {},
+          "overround": null,
+          "checked_at": "2026-07-14T13:05:43.149695+00:00"
+        },
+        "totals": {
+          "available": false,
+          "provider": "the_odds_api",
+          "reason": "大小球盘口不可用",
+          "odds": {},
+          "implied_probability_raw": {},
+          "implied_probability_no_vig": {},
+          "market_probability_no_vig": {},
+          "overround": null,
+          "checked_at": "2026-07-14T13:05:43.149698+00:00"
+        }
+      },
+      "lottery_market": {
+        "available": false,
+        "reason": "no_sporttery_worldcup_match_found"
+      },
+      "odds_data_status": {
+        "market_available": false,
+        "source": "the_odds_api",
+        "available_markets": [],
+        "providers": [
+          {
+            "name": "China Sporttery",
+            "configured": false,
+            "role": "official_cn_odds_public_web_fallback"
+          }
+        ],
+        "reason": "中国体育彩票当前没有该比赛胜平负赔率，或网页抓取失败。",
+        "sporttery_priority_note": "赔率仅使用中国体育彩票网页数据；其他历史赔率源不会参与今日比赛或可投注比赛计算。"
+      },
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -48,6 +108,7 @@
         "reason": "让球胜平负盘口不可用：当前数据源未返回 handicap market。",
         "line": null,
         "model_probabilities": {},
+        "market_probabilities": {},
         "value_analysis": {
           "available": false,
           "items": [],
@@ -55,12 +116,13 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.35383619374324504,
-        "under25_prob": 0.6161288445513995,
-        "xgboost_over25_prob": 0.3455168687599581,
-        "monte_carlo_over25_prob": 0.3609,
-        "score_heatmap_over25_prob": 0.48881733272320316,
-        "final_over25_prob": 0.38387115544860045,
+        "poisson_over25_prob": 0.35612041458080707,
+        "under25_prob": 0.611881049913661,
+        "xgboost_over25_prob": 0.3500614356392458,
+        "monte_carlo_over25_prob": 0.3689,
+        "score_heatmap_over25_prob": 0.4914225032445473,
+        "final_over25_prob": 0.388118950086339,
+        "over25_market_prob": null,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {

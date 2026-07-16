@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-12T08:43:43.807421+00:00",
+  "generated_at": "2026-07-14T11:11:40.491391+00:00",
   "team_id": "Portugal",
   "canonical_team_id": "Portugal",
   "team_name": {
@@ -8,6 +8,9 @@
     "flag": "🇵🇹",
     "iso2": "PT"
   },
+  "fifa_team_id": null,
+  "sportmonks_team_id": null,
+  "footballdata_io_team_id": null,
   "alias_mapping": {
     "Portugal": "Portugal",
     "POR": "Portugal",
@@ -16,39 +19,85 @@
     "Portugal National Team": "Portugal"
   },
   "alias_mapping_success": true,
+  "players_used": [],
+  "starting_players": [],
   "substitutes": [],
   "power_rankings": [],
+  "player_value_or_ability_data": {
+    "team_market_value_prior": {
+      "attack": 89,
+      "midfield": 88,
+      "defense": 87,
+      "goalkeeper": 85,
+      "overall": 87.5,
+      "depth": 87
+    },
+    "player_value_score": 68.0,
+    "roster_quality_prior": {
+      "attack": 83.35,
+      "midfield": 83.31,
+      "defense": 82.6,
+      "goalkeeper": 81.78,
+      "overall": 82.91,
+      "depth": 81.58
+    },
+    "squad_depth_prior": 65.2
+  },
   "fallback_triggered": true,
-  "fallback_reason": "Player feed has no FIFA power ratings and no usable club minutes/ratings; identical enriched strengths indicate placeholder data.",
+  "fallback_reason": "No player roster available; using team-level roster quality prior.",
   "raw_scores": {
-    "attack_line_strength": 80.79,
-    "midfield_line_strength": 81.9,
-    "defense_line_strength": 80.73,
-    "goalkeeper_strength": 79.14
+    "attack_line_strength": 79.0,
+    "midfield_line_strength": 81.25,
+    "defense_line_strength": 80.8,
+    "goalkeeper_strength": 82.3,
+    "squad_overall_strength": 80.84
   },
   "raw_pool_stats_48": {
     "attack_line_strength": {
-      "mean": 72.7567,
-      "std": 8.5141
+      "mean": 73.9323,
+      "std": 8.6325
     },
     "midfield_line_strength": {
-      "mean": 67.4819,
-      "std": 11.64
+      "mean": 68.7156,
+      "std": 12.8085
     },
     "defense_line_strength": {
-      "mean": 69.2698,
-      "std": 7.8367
+      "mean": 69.8915,
+      "std": 8.1209
     },
     "goalkeeper_strength": {
-      "mean": 70.6706,
-      "std": 7.9019
+      "mean": 71.3915,
+      "std": 8.1209
+    },
+    "squad_overall_strength": {
+      "mean": 70.9835,
+      "std": 8.2811
     }
   },
   "normalized_scores": {
-    "attack_line_strength": 59.44,
-    "midfield_line_strength": 62.39,
-    "defense_line_strength": 64.62,
-    "goalkeeper_strength": 60.72
+    "attack_line_strength": 55.87,
+    "midfield_line_strength": 59.79,
+    "defense_line_strength": 63.43,
+    "goalkeeper_strength": 63.43,
+    "squad_overall_strength": 61.9
+  },
+  "source_fields": {
+    "paper_strength_source": "本届世界杯表现 fallback",
+    "line_strength_source": "本届世界杯表现 fallback",
+    "fallback_fields": [
+      "attack_line_strength",
+      "midfield_line_strength",
+      "defense_line_strength",
+      "goalkeeper_strength"
+    ],
+    "coverage": 0.0,
+    "fifa_power_coverage": 0.0,
+    "roster_data_quality": {
+      "poor": true,
+      "effective_coverage": 0.0,
+      "reason": "No player roster available; using team-level roster quality prior.",
+      "players": 0
+    }
   },
   "strong_team_sanity_warnings": [],
   "standardization": "z-score: 50 + (raw - mean) / std * 10, clamped to 30-85",
