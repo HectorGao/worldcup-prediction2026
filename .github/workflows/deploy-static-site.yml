@@ -45,7 +45,7 @@ jobs:
         run: PYTHONPATH=backend python scripts/export_static_site.py
 
       - name: Upload static artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: worldcup-static-site
           path: dist
