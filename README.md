@@ -82,6 +82,26 @@ Detailed sources, data rights, private-input setup, snapshot contents, update fr
 
 No production deployment requires publishing provider credentials.
 
+## Technical method and evaluation
+
+The reproducible path is:
+
+```mermaid
+flowchart LR
+  A[Public facts and authorized local feeds] --> B[Validation and normalization]
+  B --> C[Feature engineering]
+  C --> D[Dixon-Coles and Poisson]
+  C --> E[Elo and XGBoost]
+  D --> F[Calibrated ensemble and Monte Carlo]
+  E --> F
+  F --> G[Prediction snapshot and dashboard]
+  G --> H[Finished result and error analysis]
+```
+
+The model keeps 90-minute outcomes separate from extra-time and penalty-shootout advancement. Each persisted prediction contains the forecast timestamp, probabilities, expected goals, score matrix, model inputs, blend weights, market fields when locally authorized, and (once available) `post_match_evaluation` with Brier score and log loss. Regression artifacts in `outputs/` record accuracy, calibration, and per-match errors; they are regenerated after each reviewed result update rather than treated as immutable benchmarks.
+
+For a fresh, auditable update, fetch all available completed scoreboard events, retain the pre-match rows, recalculate only unfinished fixtures, attach actual 90-minute/extra-time/penalty fields, run tests, and rebuild the public snapshot. The exact command is documented in [DATA.md](DATA.md).
+
 ## Project layout
 
 ```text

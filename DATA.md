@@ -92,6 +92,7 @@ Install the project and configure authorized providers first. A full result upda
 ```bash
 SPORTTERY_ENABLE_LIVE=1 .venv/bin/python scripts/update_after_results.py \
   --fetch-online-results \
+  --all-finished-results \
   --use-xgboost \
   --recalculate \
   --sync-fifa \
