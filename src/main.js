@@ -1137,13 +1137,11 @@ function accuracyStatus(accuracy) {
   }
   const exact = accuracy.exact_score_hit ?? accuracy.exact_score;
   const outcome = accuracy.outcome_hit
-    ? '<span class="accuracy-status is-outcome" aria-label="胜平负命中">胜平负：命中</span>'
-    : '<span class="accuracy-status is-miss" aria-label="胜平负未命中">胜平负：未命中</span>';
+    ? '<span class="accuracy-status is-outcome-hit" aria-label="胜平负命中">胜平负：命中</span>'
+    : '<span class="accuracy-status is-outcome-miss" aria-label="胜平负未命中">胜平负：未命中</span>';
   const score = exact
-    ? '<span class="accuracy-status is-exact" aria-label="精确比分命中">精确比分：命中</span>'
-    : accuracy.outcome_hit
-      ? '<span class="accuracy-status is-partial" aria-label="胜平负命中但精确比分未命中">精确比分：部分命中</span>'
-      : '<span class="accuracy-status is-miss" aria-label="精确比分未命中">精确比分：未命中</span>';
+    ? '<span class="accuracy-status is-score-hit" aria-label="精确比分命中">精确比分：命中</span>'
+    : '<span class="accuracy-status is-score-miss" aria-label="精确比分未命中">精确比分：未命中</span>';
   return `${outcome}${score}`;
 }
 

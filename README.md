@@ -134,7 +134,7 @@ All figures and machine-readable metrics are generated from SQLite by [`tools/ge
 
 ## Match detail and evaluation labels
 
-Clicking a match card opens its single-match detail view. It shows the saved forecast timestamp, top scoreline, win/draw/loss probabilities, expected goals, model inputs and blend, available reviewed odds context, canonical final result, and a result label. The API carries `prediction_evaluation` with exact-score, outcome, partial-hit, goal-error, timing, and 90-minute-basis fields so the browser can render accessible status labels consistently.
+Clicking a match card opens its single-match detail view. It shows the saved forecast timestamp, top scoreline, win/draw/loss probabilities, expected goals, model inputs and blend, available reviewed odds context, canonical final result, and separate color-coded score/outcome labels. The API carries `prediction_evaluation` with exact-score, outcome, goal-error, timing, and 90-minute-basis fields so the browser can render accessible status labels consistently.
 
 ![Evaluation cases](docs/assets/case-cards.svg)
 
