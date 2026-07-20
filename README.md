@@ -1,6 +1,6 @@
 # World Cup Prediction 2026
 
-[English](README.md) | [中文](README.zh-CN.md)
+English | [简体中文](README.zh-CN.md)
 
 An open-source, local-first dashboard for exploring 2026 World Cup fixtures, team strength, match probabilities, knockout paths, and daily prediction reports.
 
@@ -18,6 +18,8 @@ The project combines Dixon-Coles and Poisson score models, Elo ratings, Monte Ca
 - Tests, static export, Render configuration, and maintenance tools
 
 Restricted raw provider payloads, credentials, and unlicensed player/roster datasets are not published. The reviewed Sporttery snapshot is a narrow field-whitelisted historical input, not a relicensed odds feed. See [DATA.md](DATA.md) for the exact boundary and update workflow.
+
+Sporttery values are historical point-in-time snapshots used only for research, model reproduction, and prediction evaluation. They are not current odds or betting advice; see the [snapshot audit](docs/audits/sporttery-snapshot-audit-2026-07-20.md).
 
 ## Quick start
 
@@ -110,7 +112,17 @@ The tournament evaluation population is **104 unique matches**: 72 group matches
 
 Each result stores `home_score_90`, `away_score_90`, extra-time fields, penalty fields, and one shared `result_display`. For example: `France 1-1 England（加时 2-2，点球 4-3）`. Outcome and exact-score hits always use the 90-minute score.
 
-The currently generated audit contains 104 matched stored prediction records: 70 outcome hits (67.3%), 24 exact-score hits (23.1%), score MAE 0.692, score RMSE 1.052, and Brier score 0.142. These are **reconstructed-record audit metrics**, not a claim of live pre-match performance: only 1 stored record is timestamped on or before its fixture date; 103 are labelled post-match-or-unknown and are shown separately in the generated report.
+<!-- GENERATED_FINAL_METRICS_START -->
+This block is generated from the final SQLite snapshot; 90-minute scores are the evaluation basis.
+- Population / evaluated / missing predictions: 104 / 104 / 2
+- Outcome / exact-score hits: 70 (67.3%) / 24 (23.1%)
+- Home / away / total-goal MAE and score RMSE: 0.731 / 0.654 / 1.154 / 1.052
+- Brier / log loss: 0.142 / 0.723; best / hardest stage: 半决赛 / 季军赛
+- Odds-covered / no-odds outcome rate: 0 (0.0%) / 104 (67.3%) (descriptive coverage split, not a causal claim).
+- Timing: 1 pre-match records and 103 reconstructed post-match-or-unknown records.
+<!-- GENERATED_FINAL_METRICS_END -->
+
+These are **reconstructed-record audit metrics**, not a claim of live pre-match performance. Timing-qualified pre-match records and post-match-or-unknown records are always reported separately.
 
 ![Final overview](docs/assets/overview.svg)
 
@@ -126,6 +138,8 @@ Clicking a match card opens its single-match detail view. It shows the saved for
 
 ![Evaluation cases](docs/assets/case-cards.svg)
 
+![Match detail flow](docs/assets/match-detail-flow.svg)
+
 ## Reproducing the final report
 
 Run the canonical rebuild and attach evaluations without rerunning historical forecasts:
@@ -140,11 +154,15 @@ The deliberate order prevents post-result model recomputation from being present
 
 ## Next tournament improvement plan
 
-1. Persist an immutable forecast at prediction time, including an explicit timezone-aware timestamp and frozen feature/odds snapshot.
-2. Require a data-quality gate before release: one canonical fixture ID, 90-minute/extra-time/penalty completeness, alias review, and source-provenance check.
-3. Publish pre-match-only metrics separately from reconstructed diagnostics; add confidence, calibration, stage, and odds-availability slices once the timestamps support them.
-4. Add a source-rights review for every new data feed and retain only documented, safe public fields in the release builder.
-5. Keep daily changes reviewable with explicit staging, safety scan, database integrity check, regression tests, canonical rebuild, report generation, and then a normal commit/push.
+The generated case set includes an exact hit, an outcome-only hit, and a high-confidence miss (for example, a 3–0 forecast versus a 1–1 regular-time result). The draw slice is materially harder than home or away outcomes in this snapshot. These observations drive the following concrete plan.
+
+**Data.** Start odds collection before the tournament and retain opening, intermediate, and closing timestamped prices; add injuries, suspensions, projected lineups, player/club form, travel distance, rest, timezone, and climate. Version every input and freeze a pre-match record so post-result information cannot leak into a forecast.
+
+**Models.** Keep separate outcome classification and score-regression objectives; retain Poisson/Dixon–Coles or bivariate-Poisson baselines; compare calibrated ensembles, dynamic team ratings, draw/low-score specialists, stage-specific models, uncertainty intervals, and time-ordered validation. Run an explicit odds-feature ablation rather than treating the descriptive odds-covered split as causal evidence.
+
+**Evaluation.** Report Log Loss, Brier score, calibration error, high-confidence hits/misses, stage, team-strength-gap, outcome, and odds-coverage slices. Publish only timestamp-qualified pre-match results as performance, and keep reconstructed diagnostics separate. Generate model/data cards and canonical case records automatically.
+
+**Engineering.** Automate data capture and immutable snapshot archival; record model, code, and data versions per forecast; keep public and private layers separate; add database, unit, and end-to-end checks; and use GitHub Actions to validate snapshots, regenerate metrics/assets, and review rather than automatically publish unreviewed data.
 
 ## Project layout
 

@@ -8,7 +8,11 @@
   "exact_score_hit_rate": 0.23076923076923078,
   "score_mae": 0.6923076923076923,
   "score_rmse": 1.0515556241917166,
+  "home_goal_mae": 0.7307692307692307,
+  "away_goal_mae": 0.6538461538461539,
+  "total_goal_mae": 1.1538461538461537,
   "brier_score": 0.14186342718103578,
+  "log_loss": 0.7232787702676704,
   "timing_groups": {
     "post_match_or_unknown": 103,
     "pre_match": 1
@@ -73,6 +77,61 @@
       "matches": 20,
       "outcome_hit_rate": 0.35
     }
+  },
+  "outcome_metrics": {
+    "away": {
+      "matches": 29,
+      "outcome_hit_rate": 0.7241379310344828
+    },
+    "draw": {
+      "matches": 29,
+      "outcome_hit_rate": 0.4482758620689655
+    },
+    "home": {
+      "matches": 46,
+      "outcome_hit_rate": 0.782608695652174
+    }
+  },
+  "group_vs_knockout": {
+    "knockout": {
+      "matches": 32,
+      "outcome_hit_rate": 0.6875
+    },
+    "group_stage": {
+      "matches": 72,
+      "outcome_hit_rate": 0.6666666666666666
+    }
+  },
+  "odds_coverage": {
+    "without_odds": {
+      "matches": 104,
+      "outcome_hit_rate": 0.6730769230769231
+    }
+  },
+  "best_stage": "半决赛",
+  "hardest_stage": "季军赛",
+  "case_groups": {
+    "exact_hit": [
+      {
+        "result_display": "Spain 0-0 Argentina",
+        "predicted_score": "0-0",
+        "actual_score_90": "0-0"
+      }
+    ],
+    "outcome_only": [
+      {
+        "result_display": "Brazil 2-1 Japan",
+        "predicted_score": "2-0",
+        "actual_score_90": "2-1"
+      }
+    ],
+    "high_confidence_miss": [
+      {
+        "result_display": "Germany 1-1 Paraguay（点球 3-4）",
+        "predicted_score": "3-0",
+        "actual_score_90": "1-1"
+      }
+    ]
   },
   "evaluation_basis": "90-minute score only; extra time and penalties are presentation details.",
   "timing_note": "Only predictions timestamped on or before the fixture date are eligible for pre-match analysis; later records are reported separately as reconstructed audits."

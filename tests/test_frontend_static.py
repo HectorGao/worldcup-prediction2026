@@ -114,6 +114,9 @@ def test_finished_results_use_the_server_canonical_display_and_accessible_hit_la
     assert "result.result_display" in source
     assert "function accuracyStatus(accuracy)" in source
     assert "aria-label" in source
+    assert "胜平负：" in source
+    assert "精确比分：" in source
+    assert "function evaluationSummaryCard" in source
 
 
 def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
@@ -125,3 +128,6 @@ def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
     assert "api/teams/rankings.json" in source
     assert "read_only_static_site" in source
     assert "--precomputed" in source
+    assert "service.get_prediction(fixture_id)" in source
+    assert "service.db.list_predictions()" in source
+    assert "shutil.rmtree(api_dir)" not in source

@@ -7,7 +7,8 @@
     "iso2": "GB-ENG"
   },
   "coverage": {
-    "matches": 8
+    "matches": 8,
+    "players": 0
   },
   "matches": [
     {
@@ -21,6 +22,8 @@
       "status": "final",
       "home_score": 4,
       "away_score": 2,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "英格兰",
       "away_team_zh": "克罗地亚",
       "home_flag": "🏴",
@@ -30,27 +33,43 @@
       "match_id": "54329971",
       "stage": "小组赛 第1轮",
       "has_predict": true,
+      "source_home_team_zh": "英格兰",
+      "source_away_team_zh": "克罗地亚",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "4-2",
       "finished_result": {
-        "match_id": "espn-760437",
-        "stage": "group-stage",
+        "match_id": "54329971",
+        "stage": "小组赛 第1轮",
         "home_team": "England",
         "away_team": "Croatia",
         "is_finished": true,
         "home_goals_90": 4,
         "away_goals_90": 2,
+        "home_score_90": 4,
+        "away_score_90": 2,
         "home_goals_extra_time": null,
         "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "England 4-2 Croatia",
         "winner": "England",
         "loser": "Croatia",
         "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-20T07:44:31.089708+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "4-2",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -89,12 +108,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "3-1",
+        "actual_score_90": "4-2",
+        "predicted_home_score": 3,
+        "predicted_away_score": 1,
+        "actual_home_score": 4,
+        "actual_away_score": 2,
+        "predicted_outcome": "home",
+        "actual_outcome": "home",
+        "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
+        "goal_diff_error": 0,
+        "total_goal_error": 2,
+        "home_goal_error": 1,
+        "away_goal_error": 1,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-06-18|England|Croatia",
+        "result_display": "England 4-2 Croatia",
+        "prediction_created_at": "2026-07-20 02:42:13",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "3-1",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "3-1",
+        "actual_score_90": "4-2",
+        "predicted_home_score": 3,
+        "predicted_away_score": 1,
+        "actual_home_score": 4,
+        "actual_away_score": 2,
+        "predicted_outcome": "home",
+        "actual_outcome": "home",
         "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
         "goal_diff_error": 0,
-        "total_goal_error": 2
+        "total_goal_error": 2,
+        "home_goal_error": 1,
+        "away_goal_error": 1,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -108,6 +164,8 @@
       "status": "final",
       "home_score": 0,
       "away_score": 0,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "英格兰",
       "away_team_zh": "加纳",
       "home_flag": "🏴",
@@ -117,27 +175,43 @@
       "match_id": "54329972",
       "stage": "小组赛 第2轮",
       "has_predict": true,
+      "source_home_team_zh": "英格兰",
+      "source_away_team_zh": "加纳",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "0-0",
       "finished_result": {
-        "match_id": "espn-760458",
-        "stage": "group-stage",
+        "match_id": "54329972",
+        "stage": "小组赛 第2轮",
         "home_team": "England",
         "away_team": "Ghana",
         "is_finished": true,
         "home_goals_90": 0,
         "away_goals_90": 0,
+        "home_score_90": 0,
+        "away_score_90": 0,
         "home_goals_extra_time": null,
         "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "England 0-0 Ghana",
         "winner": null,
         "loser": null,
         "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-20T07:44:31.089834+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "0-0",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -175,12 +249,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "1-0",
+        "actual_score_90": "0-0",
+        "predicted_home_score": 1,
+        "predicted_away_score": 0,
+        "actual_home_score": 0,
+        "actual_away_score": 0,
+        "predicted_outcome": "home",
+        "actual_outcome": "draw",
+        "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
+        "goal_diff_error": 1,
+        "total_goal_error": 1,
+        "home_goal_error": 1,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-06-24|England|Ghana",
+        "result_display": "England 0-0 Ghana",
+        "prediction_created_at": "2026-07-20 02:42:39",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "1-0",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "1-0",
+        "actual_score_90": "0-0",
+        "predicted_home_score": 1,
+        "predicted_away_score": 0,
+        "actual_home_score": 0,
+        "actual_away_score": 0,
+        "predicted_outcome": "home",
+        "actual_outcome": "draw",
         "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
         "goal_diff_error": 1,
-        "total_goal_error": 1
+        "total_goal_error": 1,
+        "home_goal_error": 1,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -194,6 +305,8 @@
       "status": "final",
       "home_score": 0,
       "away_score": 2,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "巴拿马",
       "away_team_zh": "英格兰",
       "home_flag": "🇵🇦",
@@ -203,27 +316,43 @@
       "match_id": "54329973",
       "stage": "小组赛 第3轮",
       "has_predict": true,
+      "source_home_team_zh": "巴拿马",
+      "source_away_team_zh": "英格兰",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "0-2",
       "finished_result": {
-        "match_id": "espn-760485",
-        "stage": "group-stage",
+        "match_id": "54329973",
+        "stage": "小组赛 第3轮",
         "home_team": "Panama",
         "away_team": "England",
         "is_finished": true,
         "home_goals_90": 0,
         "away_goals_90": 2,
+        "home_score_90": 0,
+        "away_score_90": 2,
         "home_goals_extra_time": null,
         "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "Panama 0-2 England",
         "winner": "England",
         "loser": "Panama",
         "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-20T07:44:31.089946+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "0-2",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -261,12 +390,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "0-3",
+        "actual_score_90": "0-2",
+        "predicted_home_score": 0,
+        "predicted_away_score": 3,
+        "actual_home_score": 0,
+        "actual_away_score": 2,
+        "predicted_outcome": "away",
+        "actual_outcome": "away",
+        "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
+        "goal_diff_error": 1,
+        "total_goal_error": 1,
+        "home_goal_error": 0,
+        "away_goal_error": 1,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-06-28|Panama|England",
+        "result_display": "Panama 0-2 England",
+        "prediction_created_at": "2026-07-20 02:43:03",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "0-3",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "0-3",
+        "actual_score_90": "0-2",
+        "predicted_home_score": 0,
+        "predicted_away_score": 3,
+        "actual_home_score": 0,
+        "actual_away_score": 2,
+        "predicted_outcome": "away",
+        "actual_outcome": "away",
         "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
         "goal_diff_error": 1,
-        "total_goal_error": 1
+        "total_goal_error": 1,
+        "home_goal_error": 0,
+        "away_goal_error": 1,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -280,6 +446,8 @@
       "status": "final",
       "home_score": 2,
       "away_score": 1,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "英格兰",
       "away_team_zh": "刚果民主共和国",
       "home_flag": "🏴",
@@ -289,35 +457,51 @@
       "match_id": "54327940",
       "stage": "1/16决赛",
       "has_predict": true,
+      "source_home_team_zh": "英格兰",
+      "source_away_team_zh": "刚果民主共和国",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "2-1",
       "finished_result": {
-        "match_id": "lyihub-54327940",
+        "match_id": "54327940",
         "stage": "1/16决赛",
         "home_team": "England",
         "away_team": "DR Congo",
         "is_finished": true,
         "home_goals_90": 2,
         "away_goals_90": 1,
+        "home_score_90": 2,
+        "away_score_90": 1,
         "home_goals_extra_time": null,
         "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "England 2-1 DR Congo",
         "winner": "England",
         "loser": "DR Congo",
         "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-02T07:54:11.938642+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "2-1",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": true,
         "summary": "盘口未发现明显价值。",
         "items": [
           {
             "outcome": "home",
-            "model_probability": 0.711317,
-            "edge": -0.046054,
+            "model_probability": 0.702769,
+            "edge": -0.054602,
             "decimal_odds": 1.17,
             "label": "不建议",
             "edge_label": "no edge",
@@ -330,31 +514,31 @@
           },
           {
             "outcome": "draw",
-            "model_probability": 0.18378,
-            "edge": 0.014995,
+            "model_probability": 0.206851,
+            "edge": 0.038066,
             "decimal_odds": 5.25,
-            "label": "市场共识",
-            "edge_label": "market efficient",
+            "label": "不建议",
+            "edge_label": "no edge",
             "kelly": {
-              "full": 0.0,
-              "half": 0.0,
-              "quarter": 0.0
+              "full": 0.020228,
+              "half": 0.010114,
+              "quarter": 0.005057
             },
             "recommendation": "不下注"
           },
           {
             "outcome": "away",
-            "model_probability": 0.104903,
-            "edge": 0.031059,
+            "model_probability": 0.09038,
+            "edge": 0.016536,
             "decimal_odds": 12.0,
-            "label": "不建议",
-            "edge_label": "no edge",
+            "label": "市场共识",
+            "edge_label": "market efficient",
             "kelly": {
-              "full": 0.023531,
-              "half": 0.011765,
-              "quarter": 0.005883
+              "full": 0.007687,
+              "half": 0.003844,
+              "quarter": 0.001922
             },
-            "recommendation": "不下注"
+            "recommendation": "小仓位观察"
           }
         ],
         "recommended_options": [],
@@ -368,396 +552,396 @@
         "available": true,
         "line": -1.0,
         "model_probabilities": {
-          "home": 0.546754,
-          "draw": 0.197185,
-          "away": 0.256062
+          "home": 0.558004,
+          "draw": 0.196204,
+          "away": 0.245793
         },
-        "tail_probability": 0.011369,
+        "tail_probability": 0.010955,
         "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
         "regions": [
           {
             "home_goals": 0,
             "away_goals": 0,
             "outcome": "away",
-            "probability": 0.0172177
+            "probability": 0.01946826
           },
           {
             "home_goals": 0,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.01587175
+            "probability": 0.01680217
           },
           {
             "home_goals": 0,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.00937377
+            "probability": 0.00911779
           },
           {
             "home_goals": 0,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.00363587
+            "probability": 0.00324983
           },
           {
             "home_goals": 0,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.0010577
+            "probability": 0.00086875
           },
           {
             "home_goals": 0,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00024615
+            "probability": 0.00018579
           },
           {
             "home_goals": 0,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 4.774e-05
+            "probability": 3.311e-05
           },
           {
             "home_goals": 0,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 7.94e-06
+            "probability": 5.06e-06
           },
           {
             "home_goals": 1,
             "away_goals": 0,
             "outcome": "draw",
-            "probability": 0.04767356
+            "probability": 0.05269966
           },
           {
             "home_goals": 1,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.05885158
+            "probability": 0.06083787
           },
           {
             "home_goals": 1,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.02787184
+            "probability": 0.02693292
           },
           {
             "home_goals": 1,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.01081083
+            "probability": 0.00959962
           },
           {
             "home_goals": 1,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00314495
+            "probability": 0.00256618
           },
           {
             "home_goals": 1,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00073191
+            "probability": 0.00054879
           },
           {
             "home_goals": 1,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00014195
+            "probability": 9.78e-05
           },
           {
             "home_goals": 1,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 2.36e-05
+            "probability": 1.494e-05
           },
           {
             "home_goals": 2,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.07129071
+            "probability": 0.07825279
           },
           {
             "home_goals": 2,
             "away_goals": 1,
             "outcome": "draw",
-            "probability": 0.08295595
+            "probability": 0.08367426
           },
           {
             "home_goals": 2,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.05065214
+            "probability": 0.04780066
           },
           {
             "home_goals": 2,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.01607238
+            "probability": 0.0141781
           },
           {
             "home_goals": 2,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00467557
+            "probability": 0.0037901
           },
           {
             "home_goals": 2,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00108813
+            "probability": 0.00081054
           },
           {
             "home_goals": 2,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00021103
+            "probability": 0.00014445
           },
           {
             "home_goals": 2,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 3.508e-05
+            "probability": 2.207e-05
           },
           {
             "home_goals": 3,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.07065825
+            "probability": 0.07704997
           },
           {
             "home_goals": 3,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.08221999
+            "probability": 0.08238811
           },
           {
             "home_goals": 3,
             "away_goals": 2,
             "outcome": "draw",
-            "probability": 0.04783679
+            "probability": 0.04404804
           },
           {
             "home_goals": 3,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.01947247
+            "probability": 0.01677557
           },
           {
             "home_goals": 3,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00463409
+            "probability": 0.00373184
           },
           {
             "home_goals": 3,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00107847
+            "probability": 0.00079808
           },
           {
             "home_goals": 3,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00020916
+            "probability": 0.00014223
           },
           {
             "home_goals": 3,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 3.477e-05
+            "probability": 2.173e-05
           },
           {
             "home_goals": 4,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.05252354
+            "probability": 0.05689922
           },
           {
             "home_goals": 4,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.06111793
+            "probability": 0.06084129
           },
           {
             "home_goals": 4,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.0355593
+            "probability": 0.03252823
           },
           {
             "home_goals": 4,
             "away_goals": 3,
             "outcome": "draw",
-            "probability": 0.01379261
+            "probability": 0.01159395
           },
           {
             "home_goals": 4,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00421082
+            "probability": 0.00331164
           },
           {
             "home_goals": 4,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00080168
+            "probability": 0.00058936
           },
           {
             "home_goals": 4,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00015548
+            "probability": 0.00010503
           },
           {
             "home_goals": 4,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 2.585e-05
+            "probability": 1.604e-05
           },
           {
             "home_goals": 5,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.03123454
+            "probability": 0.03361478
           },
           {
             "home_goals": 5,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.03634543
+            "probability": 0.03594366
           },
           {
             "home_goals": 5,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.0211463
+            "probability": 0.01921695
           },
           {
             "home_goals": 5,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00820215
+            "probability": 0.00684944
           },
           {
             "home_goals": 5,
             "away_goals": 4,
             "outcome": "draw",
-            "probability": 0.00238607
+            "probability": 0.001831
           },
           {
             "home_goals": 5,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00058276
+            "probability": 0.0004184
           },
           {
             "home_goals": 5,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 9.246e-05
+            "probability": 6.205e-05
           },
           {
             "home_goals": 5,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 1.537e-05
+            "probability": 9.48e-06
           },
           {
             "home_goals": 6,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.01547872
+            "probability": 0.01654904
           },
           {
             "home_goals": 6,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.01801149
+            "probability": 0.01769559
           },
           {
             "home_goals": 6,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.01047935
+            "probability": 0.00946078
           },
           {
             "home_goals": 6,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00406469
+            "probability": 0.00337208
           },
           {
             "home_goals": 6,
             "away_goals": 4,
             "outcome": "home",
-            "probability": 0.00118245
+            "probability": 0.00090143
           },
           {
             "home_goals": 6,
             "away_goals": 5,
             "outcome": "draw",
-            "probability": 0.00027519
+            "probability": 0.00019278
           },
           {
             "home_goals": 6,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 5.601e-05
+            "probability": 3.671e-05
           },
           {
             "home_goals": 6,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 7.62e-06
+            "probability": 4.67e-06
           },
           {
             "home_goals": 7,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.00657489
+            "probability": 0.00698343
           },
           {
             "home_goals": 7,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.00765073
+            "probability": 0.00746725
           },
           {
             "home_goals": 7,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.00445131
+            "probability": 0.0039923
           },
           {
             "home_goals": 7,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00172656
+            "probability": 0.00142296
           },
           {
             "home_goals": 7,
             "away_goals": 4,
             "outcome": "home",
-            "probability": 0.00050227
+            "probability": 0.00038039
           },
           {
             "home_goals": 7,
             "away_goals": 5,
             "outcome": "home",
-            "probability": 0.00011689
+            "probability": 8.135e-05
           },
           {
             "home_goals": 7,
             "away_goals": 6,
             "outcome": "draw",
-            "probability": 2.267e-05
+            "probability": 1.45e-05
           },
           {
             "home_goals": 7,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 3.95e-06
+            "probability": 2.37e-06
           }
         ],
         "value_analysis": {
@@ -766,8 +950,8 @@
           "items": [
             {
               "outcome": "home",
-              "model_probability": 0.546754,
-              "edge": 0.029042,
+              "model_probability": 0.558004,
+              "edge": 0.040292,
               "decimal_odds": 1.71,
               "label": "不推荐",
               "recommendation": "不下注",
@@ -779,8 +963,8 @@
             },
             {
               "outcome": "draw",
-              "model_probability": 0.197185,
-              "edge": -0.055754,
+              "model_probability": 0.196204,
+              "edge": -0.056735,
               "decimal_odds": 3.5,
               "label": "不推荐",
               "recommendation": "不下注",
@@ -792,8 +976,8 @@
             },
             {
               "outcome": "away",
-              "model_probability": 0.256062,
-              "edge": 0.026713,
+              "model_probability": 0.245793,
+              "edge": 0.016444,
               "decimal_odds": 3.86,
               "label": "不推荐",
               "recommendation": "不下注",
@@ -809,12 +993,12 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.3992610837464763,
-        "under25_prob": 0.5183101052575236,
-        "xgboost_over25_prob": 0.39043186740923047,
-        "monte_carlo_over25_prob": 0.4101,
-        "score_heatmap_over25_prob": 0.7683517733409676,
-        "final_over25_prob": 0.48168989474247637,
+        "poisson_over25_prob": 0.36320179344605186,
+        "under25_prob": 0.5499152744457035,
+        "xgboost_over25_prob": 0.3558303282240229,
+        "monte_carlo_over25_prob": 0.3736,
+        "score_heatmap_over25_prob": 0.7518666213741577,
+        "final_over25_prob": 0.45008472555429646,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -822,12 +1006,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "2-1",
+        "actual_score_90": "2-1",
+        "predicted_home_score": 2,
+        "predicted_away_score": 1,
+        "actual_home_score": 2,
+        "actual_away_score": 1,
+        "predicted_outcome": "home",
+        "actual_outcome": "home",
+        "outcome_hit": true,
+        "exact_score_hit": true,
+        "score_hit": true,
+        "partial_hit": false,
+        "goal_diff_error": 0,
+        "total_goal_error": 0,
+        "home_goal_error": 0,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-07-02|England|DR Congo",
+        "result_display": "England 2-1 DR Congo",
+        "prediction_created_at": "2026-07-20 08:28:21",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "2-1",
       "prediction_accuracy": {
-        "exact_score": true,
+        "predicted_score": "2-1",
+        "actual_score_90": "2-1",
+        "predicted_home_score": 2,
+        "predicted_away_score": 1,
+        "actual_home_score": 2,
+        "actual_away_score": 1,
+        "predicted_outcome": "home",
+        "actual_outcome": "home",
         "outcome_hit": true,
+        "exact_score_hit": true,
+        "score_hit": true,
+        "partial_hit": false,
         "goal_diff_error": 0,
-        "total_goal_error": 0
+        "total_goal_error": 0,
+        "home_goal_error": 0,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": true
       }
     },
     {
@@ -841,6 +1062,8 @@
       "status": "final",
       "home_score": 2,
       "away_score": 3,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "墨西哥",
       "away_team_zh": "英格兰",
       "home_flag": "🇲🇽",
@@ -850,27 +1073,43 @@
       "match_id": "54328020",
       "stage": "1/8决赛",
       "has_predict": true,
+      "source_home_team_zh": "墨西哥",
+      "source_away_team_zh": "英格兰",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "2-3",
       "finished_result": {
-        "match_id": "espn-760505",
-        "stage": "round-of-16",
+        "match_id": "54328020",
+        "stage": "1/8决赛",
         "home_team": "Mexico",
         "away_team": "England",
         "is_finished": true,
         "home_goals_90": 2,
         "away_goals_90": 3,
+        "home_score_90": 2,
+        "away_score_90": 3,
         "home_goals_extra_time": null,
         "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "Mexico 2-3 England",
         "winner": "England",
         "loser": "Mexico",
         "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-20T07:44:32.895911+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "2-3",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -896,12 +1135,12 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.15243481836784076,
-        "under25_prob": 0.7320017105508988,
-        "xgboost_over25_prob": 0.15220786840636877,
-        "monte_carlo_over25_prob": 0.1585,
-        "score_heatmap_over25_prob": 0.6707410676858587,
-        "final_over25_prob": 0.2679982894491012,
+        "poisson_over25_prob": 0.12055181499490837,
+        "under25_prob": 0.7664458269482732,
+        "xgboost_over25_prob": 0.12049399576884197,
+        "monte_carlo_over25_prob": 0.1247,
+        "score_heatmap_over25_prob": 0.6293438032503019,
+        "final_over25_prob": 0.23355417305172682,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -909,12 +1148,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "2-0",
+        "actual_score_90": "2-3",
+        "predicted_home_score": 2,
+        "predicted_away_score": 0,
+        "actual_home_score": 2,
+        "actual_away_score": 3,
+        "predicted_outcome": "home",
+        "actual_outcome": "away",
+        "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
+        "goal_diff_error": 3,
+        "total_goal_error": 3,
+        "home_goal_error": 0,
+        "away_goal_error": 3,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-07-06|Mexico|England",
+        "result_display": "Mexico 2-3 England",
+        "prediction_created_at": "2026-07-20 08:28:29",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "2-0",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "2-0",
+        "actual_score_90": "2-3",
+        "predicted_home_score": 2,
+        "predicted_away_score": 0,
+        "actual_home_score": 2,
+        "actual_away_score": 3,
+        "predicted_outcome": "home",
+        "actual_outcome": "away",
         "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
         "goal_diff_error": 3,
-        "total_goal_error": 3
+        "total_goal_error": 3,
+        "home_goal_error": 0,
+        "away_goal_error": 3,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -928,6 +1204,8 @@
       "status": "final",
       "home_score": 1,
       "away_score": 1,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "挪威",
       "away_team_zh": "英格兰",
       "home_flag": "🇳🇴",
@@ -937,27 +1215,43 @@
       "match_id": "54328027",
       "stage": "1/4决赛",
       "has_predict": true,
+      "source_home_team_zh": "挪威",
+      "source_away_team_zh": "英格兰",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "1-1",
       "finished_result": {
-        "match_id": "espn-760512",
-        "stage": "quarterfinals",
+        "match_id": "54328027",
+        "stage": "1/4决赛",
         "home_team": "Norway",
         "away_team": "England",
         "is_finished": true,
         "home_goals_90": 1,
         "away_goals_90": 1,
-        "home_goals_extra_time": 0,
-        "away_goals_extra_time": 1,
+        "home_score_90": 1,
+        "away_score_90": 1,
+        "home_goals_extra_time": null,
+        "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "Norway 1-1 England",
         "winner": "England",
         "loser": "Norway",
-        "decided_by_extra_time": true,
+        "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-20T07:44:33.213933+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "1-1",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -982,12 +1276,12 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.8134226621822407,
-        "under25_prob": 0.14569304116888593,
-        "xgboost_over25_prob": 0.8250465262344628,
-        "monte_carlo_over25_prob": 0.8788,
-        "score_heatmap_over25_prob": 0.9124858134861311,
-        "final_over25_prob": 0.8543069588311141,
+        "poisson_over25_prob": 0.79385059203329,
+        "under25_prob": 0.15981037343635074,
+        "xgboost_over25_prob": 0.8115642523451491,
+        "monte_carlo_over25_prob": 0.8751,
+        "score_heatmap_over25_prob": 0.8939675447736537,
+        "final_over25_prob": 0.8401896265636493,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -995,12 +1289,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "2-3",
+        "actual_score_90": "1-1",
+        "predicted_home_score": 2,
+        "predicted_away_score": 3,
+        "actual_home_score": 1,
+        "actual_away_score": 1,
+        "predicted_outcome": "away",
+        "actual_outcome": "draw",
+        "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
+        "goal_diff_error": 1,
+        "total_goal_error": 3,
+        "home_goal_error": 1,
+        "away_goal_error": 2,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-07-12|Norway|England",
+        "result_display": "Norway 1-1 England",
+        "prediction_created_at": "2026-07-20 08:28:34",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "2-3",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "2-3",
+        "actual_score_90": "1-1",
+        "predicted_home_score": 2,
+        "predicted_away_score": 3,
+        "actual_home_score": 1,
+        "actual_away_score": 1,
+        "predicted_outcome": "away",
+        "actual_outcome": "draw",
         "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
         "goal_diff_error": 1,
-        "total_goal_error": 3
+        "total_goal_error": 3,
+        "home_goal_error": 1,
+        "away_goal_error": 2,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -1014,6 +1345,8 @@
       "status": "final",
       "home_score": 1,
       "away_score": 2,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "英格兰",
       "away_team_zh": "阿根廷",
       "home_flag": "🏴",
@@ -1023,9 +1356,43 @@
       "match_id": "54328030",
       "stage": "半决赛",
       "has_predict": true,
+      "source_home_team_zh": "英格兰",
+      "source_away_team_zh": "阿根廷",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
+      "finished_result": {
+        "match_id": "54328030",
+        "stage": "半决赛",
+        "home_team": "England",
+        "away_team": "Argentina",
+        "is_finished": true,
+        "home_goals_90": 1,
+        "away_goals_90": 2,
+        "home_score_90": 1,
+        "away_score_90": 2,
+        "home_goals_extra_time": null,
+        "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
+        "home_penalties": null,
+        "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "England 1-2 Argentina",
+        "winner": "Argentina",
+        "loser": "England",
+        "decided_by_extra_time": false,
+        "decided_by_penalties": false,
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
+      },
       "actual_score": "1-2",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -1050,12 +1417,12 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.4759179273204089,
-        "under25_prob": 0.4756602215476672,
-        "xgboost_over25_prob": 0.4653490678670302,
-        "monte_carlo_over25_prob": 0.4903,
-        "score_heatmap_over25_prob": 0.687667504306038,
-        "final_over25_prob": 0.5243397784523328,
+        "poisson_over25_prob": 0.41560171099810767,
+        "under25_prob": 0.5301615185791969,
+        "xgboost_over25_prob": 0.40565737384661793,
+        "monte_carlo_over25_prob": 0.4255,
+        "score_heatmap_over25_prob": 0.6585707835866148,
+        "final_over25_prob": 0.4698384814208031,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -1063,12 +1430,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "1-2",
+        "actual_score_90": "1-2",
+        "predicted_home_score": 1,
+        "predicted_away_score": 2,
+        "actual_home_score": 1,
+        "actual_away_score": 2,
+        "predicted_outcome": "away",
+        "actual_outcome": "away",
+        "outcome_hit": true,
+        "exact_score_hit": true,
+        "score_hit": true,
+        "partial_hit": false,
+        "goal_diff_error": 0,
+        "total_goal_error": 0,
+        "home_goal_error": 0,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-07-16|England|Argentina",
+        "result_display": "England 1-2 Argentina",
+        "prediction_created_at": "2026-07-20 08:28:36",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "1-2",
       "prediction_accuracy": {
-        "exact_score": true,
+        "predicted_score": "1-2",
+        "actual_score_90": "1-2",
+        "predicted_home_score": 1,
+        "predicted_away_score": 2,
+        "actual_home_score": 1,
+        "actual_away_score": 2,
+        "predicted_outcome": "away",
+        "actual_outcome": "away",
         "outcome_hit": true,
+        "exact_score_hit": true,
+        "score_hit": true,
+        "partial_hit": false,
         "goal_diff_error": 0,
-        "total_goal_error": 0
+        "total_goal_error": 0,
+        "home_goal_error": 0,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": true
       }
     },
     {
@@ -1082,6 +1486,8 @@
       "status": "final",
       "home_score": 4,
       "away_score": 6,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "法国",
       "away_team_zh": "英格兰",
       "home_flag": "🇫🇷",
@@ -1091,17 +1497,51 @@
       "match_id": "54328032",
       "stage": "季军赛",
       "has_predict": true,
+      "source_home_team_zh": "法国",
+      "source_away_team_zh": "英格兰",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
+      "finished_result": {
+        "match_id": "54328032",
+        "stage": "季军赛",
+        "home_team": "France",
+        "away_team": "England",
+        "is_finished": true,
+        "home_goals_90": 4,
+        "away_goals_90": 6,
+        "home_score_90": 4,
+        "away_score_90": 6,
+        "home_goals_extra_time": null,
+        "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
+        "home_penalties": null,
+        "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "France 4-6 England",
+        "winner": "England",
+        "loser": "France",
+        "decided_by_extra_time": false,
+        "decided_by_penalties": false,
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
+      },
       "actual_score": "4-6",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": true,
-        "summary": "模型与市场接近，属于市场共识区间。",
+        "summary": "盘口未发现明显价值。",
         "items": [
           {
             "outcome": "home",
-            "model_probability": 0.537004,
-            "edge": 0.01606,
+            "model_probability": 0.519328,
+            "edge": -0.001617,
             "decimal_odds": 1.7,
             "label": "市场共识",
             "edge_label": "market efficient",
@@ -1114,8 +1554,8 @@
           },
           {
             "outcome": "draw",
-            "model_probability": 0.19241,
-            "edge": -0.040645,
+            "model_probability": 0.201172,
+            "edge": -0.031882,
             "decimal_odds": 3.8,
             "label": "不建议",
             "edge_label": "no edge",
@@ -1128,15 +1568,15 @@
           },
           {
             "outcome": "away",
-            "model_probability": 0.270586,
-            "edge": 0.024585,
+            "model_probability": 0.2795,
+            "edge": 0.033499,
             "decimal_odds": 3.6,
-            "label": "市场共识",
-            "edge_label": "market efficient",
+            "label": "不建议",
+            "edge_label": "no edge",
             "kelly": {
-              "full": 0.0,
-              "half": 0.0,
-              "quarter": 0.0
+              "full": 0.002385,
+              "half": 0.001192,
+              "quarter": 0.000596
             },
             "recommendation": "不下注"
           }
@@ -1144,404 +1584,405 @@
         "recommended_options": [],
         "confidence": "低",
         "risk_warnings": [
+          "模型分歧",
           "roster 不完整"
         ],
-        "risk_warning": "roster 不完整；Kelly 仅用于仓位上限估算，本系统只做数据分析，不构成投注建议。"
+        "risk_warning": "模型分歧；roster 不完整；Kelly 仅用于仓位上限估算，本系统只做数据分析，不构成投注建议。"
       },
       "handicap_analysis": {
         "available": true,
         "line": -1.0,
         "model_probabilities": {
-          "home": 0.415937,
-          "draw": 0.173488,
-          "away": 0.410574
+          "home": 0.417563,
+          "draw": 0.17626,
+          "away": 0.406177
         },
-        "tail_probability": 0.016899,
+        "tail_probability": 0.0142,
         "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
         "regions": [
           {
             "home_goals": 0,
             "away_goals": 0,
             "outcome": "away",
-            "probability": 0.00747023
+            "probability": 0.00916645
           },
           {
             "home_goals": 0,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.01233538
+            "probability": 0.01454672
           },
           {
             "home_goals": 0,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.01190226
+            "probability": 0.01317632
           },
           {
             "home_goals": 0,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.00753473
+            "probability": 0.00783423
           },
           {
             "home_goals": 0,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00357739
+            "probability": 0.00349349
           },
           {
             "home_goals": 0,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.0013588
+            "probability": 0.00124627
           },
           {
             "home_goals": 0,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00043009
+            "probability": 0.0003705
           },
           {
             "home_goals": 0,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00011669
+            "probability": 9.441e-05
           },
           {
             "home_goals": 1,
             "away_goals": 0,
             "outcome": "draw",
-            "probability": 0.01852847
+            "probability": 0.02214043
           },
           {
             "home_goals": 1,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.0439322
+            "probability": 0.04922576
           },
           {
             "home_goals": 1,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.03777893
+            "probability": 0.04055619
           },
           {
             "home_goals": 1,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.02391596
+            "probability": 0.02411345
           },
           {
             "home_goals": 1,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.011355
+            "probability": 0.01075283
           },
           {
             "home_goals": 1,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00431297
+            "probability": 0.00383598
           },
           {
             "home_goals": 1,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00136516
+            "probability": 0.00114038
           },
           {
             "home_goals": 1,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00037038
+            "probability": 0.00029059
           },
           {
             "home_goals": 2,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.02968749
+            "probability": 0.03438029
           },
           {
             "home_goals": 2,
             "away_goals": 1,
             "outcome": "draw",
-            "probability": 0.05638101
+            "probability": 0.06132435
           },
           {
             "home_goals": 2,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.0658774
+            "probability": 0.06722839
           },
           {
             "home_goals": 2,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.03795579
+            "probability": 0.03711011
           },
           {
             "home_goals": 2,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.01802094
+            "probability": 0.01654839
           },
           {
             "home_goals": 2,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00684489
+            "probability": 0.00590349
           },
           {
             "home_goals": 2,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00216658
+            "probability": 0.00175502
           },
           {
             "home_goals": 2,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00058781
+            "probability": 0.00044721
           },
           {
             "home_goals": 3,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.03141033
+            "probability": 0.03527371
           },
           {
             "home_goals": 3,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.05965293
+            "probability": 0.06291796
           },
           {
             "home_goals": 3,
             "away_goals": 2,
             "outcome": "draw",
-            "probability": 0.05664494
+            "probability": 0.0561136
           },
           {
             "home_goals": 3,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.04412386
+            "probability": 0.04101064
           },
           {
             "home_goals": 3,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.01906673
+            "probability": 0.01697842
           },
           {
             "home_goals": 3,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00724212
+            "probability": 0.00605691
           },
           {
             "home_goals": 3,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00229231
+            "probability": 0.00180062
           },
           {
             "home_goals": 3,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00062192
+            "probability": 0.00045883
           },
           {
             "home_goals": 4,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.02492486
+            "probability": 0.02714277
           },
           {
             "home_goals": 4,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.04733606
+            "probability": 0.04841474
           },
           {
             "home_goals": 4,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.04494914
+            "probability": 0.04317885
           },
           {
             "home_goals": 4,
             "away_goals": 3,
             "outcome": "draw",
-            "probability": 0.02845506
+            "probability": 0.0256728
           },
           {
             "home_goals": 4,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.01662391
+            "probability": 0.01407223
           },
           {
             "home_goals": 4,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.0057468
+            "probability": 0.00466073
           },
           {
             "home_goals": 4,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00181901
+            "probability": 0.00138556
           },
           {
             "home_goals": 4,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00049351
+            "probability": 0.00035306
           },
           {
             "home_goals": 5,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.01582279
+            "probability": 0.01670887
           },
           {
             "home_goals": 5,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.03004985
+            "probability": 0.02980372
           },
           {
             "home_goals": 5,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.02853459
+            "probability": 0.02658055
           },
           {
             "home_goals": 5,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.01806382
+            "probability": 0.01580397
           },
           {
             "home_goals": 5,
             "away_goals": 4,
             "outcome": "draw",
-            "probability": 0.00857648
+            "probability": 0.00704741
           },
           {
             "home_goals": 5,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00400841
+            "probability": 0.00309036
           },
           {
             "home_goals": 5,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00115474
+            "probability": 0.00085294
           },
           {
             "home_goals": 5,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00031329
+            "probability": 0.00021734
           },
           {
             "home_goals": 6,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.00837051
+            "probability": 0.00857154
           },
           {
             "home_goals": 6,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.01589686
+            "probability": 0.01528911
           },
           {
             "home_goals": 6,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.01509526
+            "probability": 0.01363564
           },
           {
             "home_goals": 6,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00955606
+            "probability": 0.00810733
           },
           {
             "home_goals": 6,
             "away_goals": 4,
             "outcome": "home",
-            "probability": 0.0045371
+            "probability": 0.00361527
           },
           {
             "home_goals": 6,
             "away_goals": 5,
             "outcome": "draw",
-            "probability": 0.00172333
+            "probability": 0.00128972
           },
           {
             "home_goals": 6,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.0006712
+            "probability": 0.0004713
           },
           {
             "home_goals": 6,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00016574
+            "probability": 0.0001115
           },
           {
             "home_goals": 7,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.00379555
+            "probability": 0.00376898
           },
           {
             "home_goals": 7,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.00720831
+            "probability": 0.00672275
           },
           {
             "home_goals": 7,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.00684483
+            "probability": 0.00599571
           },
           {
             "home_goals": 7,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00433312
+            "probability": 0.00356486
           },
           {
             "home_goals": 7,
             "away_goals": 4,
             "outcome": "home",
-            "probability": 0.00205731
+            "probability": 0.00158967
           },
           {
             "home_goals": 7,
             "away_goals": 5,
             "outcome": "home",
-            "probability": 0.00078143
+            "probability": 0.0005671
           },
           {
             "home_goals": 7,
             "away_goals": 6,
             "outcome": "draw",
-            "probability": 0.00024734
+            "probability": 0.00016859
           },
           {
             "home_goals": 7,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 8.257e-05
+            "probability": 5.281e-05
           }
         ],
         "value_analysis": {
@@ -1550,21 +1991,21 @@
           "items": [
             {
               "outcome": "home",
-              "model_probability": 0.415937,
-              "edge": 0.120931,
+              "model_probability": 0.417563,
+              "edge": 0.122557,
               "decimal_odds": 3.0,
               "label": "强推荐",
               "recommendation": "小仓位候选",
               "kelly": {
-                "full": 0.123906,
-                "half": 0.061953,
-                "quarter": 0.030976
+                "full": 0.126345,
+                "half": 0.063172,
+                "quarter": 0.031586
               }
             },
             {
               "outcome": "draw",
-              "model_probability": 0.173488,
-              "edge": -0.065706,
+              "model_probability": 0.17626,
+              "edge": -0.062934,
               "decimal_odds": 3.7,
               "label": "不推荐",
               "recommendation": "不下注",
@@ -1576,8 +2017,8 @@
             },
             {
               "outcome": "away",
-              "model_probability": 0.410574,
-              "edge": -0.055225,
+              "model_probability": 0.406177,
+              "edge": -0.059622,
               "decimal_odds": 1.9,
               "label": "不推荐",
               "recommendation": "不下注",
@@ -1591,28 +2032,28 @@
           "recommended_options": [
             {
               "outcome": "home",
-              "model_probability": 0.415937,
-              "edge": 0.120931,
+              "model_probability": 0.417563,
+              "edge": 0.122557,
               "decimal_odds": 3.0,
               "label": "强推荐",
               "recommendation": "小仓位候选",
               "kelly": {
-                "full": 0.123906,
-                "half": 0.061953,
-                "quarter": 0.030976
+                "full": 0.126345,
+                "half": 0.063172,
+                "quarter": 0.031586
               }
             }
           ],
-          "summary": "让球胜 Edge 12.1%，Kelly 12.4%。"
+          "summary": "让球胜 Edge 12.3%，Kelly 12.6%。"
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.5764219852771116,
-        "under25_prob": 0.35998526569311307,
-        "xgboost_over25_prob": 0.562841514709083,
-        "monte_carlo_over25_prob": 0.5911,
-        "score_heatmap_over25_prob": 0.859244484841064,
-        "final_over25_prob": 0.6400147343068869,
+        "poisson_over25_prob": 0.5380807213090258,
+        "under25_prob": 0.39199099313851815,
+        "xgboost_over25_prob": 0.5270863368089379,
+        "monte_carlo_over25_prob": 0.5565,
+        "score_heatmap_over25_prob": 0.8431637317763825,
+        "final_over25_prob": 0.6080090068614818,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -1620,15 +2061,53 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "2-2",
+        "actual_score_90": "4-6",
+        "predicted_home_score": 2,
+        "predicted_away_score": 2,
+        "actual_home_score": 4,
+        "actual_away_score": 6,
+        "predicted_outcome": "draw",
+        "actual_outcome": "away",
+        "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
+        "goal_diff_error": 2,
+        "total_goal_error": 6,
+        "home_goal_error": 2,
+        "away_goal_error": 4,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-07-19|France|England",
+        "result_display": "France 4-6 England",
+        "prediction_created_at": "2026-07-20 08:28:37",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "2-2",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "2-2",
+        "actual_score_90": "4-6",
+        "predicted_home_score": 2,
+        "predicted_away_score": 2,
+        "actual_home_score": 4,
+        "actual_away_score": 6,
+        "predicted_outcome": "draw",
+        "actual_outcome": "away",
         "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
         "goal_diff_error": 2,
-        "total_goal_error": 6
+        "total_goal_error": 6,
+        "home_goal_error": 2,
+        "away_goal_error": 4,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     }
   ],
+  "players": [],
   "power_rankings": [],
   "static_lightweight": true
 }

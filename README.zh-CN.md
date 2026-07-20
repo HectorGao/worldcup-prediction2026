@@ -1,6 +1,6 @@
 # 2026 世界杯预测
 
-[English](README.md) | [中文](README.zh-CN.md)
+[English](README.md) | 简体中文
 
 开源、本地优先的 2026 世界杯数据与预测看板。它使用 FastAPI、Dixon-Coles、Poisson、Elo、Monte Carlo、校准集成与可选 XGBoost，提供赛程、球队强度、比赛概率、淘汰赛路径、赛后归因与预测报告。
 
@@ -13,6 +13,8 @@
 - `outputs/` 公开预测/回归产物与 `precomputed/api/` 只读 API 快照。
 
 不发布原始供应商载荷、凭据和未经许可的球员/阵容数据。Sporttery 快照只是经字段白名单处理的历史项目输入，并不构成赔率数据再许可。完整来源、权利边界、更新和复现方式见 [DATA.md](DATA.md)。
+
+Sporttery 数值是用于研究、模型复现和预测评估的历史时点快照，不代表当前赔率，也不构成投注建议；见[快照审计记录](docs/audits/sporttery-snapshot-audit-2026-07-20.md)。
 
 ## 快速开始
 
@@ -57,7 +59,17 @@ flowchart LR
 
 每条归一赛果保存 `home_score_90`、`away_score_90`、加时字段、点球字段和统一 `result_display`。例如：`法国 1-1 英格兰（加时 2-2，点球 4-3）`。胜平负和比分命中均按 90 分钟赛果计算。
 
-当前生成的审计有 104 条已匹配保存预测：胜平负命中 70 条（67.3%）、比分命中 24 条（23.1%）、比分 MAE 0.692、RMSE 1.052、Brier 0.142。这是**重建记录审计指标**，不是实时赛前表现：仅 1 条记录时间戳不晚于比赛日，另 103 条标记为赛后或时间未知。
+<!-- GENERATED_FINAL_METRICS_START -->
+以下区块由最终 SQLite 快照自动生成，评估口径为 90 分钟赛果。
+- 总体 / 有效预测 / 缺失预测：104 / 104 / 2
+- 胜平负 / 精确比分命中：70（67.3%）/ 24（23.1%）
+- 主队 / 客队 / 总进球 MAE 与比分 RMSE：0.731 / 0.654 / 1.154 / 1.052
+- Brier / Log Loss：0.142 / 0.723；最佳 / 最难阶段：半决赛 / 季军赛
+- 有赔率 / 无赔率的胜平负命中率：0 (0.0%) / 104 (67.3%)（仅覆盖分组描述，不构成赔率因果贡献结论）。
+- 时间口径：赛前记录 1 条；赛后或时间未知的重建审计 103 条。
+<!-- GENERATED_FINAL_METRICS_END -->
+
+这些是**重建记录审计指标**，不是实时赛前表现；赛前记录与赛后或时间未知记录始终分开报告。
 
 ![最终总览](docs/assets/overview.svg)
 
@@ -73,6 +85,8 @@ flowchart LR
 
 ![评估样例](docs/assets/case-cards.svg)
 
+![单场详情流程](docs/assets/match-detail-flow.svg)
+
 ```bash
 PYTHONPATH=backend .venv/bin/python -c "from worldcup_predictor.service import WorldCupService; s=WorldCupService('.private_data/reviewed-worldcup.sqlite3'); print(s.db.rebuild_canonical_match_results()); print(s.rebuild_prediction_evaluations())"
 PYTHONPATH=backend .venv/bin/python tools/generate_report_assets.py --database .private_data/reviewed-worldcup.sqlite3 --output docs/assets
@@ -84,11 +98,15 @@ scripts/review_daily_update.sh
 
 ## 后续赛事改进计划
 
-1. 在预测生成时保存带时区的不可变时间、特征和赔率快照。
-2. 发布前检查唯一赛程 ID、90 分钟/加时/点球完整性、别名和来源权利。
-3. 严格分开真正赛前指标与重建诊断；时间戳完备后再公开置信度、校准、阶段和赔率可用性切片。
-4. 每个新增数据源进行权利审查，仅让有文档依据的安全字段进入公开快照。
-5. 日常按“显式暂存、安全扫描、数据库完整性、测试、归一重建、报告生成、正常提交/推送”执行。
+自动生成的案例集包含比分命中、仅胜平负命中和高置信度失败案例（例如预测 3–0、90 分钟实际 1–1）。本快照中平局比主胜或客胜更难预测，因此改进不应只写通用口号。
+
+**数据层面。** 更早采集赔率，并保存开盘、中间和临场的带时间戳序列；加入伤病、停赛、预计首发、球员/俱乐部状态、旅行距离、休息、时区和气候。每次预测冻结数据版本与赛前记录，避免赛后信息泄漏。
+
+**模型层面。** 分离胜平负分类与比分回归；保留 Poisson、Dixon–Coles 或双变量 Poisson 基线；研究校准集成、动态球队评分、平局/低比分专用模型、分阶段模型、不确定性区间和时间顺序验证。以赔率特征消融实验检验贡献，而不把有赔率覆盖分组误解为因果效果。
+
+**评估层面。** 除准确率外持续报告 Log Loss、Brier、校准误差、高置信度正确/失败、阶段、实力差距、赛果类别和赔率覆盖切片。只有时间戳合格的赛前记录才可作为模型表现；重建诊断单独发布，并自动生成模型卡、数据卡和典型案例。
+
+**工程层面。** 自动抓取并归档不可变快照；为每条预测记录模型、代码和数据版本；公开与私有数据分层；增加数据库、单元和端到端校验；通过 GitHub Actions 验证数据、重建指标/图片并要求人工审阅后再发布。
 
 ## 贡献与许可证
 

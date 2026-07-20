@@ -145,6 +145,14 @@ def export_static_data(
     write_json(output_dir / "api/lyihub/rounds.json", rounds)
     all_lyihub_matches = service.lyihub_matches()
     write_json(output_dir / "api/lyihub/matches/all.json", all_lyihub_matches)
+    for match in all_lyihub_matches.get("matches", []):
+        fixture_id = str(match.get("id") or "")
+        if fixture_id:
+            exported_fixture_ids.add(fixture_id)
+        for side in ("home_team", "away_team"):
+            if match.get(side):
+                exported_teams.add(str(match[side]))
+    exported_fixture_ids.update(str(row["fixture_id"]) for row in service.db.list_predictions())
     stages = sorted({str(item.get("stage")) for item in rounds.get("rounds", []) if item.get("stage")})
     for stage in stages:
         write_json(
@@ -154,7 +162,7 @@ def export_static_data(
 
     for fixture_id in sorted(exported_fixture_ids):
         try:
-            prediction = service.predict_fixture(fixture_id, simulations=simulations)
+            prediction = service.get_prediction(fixture_id)
             write_json(output_dir / f"api/predictions/{encode_name(fixture_id)}.json", prediction)
         except (KeyError, ValueError, TypeError) as exc:
             write_json(
@@ -241,8 +249,6 @@ def main() -> None:
     output_dir = Path(args.precomputed_dir) if args.precomputed else DIST_DIR
     if args.precomputed:
         api_dir = output_dir / "api"
-        if api_dir.exists():
-            shutil.rmtree(api_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
     else:
         copy_frontend()

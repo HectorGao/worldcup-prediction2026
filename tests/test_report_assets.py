@@ -53,5 +53,9 @@ def test_report_asset_generator_uses_canonical_results_and_persisted_evaluations
     assert metrics["canonical_matches"] == 1
     assert metrics["evaluated_predictions"] == 1
     assert metrics["outcome_hit_rate"] == 1.0
+    assert metrics["home_goal_mae"] == 0.0
+    assert metrics["outcome_metrics"]["home"]["matches"] == 1
+    assert metrics["group_vs_knockout"]["group_stage"]["matches"] == 1
     assert (output / "overview.svg").is_file()
+    assert (output / "match-detail-flow.svg").is_file()
     assert (output / "final_metrics.json").is_file()

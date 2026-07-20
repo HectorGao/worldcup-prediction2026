@@ -1132,11 +1132,19 @@ function accuracyLabel(accuracy) {
 }
 
 function accuracyStatus(accuracy) {
-  if (!accuracy) return '<span class="accuracy-status is-pending" aria-label="赛后评估待完成">待赛后</span>';
+  if (!accuracy) {
+    return '<span class="accuracy-status is-pending" aria-label="胜平负评估待完成">胜平负：待评估</span><span class="accuracy-status is-pending" aria-label="精确比分评估待完成">精确比分：待评估</span>';
+  }
   const exact = accuracy.exact_score_hit ?? accuracy.exact_score;
-  if (exact) return '<span class="accuracy-status is-exact" aria-label="比分命中">比分命中</span>';
-  if (accuracy.outcome_hit) return `<span class="accuracy-status is-outcome" aria-label="胜平负命中，净胜球误差 ${accuracy.goal_diff_error ?? '--'}">赛果命中</span>`;
-  return `<span class="accuracy-status is-miss" aria-label="胜平负未命中，净胜球误差 ${accuracy.goal_diff_error ?? '--'}">未命中</span>`;
+  const outcome = accuracy.outcome_hit
+    ? '<span class="accuracy-status is-outcome" aria-label="胜平负命中">胜平负：命中</span>'
+    : '<span class="accuracy-status is-miss" aria-label="胜平负未命中">胜平负：未命中</span>';
+  const score = exact
+    ? '<span class="accuracy-status is-exact" aria-label="精确比分命中">精确比分：命中</span>'
+    : accuracy.outcome_hit
+      ? '<span class="accuracy-status is-partial" aria-label="胜平负命中但精确比分未命中">精确比分：部分命中</span>'
+      : '<span class="accuracy-status is-miss" aria-label="精确比分未命中">精确比分：未命中</span>';
+  return `${outcome}${score}`;
 }
 
 function forecastLabel(match, side) {
@@ -1282,7 +1290,7 @@ function renderRoundMatches() {
           </div>
           ${roundResultLine(match)}
           <div class="round-card-meta">${match.date} · ${match.venue || 'venue pending'}</div>
-          <div class="round-card-meta">预测 ${match.predicted_score || '--'} · ${accuracyLabel(match.prediction_accuracy)}</div>
+          <div class="round-card-meta">预测 ${match.predicted_score || '--'} · ${accuracyStatus(match.prediction_accuracy)}</div>
           ${roundOddsLine(match)}
         </article>
       `
@@ -1494,6 +1502,8 @@ function renderPrediction(prediction, analysis = null) {
         ${divergenceNotice(prediction)}
       </section>
 
+      ${evaluationSummaryCard(fixture, analysis)}
+
       <div class="detail-section-toolbar">
         <button type="button" data-expand-sections>展开全部卡片</button>
         <button type="button" data-collapse-sections>折叠长卡片</button>
@@ -1633,6 +1643,21 @@ function renderPrediction(prediction, analysis = null) {
   document.querySelector('#calculate-prediction-button')?.addEventListener('click', () => recalculatePrediction(fixture.id));
   document.querySelector('[data-sync-squads]')?.addEventListener('click', () => syncFixtureSquads(fixture));
   document.querySelector('[data-process-roster]')?.addEventListener('click', () => processRosterQueue());
+}
+
+function evaluationSummaryCard(fixture, analysis) {
+  const result = analysis?.finished_result;
+  const evaluation = analysis?.evaluation;
+  if (!result && !evaluation) return '';
+  const resultMatch = { ...fixture, finished_result: result };
+  return `
+    <section class="prediction-section">
+      <div class="section-title"><h3>赛后结果与命中</h3><span>${evaluation?.evaluation_basis === '90_minute_score' ? '按90分钟赛果评估' : '等待赛后评估'}</span></div>
+      <div class="analysis"><strong>最终赛果</strong><br>${resultDisplay(resultMatch) || '结果待同步'}</div>
+      <div class="analysis"><strong>预测比分</strong> ${evaluation?.predicted_score || predictionScore(fixture, { prediction }) || '--'} · <strong>90分钟实际</strong> ${evaluation?.actual_score_90 || actualScoreText(resultMatch) || '--'}<br>${accuracyStatus(evaluation)}</div>
+      <div class="analysis">预测时间：${formatDateTime(evaluation?.prediction_created_at) || '未记录'} · 时间口径：${evaluation?.prediction_timing === 'pre_match' ? '赛前记录' : evaluation ? '赛后或时间未知的重建审计' : '待评估'} · 进球误差：主 ${evaluation?.home_goal_error ?? '--'} / 客 ${evaluation?.away_goal_error ?? '--'}</div>
+    </section>
+  `;
 }
 
 function simulationControlCard() {

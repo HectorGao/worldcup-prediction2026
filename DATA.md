@@ -43,6 +43,8 @@ The repository includes a compliant SQLite database, public prediction outputs, 
 
 The public snapshot retains CC0 historical match data, necessary factual match fields, the active 104-match canonical result table, project-authored prediction/model outputs, and the reviewed Sporttery historical snapshot described above. It removes raw provider payload rows, unlicensed roster/player tables, image fields, provider URLs, credentials, and restricted embedded market/source fields. Provider integration names may remain in capability metadata and project-authored model feature names; they do not include provider payloads or credentials.
 
+The checked Sporttery backup location, checksum, row/fixture count, date range, and credential-field audit are recorded in [docs/audits/sporttery-snapshot-audit-2026-07-20.md](docs/audits/sporttery-snapshot-audit-2026-07-20.md).
+
 ## Canonical 104-match result set
 
 `finished_match_results` is retained as raw-source provenance. The application and report generator use `canonical_match_results`, whose active build is exactly the 104 unique tournament matches: 72 group matches, 16 round-of-32 matches, 8 round-of-16 matches, 4 quarter-finals, 2 semi-finals, a third-place match, and a final.
