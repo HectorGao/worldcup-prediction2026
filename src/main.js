@@ -899,7 +899,7 @@ function inlinePrediction(match) {
         <span>${forecastLabel(match, 'home')} --</span>
         <span>平局 --</span>
         <span>${forecastLabel(match, 'away')} --</span>
-        ${scoreSummary(actualScore, predictedScore, accuracy)}
+        ${scoreSummary(match, actualScore, predictedScore, accuracy)}
       </div>
     `;
   }
@@ -915,7 +915,7 @@ function inlinePrediction(match) {
       ${forecastPill(forecastLabel(match, 'home'), probs.home, best === 'home')}
       ${forecastPill('平局', probs.draw, best === 'draw')}
       ${forecastPill(forecastLabel(match, 'away'), probs.away, best === 'away')}
-      ${scoreSummary(actualScore, predictedScore, accuracy)}
+      ${scoreSummary(match, actualScore, predictedScore, accuracy)}
       <span class="match-value-line">
         <b>价值</b>${value ? `${outcomeLabel(value.outcome)} · ${value.label}` : '盘口未配置'}
         <b>风险</b>${riskLabel(confidence, entry.prediction)}
@@ -1062,10 +1062,34 @@ function teamButton(team, label) {
 }
 
 function actualScoreText(match) {
+  const result = match.finished_result;
+  const home = result?.home_score_90 ?? result?.home_goals_90;
+  const away = result?.away_score_90 ?? result?.away_goals_90;
+  if (home !== null && home !== undefined && away !== null && away !== undefined) {
+    return `${home}-${away}`;
+  }
   if (match.home_score === null || match.home_score === undefined || match.away_score === null || match.away_score === undefined) {
     return null;
   }
   return `${match.home_score}-${match.away_score}`;
+}
+
+function resultDisplay(match) {
+  const result = match.finished_result;
+  if (!result) return null;
+  if (result.result_display) return result.result_display;
+  const home = result.home_score_90 ?? result.home_goals_90;
+  const away = result.away_score_90 ?? result.away_goals_90;
+  if (home === null || home === undefined || away === null || away === undefined) return null;
+  const details = [];
+  const extraHome = result.home_score_extra_time ?? result.home_goals_extra_time;
+  const extraAway = result.away_score_extra_time ?? result.away_goals_extra_time;
+  const penaltiesHome = result.home_score_penalties ?? result.home_penalties;
+  const penaltiesAway = result.away_score_penalties ?? result.away_penalties;
+  if (extraHome !== null && extraHome !== undefined && extraAway !== null && extraAway !== undefined) details.push(`加时 ${extraHome}-${extraAway}`);
+  if (penaltiesHome !== null && penaltiesHome !== undefined && penaltiesAway !== null && penaltiesAway !== undefined) details.push(`点球 ${penaltiesHome}-${penaltiesAway}`);
+  const base = `${match.home_team} ${home}-${away} ${match.away_team}`;
+  return details.length ? `${base}（${details.join('，')}）` : base;
 }
 
 function predictionScore(match, entry) {
@@ -1073,13 +1097,13 @@ function predictionScore(match, entry) {
   return match.predicted_score || null;
 }
 
-function scoreSummary(actualScore, predictedScore, accuracy) {
-  const accuracyText = accuracyLabel(accuracy);
+function scoreSummary(match, actualScore, predictedScore, accuracy) {
+  const actualDisplay = resultDisplay(match) || actualScore || '未赛';
   return `
     <span class="score-summary">
-      <b>实际</b>${actualScore || '未赛'}
+      <b>实际</b>${actualDisplay}
       <b>预测</b>${predictedScore || '--'}
-      <b>准确</b>${accuracyText}
+      <b>准确</b>${accuracyStatus(accuracy)}
     </span>
   `;
 }
@@ -1105,6 +1129,14 @@ function accuracyLabel(accuracy) {
   if (accuracy.exact_score) return '比分命中';
   if (accuracy.outcome_hit) return `赛果命中 · 差${accuracy.goal_diff_error}`;
   return `未命中 · 差${accuracy.goal_diff_error}`;
+}
+
+function accuracyStatus(accuracy) {
+  if (!accuracy) return '<span class="accuracy-status is-pending" aria-label="赛后评估待完成">待赛后</span>';
+  const exact = accuracy.exact_score_hit ?? accuracy.exact_score;
+  if (exact) return '<span class="accuracy-status is-exact" aria-label="比分命中">比分命中</span>';
+  if (accuracy.outcome_hit) return `<span class="accuracy-status is-outcome" aria-label="胜平负命中，净胜球误差 ${accuracy.goal_diff_error ?? '--'}">赛果命中</span>`;
+  return `<span class="accuracy-status is-miss" aria-label="胜平负未命中，净胜球误差 ${accuracy.goal_diff_error ?? '--'}">未命中</span>`;
 }
 
 function forecastLabel(match, side) {
@@ -1276,19 +1308,13 @@ function renderRoundMatches() {
 function roundResultLine(match) {
   const result = match.finished_result;
   if (!result) return '';
-  const extra = result.home_goals_extra_time !== null && result.home_goals_extra_time !== undefined
-    ? ` · 加时 ${result.home_goals_extra_time}-${result.away_goals_extra_time}`
-    : '';
-  const penalties = result.home_penalties !== null && result.home_penalties !== undefined
-    ? ` · 点球 ${result.home_penalties}-${result.away_penalties}`
-    : '';
   const advance = result.winner ? ` · 晋级 ${result.winner}` : '';
   const loser = result.loser ? ` · 淘汰 ${result.loser}` : '';
   const source = result.source ? ` · ${result.source}` : '';
   const updated = result.fetched_at || result.synced_at;
   return `
     <div class="round-card-result">
-      90分钟 ${result.home_goals_90 ?? match.home_score}-${result.away_goals_90 ?? match.away_score}${extra}${penalties}${advance}${loser}${source}${updated ? ` · ${formatDateTime(updated)}` : ''}
+      ${resultDisplay(match) || `90分钟 ${actualScoreText(match) || '--'}`}${advance}${loser}${source}${updated ? ` · ${formatDateTime(updated)}` : ''}
     </div>
   `;
 }

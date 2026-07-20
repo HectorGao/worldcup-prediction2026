@@ -48,6 +48,7 @@ from .prediction.xgboost_model import (
     train_xgboost_layer,
 )
 from .prediction.weight_calibration import calibrate_model_weights, default_weight_run
+from .results import canonical_match_key, prediction_evaluation
 from .result_sync import (
     collect_world_cup_finished_matches,
     evaluate_round_of_32_regression,
@@ -567,6 +568,7 @@ class WorldCupService:
         }
         print("[INFO] Using result source: ESPN" if today_finished_matches else "[WARNING] No finished online matches returned.")
         sync_result = sync_finished_matches_to_local_store(today_finished_matches, self.db)
+        canonical_result_rebuild = self.db.rebuild_canonical_match_results()
         historical_backfill = (
             self.backfill_historical_matches(start_date="2026-06-23", end_date="2026-06-28")
             if backfill_historical_matches
@@ -607,6 +609,7 @@ class WorldCupService:
             all_world_cup_matches,
             recalculate=recalculate,
         )
+        prediction_evaluation_rebuild = self.rebuild_prediction_evaluations()
         regression_evaluation = self._evaluate_world_cup_regression(all_world_cup_matches)
         r32_regression = self.run_round_of_32_regression(output_dir=output_dir, before_matches=all_world_cup_matches)
         advanced_teams = sorted(
@@ -635,6 +638,8 @@ class WorldCupService:
             "advanced_teams": advanced_teams,
             "eliminated_teams": eliminated_teams,
             "sync": sync_result,
+            "canonical_result_rebuild": canonical_result_rebuild,
+            "prediction_evaluation_rebuild": prediction_evaluation_rebuild,
             "historical_backfill": historical_backfill,
             "ratings": retraining,
             "weight_scheme_comparison": weight_scheme_comparison,
@@ -709,6 +714,8 @@ class WorldCupService:
             "eliminated_teams": eliminated_teams,
             "world_cup_finished_match_count": len(all_world_cup_matches),
             "sync": sync_result,
+            "canonical_result_rebuild": canonical_result_rebuild,
+            "prediction_evaluation_rebuild": prediction_evaluation_rebuild,
             "historical_backfill": historical_backfill,
             "ratings": retraining,
             "retraining": retraining,
@@ -1521,10 +1528,17 @@ class WorldCupService:
             "is_finished": True,
             "home_goals_90": result.get("home_goals_90", row.get("home_score")),
             "away_goals_90": result.get("away_goals_90", row.get("away_score")),
+            "home_score_90": result.get("home_score_90", result.get("home_goals_90", row.get("home_score"))),
+            "away_score_90": result.get("away_score_90", result.get("away_goals_90", row.get("away_score"))),
             "home_goals_extra_time": result.get("home_goals_extra_time"),
             "away_goals_extra_time": result.get("away_goals_extra_time"),
+            "home_score_extra_time": result.get("home_score_extra_time", result.get("home_goals_extra_time")),
+            "away_score_extra_time": result.get("away_score_extra_time", result.get("away_goals_extra_time")),
             "home_penalties": result.get("home_penalties"),
             "away_penalties": result.get("away_penalties"),
+            "home_score_penalties": result.get("home_score_penalties", result.get("home_penalties")),
+            "away_score_penalties": result.get("away_score_penalties", result.get("away_penalties")),
+            "result_display": result.get("result_display"),
             "winner": result.get("winner"),
             "loser": result.get("loser"),
             "decided_by_extra_time": result.get("decided_by_extra_time", False),
@@ -3145,6 +3159,7 @@ class WorldCupService:
     def match_analysis(self, fixture_id: str) -> dict[str, Any]:
         prediction = self.get_prediction(fixture_id)
         fixture = prediction["fixture"]
+        finished_result = self._finished_result_for_row(fixture)
         profiles = {profile["team"]: profile for profile in self._team_profiles(compact=False)}
         home_profile = profiles.get(fixture["home_team"], {})
         away_profile = profiles.get(fixture["away_team"], {})
@@ -3152,6 +3167,8 @@ class WorldCupService:
         return {
             "fixture": fixture,
             "prediction": prediction,
+            "finished_result": self._finished_output_row(fixture, finished_result) if finished_result else None,
+            "evaluation": prediction.get("evaluation"),
             "team_profiles": {
                 "home": self._compact_profile(home_profile),
                 "away": self._compact_profile(away_profile),
@@ -3178,6 +3195,55 @@ class WorldCupService:
                 },
             ],
         }
+
+    def rebuild_prediction_evaluations(self) -> dict[str, int]:
+        """Evaluate saved forecasts against canonical results without rerunning models."""
+        totals = {
+            "prediction_records": 0,
+            "matched_predictions": 0,
+            "evaluated_predictions": 0,
+            "unmatched_predictions": 0,
+            "cleared_stale_evaluations": 0,
+            "post_match_or_unknown_predictions": 0,
+            "pre_match_predictions": 0,
+        }
+        for stored in self.db.list_predictions():
+            totals["prediction_records"] += 1
+            payload = stored["payload"]
+            fixture = payload.get("fixture") or {}
+            result = self.db.find_canonical_match_result(
+                str(fixture.get("date") or ""),
+                str(fixture.get("home_team") or ""),
+                str(fixture.get("away_team") or ""),
+            )
+            if result is None:
+                totals["unmatched_predictions"] += 1
+                totals["cleared_stale_evaluations"] += int(self.db.clear_prediction_evaluation(str(stored["fixture_id"])))
+                continue
+            totals["matched_predictions"] += 1
+            top_scoreline = (payload.get("top_scorelines") or [{}])[0]
+            evaluation = prediction_evaluation(top_scoreline.get("score"), result)
+            if evaluation is None:
+                continue
+            created_date = str(stored.get("created_at") or "")[:10]
+            fixture_date = str(fixture.get("date") or "")
+            timing = "pre_match" if created_date and fixture_date and created_date <= fixture_date else "post_match_or_unknown"
+            evaluation.update(
+                {
+                    "canonical_match_key": canonical_match_key(
+                        str(result.get("date") or ""),
+                        str(result.get("home_team") or ""),
+                        str(result.get("away_team") or ""),
+                    ),
+                    "result_display": result.get("result_display"),
+                    "prediction_created_at": stored.get("created_at"),
+                    "prediction_timing": timing,
+                }
+            )
+            self.db.save_prediction_evaluation(str(stored["fixture_id"]), evaluation)
+            totals["evaluated_predictions"] += 1
+            totals[f"{timing}_predictions"] += 1
+        return totals
 
     def daily_report(self, date: str) -> str:
         matches = self.list_matches(date)
@@ -4244,11 +4310,11 @@ class WorldCupService:
 
     def _attach_prediction_summary(self, match: dict[str, Any]) -> dict[str, Any]:
         enriched = dict(match)
-        actual_score = self._actual_score(match)
-        enriched["actual_score"] = actual_score
         finished_result = self._finished_result_for_row(match)
         if finished_result:
             enriched["finished_result"] = self._finished_output_row(match, finished_result)
+        actual_score = self._actual_score(finished_result or match)
+        enriched["actual_score"] = actual_score
         fixture_odds_markets = self._odds_markets(match, self._market_payload(match))
         if (fixture_odds_markets.get("h2h") or {}).get("available") or (fixture_odds_markets.get("handicap") or {}).get("available"):
             enriched["odds_markets"] = fixture_odds_markets
@@ -4265,6 +4331,7 @@ class WorldCupService:
             enriched["handicap_analysis"] = prediction.get("handicap_analysis")
             enriched["over25_summary"] = prediction.get("over25_summary")
             enriched["has_prediction_record"] = True
+            enriched["prediction_evaluation"] = prediction.get("evaluation")
         except (KeyError, ValueError, TypeError, RuntimeError):
             predicted_score = None
             enriched["has_prediction_record"] = bool(enriched.get("has_prediction_record"))
@@ -4273,36 +4340,31 @@ class WorldCupService:
         return enriched
 
     def _finished_result_for_row(self, row: dict[str, Any]) -> dict[str, Any] | None:
-        for match in self.db.list_finished_matches():
-            if (
-                match.get("date") == row.get("date")
-                and match.get("home_team") == row.get("home_team")
-                and match.get("away_team") == row.get("away_team")
-            ):
-                return match
-        return None
+        return self.db.find_canonical_match_result(
+            str(row.get("date") or ""),
+            str(row.get("home_team") or ""),
+            str(row.get("away_team") or ""),
+        )
 
     def _actual_score(self, match: dict[str, Any]) -> str | None:
-        if match.get("home_score") is None or match.get("away_score") is None:
+        home = match.get("home_score_90", match.get("home_goals_90", match.get("home_score")))
+        away = match.get("away_score_90", match.get("away_goals_90", match.get("away_score")))
+        if home is None or away is None:
             return None
-        return f"{match['home_score']}-{match['away_score']}"
+        return f"{home}-{away}"
 
     def _prediction_accuracy(self, predicted_score: str | None, actual_score: str | None) -> dict[str, Any] | None:
-        if not predicted_score or not actual_score or "-" not in predicted_score or "-" not in actual_score:
+        if not actual_score or "-" not in actual_score:
             return None
-        try:
-            pred_home, pred_away = [int(part) for part in predicted_score.split("-", 1)]
-            actual_home, actual_away = [int(part) for part in actual_score.split("-", 1)]
-        except ValueError:
+        actual_home, actual_away = actual_score.split("-", 1)
+        evaluation = prediction_evaluation(
+            predicted_score,
+            {"home_score_90": actual_home, "away_score_90": actual_away},
+        )
+        if evaluation is None:
             return None
-        pred_outcome = "home" if pred_home > pred_away else "away" if pred_home < pred_away else "draw"
-        actual_outcome = "home" if actual_home > actual_away else "away" if actual_home < actual_away else "draw"
-        return {
-            "exact_score": pred_home == actual_home and pred_away == actual_away,
-            "outcome_hit": pred_outcome == actual_outcome,
-            "goal_diff_error": abs((pred_home - pred_away) - (actual_home - actual_away)),
-            "total_goal_error": abs((pred_home + pred_away) - (actual_home + actual_away)),
-        }
+        evaluation["exact_score"] = evaluation["exact_score_hit"]
+        return evaluation
 
     def _players_with_known_clubs(self, team: str, players: list[dict[str, Any]]) -> list[dict[str, Any]]:
         squad_by_number: dict[int, dict[str, Any]] = {}

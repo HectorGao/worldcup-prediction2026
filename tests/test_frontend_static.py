@@ -107,6 +107,15 @@ def test_static_build_adapter_maps_dynamic_routes_to_json_files():
     assert "公开只读部署中禁用" in source
 
 
+def test_finished_results_use_the_server_canonical_display_and_accessible_hit_labels():
+    source = Path("src/main.js").read_text(encoding="utf-8")
+
+    assert "function resultDisplay(match)" in source
+    assert "result.result_display" in source
+    assert "function accuracyStatus(accuracy)" in source
+    assert "aria-label" in source
+
+
 def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
     source = Path("scripts/export_static_site.py").read_text(encoding="utf-8")
 

@@ -623,6 +623,17 @@ input[type="date"] {
   font-size: 0.7rem;
 }
 
+.accuracy-status {
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-weight: 700;
+}
+
+.accuracy-status.is-exact { background: #cbeed8; color: #145a32; }
+.accuracy-status.is-outcome { background: #d9e8fb; color: #23549a; }
+.accuracy-status.is-miss { background: #f8d8d5; color: #9d3028; }
+.accuracy-status.is-pending { background: #ecebe7; color: #5f655f; }
+
 .match-value-line {
   grid-column: 1 / -1;
   display: flex;
