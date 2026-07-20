@@ -1,43 +1,61 @@
 {
-  "date": "2026-07-19",
+  "date": "2026-07-02",
   "requested_date": "2026-07-02",
   "display_mode": "static_export",
   "window_dates": [
-    "2026-07-19"
+    "2026-07-02"
   ],
   "matches": [
     {
-      "id": "lyihub-54328032",
-      "date": "2026-07-19",
-      "kickoff": "2026-07-18T21:00:00+00:00",
-      "home_team": "France",
-      "away_team": "England",
-      "group": "季军赛",
-      "venue": "待定",
-      "status": "scheduled",
-      "home_score": null,
-      "away_score": null,
-      "home_team_zh": "法国",
-      "away_team_zh": "英格兰",
-      "home_flag": "🇫🇷",
-      "away_flag": "🏴",
-      "home_iso2": "FR",
-      "away_iso2": "GB-ENG",
-      "match_id": "54328032",
-      "stage": "季军赛",
-      "has_predict": false,
-      "historical_without_odds": false,
+      "id": "lyihub-54327940",
+      "date": "2026-07-02",
+      "kickoff": "2026-07-01T16:00:00+00:00",
+      "home_team": "England",
+      "away_team": "DR Congo",
+      "group": "1/16决赛",
+      "venue": "亚特兰大体育场·美国 (Atlanta)",
+      "status": "final",
+      "home_score": 2,
+      "away_score": 1,
+      "home_team_zh": "英格兰",
+      "away_team_zh": "刚果民主共和国",
+      "home_flag": "🏴",
+      "away_flag": "🇨🇩",
+      "home_iso2": "GB-ENG",
+      "away_iso2": "CD",
+      "match_id": "54327940",
+      "stage": "1/16决赛",
+      "has_predict": true,
+      "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": null,
+      "actual_score": "2-1",
+      "finished_result": {
+        "match_id": "lyihub-54327940",
+        "stage": "1/16决赛",
+        "home_team": "England",
+        "away_team": "DR Congo",
+        "is_finished": true,
+        "home_goals_90": 2,
+        "away_goals_90": 1,
+        "home_goals_extra_time": null,
+        "away_goals_extra_time": null,
+        "home_penalties": null,
+        "away_penalties": null,
+        "winner": "England",
+        "loser": "DR Congo",
+        "decided_by_extra_time": false,
+        "decided_by_penalties": false,
+        "fetched_at": "2026-07-02T07:54:11.938642+00:00"
+      },
       "value_analysis": {
         "available": true,
         "summary": "盘口未发现明显价值。",
         "items": [
           {
             "outcome": "home",
-            "model_probability": 0.568244,
-            "edge": 0.047299,
-            "decimal_odds": 1.7,
+            "model_probability": 0.709558,
+            "edge": -0.047813,
+            "decimal_odds": 1.17,
             "label": "不建议",
             "edge_label": "no edge",
             "kelly": {
@@ -49,9 +67,570 @@
           },
           {
             "outcome": "draw",
-            "model_probability": 0.20108,
-            "edge": -0.031975,
-            "decimal_odds": 3.8,
+            "model_probability": 0.203566,
+            "edge": 0.034781,
+            "decimal_odds": 5.25,
+            "label": "不建议",
+            "edge_label": "no edge",
+            "kelly": {
+              "full": 0.01617,
+              "half": 0.008085,
+              "quarter": 0.004043
+            },
+            "recommendation": "不下注"
+          },
+          {
+            "outcome": "away",
+            "model_probability": 0.086875,
+            "edge": 0.013032,
+            "decimal_odds": 12.0,
+            "label": "市场共识",
+            "edge_label": "market efficient",
+            "kelly": {
+              "full": 0.003864,
+              "half": 0.001932,
+              "quarter": 0.000966
+            },
+            "recommendation": "小仓位观察"
+          }
+        ],
+        "recommended_options": [],
+        "confidence": "低",
+        "risk_warnings": [
+          "roster 不完整"
+        ],
+        "risk_warning": "roster 不完整；Kelly 仅用于仓位上限估算，本系统只做数据分析，不构成投注建议。"
+      },
+      "handicap_analysis": {
+        "available": true,
+        "line": -1.0,
+        "model_probabilities": {
+          "home": 0.540281,
+          "draw": 0.212493,
+          "away": 0.247226
+        },
+        "tail_probability": 0.006006,
+        "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
+        "regions": [
+          {
+            "home_goals": 0,
+            "away_goals": 0,
+            "outcome": "away",
+            "probability": 0.0310097
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 1,
+            "outcome": "away",
+            "probability": 0.02304368
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 2,
+            "outcome": "away",
+            "probability": 0.01019563
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.00296745
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.00064776
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00011312
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 1.646e-05
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 2.05e-06
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 0,
+            "outcome": "draw",
+            "probability": 0.07791552
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 1,
+            "outcome": "away",
+            "probability": 0.0713908
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 2,
+            "outcome": "away",
+            "probability": 0.02705858
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.00787543
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.00171911
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00030021
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 4.369e-05
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 5.45e-06
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.10384494
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 1,
+            "outcome": "draw",
+            "probability": 0.09067254
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 2,
+            "outcome": "away",
+            "probability": 0.04115265
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.01045046
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.00228121
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00039837
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 5.797e-05
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 7.23e-06
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.09186609
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.08021317
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 2,
+            "outcome": "draw",
+            "probability": 0.03501919
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.01059588
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.00201807
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00035242
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 5.129e-05
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 6.4e-06
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.06095178
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.05322024
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.02323471
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 3,
+            "outcome": "draw",
+            "probability": 0.00676249
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.00153461
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00023382
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 3.403e-05
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 4.24e-06
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.03235248
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.02824867
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.01233271
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 3,
+            "outcome": "home",
+            "probability": 0.00358945
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 4,
+            "outcome": "draw",
+            "probability": 0.00078353
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00014225
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 1.806e-05
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 2.25e-06
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.01431026
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.01249505
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.00545505
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 3,
+            "outcome": "home",
+            "probability": 0.0015877
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 4,
+            "outcome": "home",
+            "probability": 0.00034658
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 5,
+            "outcome": "draw",
+            "probability": 6.052e-05
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 9.16e-06
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 1e-06
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.00542551
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.0047373
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.0020682
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 3,
+            "outcome": "home",
+            "probability": 0.00060195
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 4,
+            "outcome": "home",
+            "probability": 0.0001314
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 5,
+            "outcome": "home",
+            "probability": 2.295e-05
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 6,
+            "outcome": "draw",
+            "probability": 3.34e-06
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 4.3e-07
+          }
+        ],
+        "value_analysis": {
+          "available": true,
+          "line": "-1",
+          "items": [
+            {
+              "outcome": "home",
+              "model_probability": 0.540281,
+              "edge": 0.022569,
+              "decimal_odds": 1.71,
+              "label": "不推荐",
+              "recommendation": "不下注",
+              "kelly": {
+                "full": 0.0,
+                "half": 0.0,
+                "quarter": 0.0
+              }
+            },
+            {
+              "outcome": "draw",
+              "model_probability": 0.212493,
+              "edge": -0.040446,
+              "decimal_odds": 3.5,
+              "label": "不推荐",
+              "recommendation": "不下注",
+              "kelly": {
+                "full": 0.0,
+                "half": 0.0,
+                "quarter": 0.0
+              }
+            },
+            {
+              "outcome": "away",
+              "model_probability": 0.247226,
+              "edge": 0.017877,
+              "decimal_odds": 3.86,
+              "label": "不推荐",
+              "recommendation": "不下注",
+              "kelly": {
+                "full": 0.0,
+                "half": 0.0,
+                "quarter": 0.0
+              }
+            }
+          ],
+          "recommended_options": [],
+          "summary": "暂无明显价值，模型与市场基本一致。"
+        }
+      },
+      "over25_summary": {
+        "poisson_over25_prob": 0.3641703444067167,
+        "under25_prob": 0.5643121632336063,
+        "xgboost_over25_prob": 0.35850692638532,
+        "monte_carlo_over25_prob": 0.3788,
+        "score_heatmap_over25_prob": 0.6765939678125109,
+        "final_over25_prob": 0.43568783676639367,
+        "over25_edge": null,
+        "over25_kelly": null,
+        "value": {
+          "available": false,
+          "reason": "无赔率，仅模型概率。"
+        }
+      },
+      "predicted_score": "2-0",
+      "prediction_accuracy": {
+        "exact_score": false,
+        "outcome_hit": true,
+        "goal_diff_error": 1,
+        "total_goal_error": 1
+      }
+    },
+    {
+      "id": "lyihub-54327943",
+      "date": "2026-07-02",
+      "kickoff": "2026-07-01T20:00:00+00:00",
+      "home_team": "Belgium",
+      "away_team": "Senegal",
+      "group": "1/16决赛",
+      "venue": "西雅图体育场·美国 (Seattle, Washington)",
+      "status": "final",
+      "home_score": 2,
+      "away_score": 2,
+      "home_team_zh": "比利时",
+      "away_team_zh": "塞内加尔",
+      "home_flag": "🇧🇪",
+      "away_flag": "🇸🇳",
+      "home_iso2": "BE",
+      "away_iso2": "SN",
+      "match_id": "54327943",
+      "stage": "1/16决赛",
+      "has_predict": true,
+      "historical_without_odds": true,
+      "has_prediction_record": true,
+      "actual_score": "2-2",
+      "finished_result": {
+        "match_id": "espn-760493",
+        "stage": "round-of-32",
+        "home_team": "Belgium",
+        "away_team": "Senegal",
+        "is_finished": true,
+        "home_goals_90": 2,
+        "away_goals_90": 2,
+        "home_goals_extra_time": 1,
+        "away_goals_extra_time": 0,
+        "home_penalties": null,
+        "away_penalties": null,
+        "winner": "Belgium",
+        "loser": "Senegal",
+        "decided_by_extra_time": true,
+        "decided_by_penalties": false,
+        "fetched_at": "2026-07-20T07:44:31.807576+00:00"
+      },
+      "value_analysis": {
+        "available": true,
+        "summary": "主胜相对市场有 29.8% 正向差异。",
+        "items": [
+          {
+            "outcome": "home",
+            "model_probability": 0.743684,
+            "edge": 0.29829,
+            "decimal_odds": 1.99,
+            "label": "有价值",
+            "edge_label": "value bet",
+            "kelly": {
+              "full": 0.484778,
+              "half": 0.242389,
+              "quarter": 0.121195
+            },
+            "recommendation": "小仓位观察"
+          },
+          {
+            "outcome": "draw",
+            "model_probability": 0.11877,
+            "edge": -0.176674,
+            "decimal_odds": 3.0,
             "label": "不建议",
             "edge_label": "no edge",
             "kelly": {
@@ -63,15 +642,605 @@
           },
           {
             "outcome": "away",
-            "model_probability": 0.230677,
-            "edge": -0.015325,
-            "decimal_odds": 3.6,
+            "model_probability": 0.137546,
+            "edge": -0.121616,
+            "decimal_odds": 3.42,
+            "label": "不建议",
+            "edge_label": "no edge",
+            "kelly": {
+              "full": 0.0,
+              "half": 0.0,
+              "quarter": 0.0
+            },
+            "recommendation": "不下注"
+          }
+        ],
+        "recommended_options": [
+          {
+            "outcome": "home",
+            "model_probability": 0.743684,
+            "edge": 0.29829,
+            "decimal_odds": 1.99,
+            "label": "有价值",
+            "edge_label": "value bet",
+            "kelly": {
+              "full": 0.484778,
+              "half": 0.242389,
+              "quarter": 0.121195
+            },
+            "recommendation": "小仓位观察"
+          }
+        ],
+        "confidence": "高",
+        "risk_warnings": [
+          "roster 不完整"
+        ],
+        "risk_warning": "roster 不完整；Kelly 仅用于仓位上限估算，本系统只做数据分析，不构成投注建议。"
+      },
+      "handicap_analysis": {
+        "available": true,
+        "line": -1.0,
+        "model_probabilities": {
+          "home": 0.398486,
+          "draw": 0.160183,
+          "away": 0.441331
+        },
+        "tail_probability": 0.024618,
+        "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
+        "regions": [
+          {
+            "home_goals": 0,
+            "away_goals": 0,
+            "outcome": "away",
+            "probability": 0.00543999
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 1,
+            "outcome": "away",
+            "probability": 0.00879915
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 2,
+            "outcome": "away",
+            "probability": 0.00949317
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.00671188
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.00355909
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00150981
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 0.00053373
+          },
+          {
+            "home_goals": 0,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00016173
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 0,
+            "outcome": "draw",
+            "probability": 0.01213609
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 1,
+            "outcome": "away",
+            "probability": 0.03805514
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 2,
+            "outcome": "away",
+            "probability": 0.03227679
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.0228204
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.01210089
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00513336
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 0.0018147
+          },
+          {
+            "home_goals": 1,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00054987
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.0208525
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 1,
+            "outcome": "draw",
+            "probability": 0.04422953
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 2,
+            "outcome": "away",
+            "probability": 0.06826849
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.03879468
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.02057152
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00872671
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 0.00308499
+          },
+          {
+            "home_goals": 2,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00093478
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.02363284
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.0501268
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 2,
+            "outcome": "draw",
+            "probability": 0.05316112
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 3,
+            "outcome": "away",
+            "probability": 0.05470297
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.02331439
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00989027
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 0.00349632
+          },
+          {
+            "home_goals": 3,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00105942
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.02008791
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.04260778
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.04518696
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 3,
+            "outcome": "draw",
+            "probability": 0.03194817
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 4,
+            "outcome": "away",
+            "probability": 0.02465608
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00840673
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 0.00297187
+          },
+          {
+            "home_goals": 4,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00090051
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.01365978
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.02897329
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.03072713
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 3,
+            "outcome": "home",
+            "probability": 0.02172476
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 4,
+            "outcome": "draw",
+            "probability": 0.01151991
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 5,
+            "outcome": "away",
+            "probability": 0.00711241
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 0.00202087
+          },
+          {
+            "home_goals": 5,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00061234
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.00774054
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.0164182
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.01741204
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 3,
+            "outcome": "home",
+            "probability": 0.0123107
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 4,
+            "outcome": "home",
+            "probability": 0.00652795
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 5,
+            "outcome": "draw",
+            "probability": 0.00276924
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 6,
+            "outcome": "away",
+            "probability": 0.00142478
+          },
+          {
+            "home_goals": 6,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00034699
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.00375969
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.00797455
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.00845728
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 3,
+            "outcome": "home",
+            "probability": 0.00597948
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 4,
+            "outcome": "home",
+            "probability": 0.00317072
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 5,
+            "outcome": "home",
+            "probability": 0.00134506
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 6,
+            "outcome": "draw",
+            "probability": 0.00047549
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00020969
+          }
+        ],
+        "value_analysis": {
+          "available": true,
+          "line": "-1",
+          "items": [
+            {
+              "outcome": "home",
+              "model_probability": 0.398486,
+              "edge": 0.18496,
+              "decimal_odds": 4.15,
+              "label": "强推荐",
+              "recommendation": "小仓位候选",
+              "kelly": {
+                "full": 0.207529,
+                "half": 0.103765,
+                "quarter": 0.051882
+              }
+            },
+            {
+              "outcome": "draw",
+              "model_probability": 0.160183,
+              "edge": -0.085965,
+              "decimal_odds": 3.6,
+              "label": "不推荐",
+              "recommendation": "不下注",
+              "kelly": {
+                "full": 0.0,
+                "half": 0.0,
+                "quarter": 0.0
+              }
+            },
+            {
+              "outcome": "away",
+              "model_probability": 0.441331,
+              "edge": -0.098994,
+              "decimal_odds": 1.64,
+              "label": "不推荐",
+              "recommendation": "不下注",
+              "kelly": {
+                "full": 0.0,
+                "half": 0.0,
+                "quarter": 0.0
+              }
+            }
+          ],
+          "recommended_options": [
+            {
+              "outcome": "home",
+              "model_probability": 0.398486,
+              "edge": 0.18496,
+              "decimal_odds": 4.15,
+              "label": "强推荐",
+              "recommendation": "小仓位候选",
+              "kelly": {
+                "full": 0.207529,
+                "half": 0.103765,
+                "quarter": 0.051882
+              }
+            }
+          ],
+          "summary": "让球胜 Edge 18.5%，Kelly 20.8%。"
+        }
+      },
+      "over25_summary": {
+        "poisson_over25_prob": 0.8017467323643759,
+        "under25_prob": 0.15227918305011812,
+        "xgboost_over25_prob": 0.8254978465017555,
+        "monte_carlo_over25_prob": 0.8954,
+        "score_heatmap_over25_prob": 0.880605979889446,
+        "final_over25_prob": 0.8477208169498819,
+        "over25_edge": null,
+        "over25_kelly": null,
+        "value": {
+          "available": false,
+          "reason": "无赔率，仅模型概率。"
+        }
+      },
+      "predicted_score": "2-2",
+      "prediction_accuracy": {
+        "exact_score": true,
+        "outcome_hit": true,
+        "goal_diff_error": 0,
+        "total_goal_error": 0
+      }
+    },
+    {
+      "id": "lyihub-54327941",
+      "date": "2026-07-02",
+      "kickoff": "2026-07-02T00:00:00+00:00",
+      "home_team": "United States",
+      "away_team": "Bosnia and Herzegovina",
+      "group": "1/16决赛",
+      "venue": "旧金山湾区体育场·美国 (Santa Clara, California)",
+      "status": "final",
+      "home_score": 2,
+      "away_score": 0,
+      "home_team_zh": "美国",
+      "away_team_zh": "波黑",
+      "home_flag": "🇺🇸",
+      "away_flag": "🇧🇦",
+      "home_iso2": "US",
+      "away_iso2": "BA",
+      "match_id": "54327941",
+      "stage": "1/16决赛",
+      "has_predict": true,
+      "historical_without_odds": true,
+      "has_prediction_record": true,
+      "actual_score": "2-0",
+      "finished_result": {
+        "match_id": "lyihub-54327941",
+        "stage": "1/16决赛",
+        "home_team": "United States",
+        "away_team": "Bosnia and Herzegovina",
+        "is_finished": true,
+        "home_goals_90": 2,
+        "away_goals_90": 0,
+        "home_goals_extra_time": null,
+        "away_goals_extra_time": null,
+        "home_penalties": null,
+        "away_penalties": null,
+        "winner": "United States",
+        "loser": "Bosnia and Herzegovina",
+        "decided_by_extra_time": false,
+        "decided_by_penalties": false,
+        "fetched_at": "2026-07-02T07:54:11.938676+00:00"
+      },
+      "value_analysis": {
+        "available": true,
+        "summary": "盘口未发现明显价值。",
+        "items": [
+          {
+            "outcome": "home",
+            "model_probability": 0.69397,
+            "edge": -0.003666,
+            "decimal_odds": 1.27,
             "label": "市场共识",
             "edge_label": "market efficient",
             "kelly": {
               "full": 0.0,
               "half": 0.0,
               "quarter": 0.0
+            },
+            "recommendation": "不下注"
+          },
+          {
+            "outcome": "draw",
+            "model_probability": 0.161817,
+            "edge": -0.035071,
+            "decimal_odds": 4.5,
+            "label": "不建议",
+            "edge_label": "no edge",
+            "kelly": {
+              "full": 0.0,
+              "half": 0.0,
+              "quarter": 0.0
+            },
+            "recommendation": "不下注"
+          },
+          {
+            "outcome": "away",
+            "model_probability": 0.144212,
+            "edge": 0.038737,
+            "decimal_odds": 8.4,
+            "label": "不建议",
+            "edge_label": "no edge",
+            "kelly": {
+              "full": 0.028565,
+              "half": 0.014283,
+              "quarter": 0.007141
             },
             "recommendation": "不下注"
           }
@@ -87,396 +1256,396 @@
         "available": true,
         "line": -1.0,
         "model_probabilities": {
-          "home": 0.468736,
-          "draw": 0.194301,
-          "away": 0.336964
+          "home": 0.553815,
+          "draw": 0.174429,
+          "away": 0.271756
         },
-        "tail_probability": 0.005002,
+        "tail_probability": 0.023188,
         "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
         "regions": [
           {
             "home_goals": 0,
             "away_goals": 0,
             "outcome": "away",
-            "probability": 0.03811665
+            "probability": 0.0096989
           },
           {
             "home_goals": 0,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.04062765
+            "probability": 0.01069327
           },
           {
             "home_goals": 0,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.01780773
+            "probability": 0.00771593
           },
           {
             "home_goals": 0,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.00513671
+            "probability": 0.00364861
           },
           {
             "home_goals": 0,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00111128
+            "probability": 0.00129398
           },
           {
             "home_goals": 0,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00019233
+            "probability": 0.00036713
           },
           {
             "home_goals": 0,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 2.774e-05
+            "probability": 8.68e-05
           },
           {
             "home_goals": 0,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 3.43e-06
+            "probability": 1.759e-05
           },
           {
             "home_goals": 1,
             "away_goals": 0,
             "outcome": "draw",
-            "probability": 0.07385842
+            "probability": 0.02666707
           },
           {
             "home_goals": 1,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.08428967
+            "probability": 0.04590704
           },
           {
             "home_goals": 1,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.04578348
+            "probability": 0.02623415
           },
           {
             "home_goals": 1,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.01320643
+            "probability": 0.01240529
           },
           {
             "home_goals": 1,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00285709
+            "probability": 0.00439955
           },
           {
             "home_goals": 1,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00049448
+            "probability": 0.00124824
           },
           {
             "home_goals": 1,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 7.132e-05
+            "probability": 0.00029513
           },
           {
             "home_goals": 1,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 8.82e-06
+            "probability": 5.981e-05
           },
           {
             "home_goals": 2,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.09535717
+            "probability": 0.04565788
           },
           {
             "home_goals": 2,
             "away_goals": 1,
             "outcome": "draw",
-            "probability": 0.0825185
+            "probability": 0.06477043
           },
           {
             "home_goals": 2,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.04664944
+            "probability": 0.05507991
           },
           {
             "home_goals": 2,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.01697679
+            "probability": 0.02108899
           },
           {
             "home_goals": 2,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00367277
+            "probability": 0.00747923
           },
           {
             "home_goals": 2,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00063566
+            "probability": 0.00212201
           },
           {
             "home_goals": 2,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 9.168e-05
+            "probability": 0.00050172
           },
           {
             "home_goals": 2,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 1.133e-05
+            "probability": 0.00010168
           },
           {
             "home_goals": 3,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.08172073
+            "probability": 0.05174559
           },
           {
             "home_goals": 3,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.07071804
+            "probability": 0.07340648
           },
           {
             "home_goals": 3,
             "away_goals": 2,
             "outcome": "draw",
-            "probability": 0.03059836
+            "probability": 0.05206735
           },
           {
             "home_goals": 3,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.01153193
+            "probability": 0.02951825
           },
           {
             "home_goals": 3,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00314755
+            "probability": 0.00847646
           },
           {
             "home_goals": 3,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00054475
+            "probability": 0.00240495
           },
           {
             "home_goals": 3,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 7.857e-05
+            "probability": 0.00056861
           },
           {
             "home_goals": 3,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 9.71e-06
+            "probability": 0.00011523
           },
           {
             "home_goals": 4,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.05252577
+            "probability": 0.04398375
           },
           {
             "home_goals": 4,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.04545382
+            "probability": 0.06239551
           },
           {
             "home_goals": 4,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.01966701
+            "probability": 0.04425725
           },
           {
             "home_goals": 4,
             "away_goals": 3,
             "outcome": "draw",
-            "probability": 0.00567303
+            "probability": 0.02092783
           },
           {
             "home_goals": 4,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00160354
+            "probability": 0.00889837
           },
           {
             "home_goals": 4,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00035014
+            "probability": 0.0020442
           },
           {
             "home_goals": 4,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 5.05e-05
+            "probability": 0.00048332
           },
           {
             "home_goals": 4,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 6.24e-06
+            "probability": 9.795e-05
           },
           {
             "home_goals": 5,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.02700863
+            "probability": 0.02990895
           },
           {
             "home_goals": 5,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.02337225
+            "probability": 0.04242895
           },
           {
             "home_goals": 5,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.01011273
+            "probability": 0.03009493
           },
           {
             "home_goals": 5,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00291706
+            "probability": 0.01423092
           },
           {
             "home_goals": 5,
             "away_goals": 4,
             "outcome": "draw",
-            "probability": 0.00063108
+            "probability": 0.00504701
           },
           {
             "home_goals": 5,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.0001427
+            "probability": 0.00171676
           },
           {
             "home_goals": 5,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 2.597e-05
+            "probability": 0.00032866
           },
           {
             "home_goals": 5,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 3.21e-06
+            "probability": 6.66e-05
           },
           {
             "home_goals": 6,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.01157315
+            "probability": 0.01694841
           },
           {
             "home_goals": 6,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.01001497
+            "probability": 0.02404307
           },
           {
             "home_goals": 6,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.00433329
+            "probability": 0.01705379
           },
           {
             "home_goals": 6,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00124995
+            "probability": 0.00806419
           },
           {
             "home_goals": 6,
             "away_goals": 4,
             "outcome": "home",
-            "probability": 0.00027042
+            "probability": 0.00285997
           },
           {
             "home_goals": 6,
             "away_goals": 5,
             "outcome": "draw",
-            "probability": 4.68e-05
+            "probability": 0.00081143
           },
           {
             "home_goals": 6,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 8.82e-06
+            "probability": 0.00023001
           },
           {
             "home_goals": 6,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 1.38e-06
+            "probability": 3.774e-05
           },
           {
             "home_goals": 7,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.00425063
+            "probability": 0.00823208
           },
           {
             "home_goals": 7,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.00367834
+            "probability": 0.01167806
           },
           {
             "home_goals": 7,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.00159155
+            "probability": 0.00828327
           },
           {
             "home_goals": 7,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00045909
+            "probability": 0.00391689
           },
           {
             "home_goals": 7,
             "away_goals": 4,
             "outcome": "home",
-            "probability": 9.932e-05
+            "probability": 0.00138913
           },
           {
             "home_goals": 7,
             "away_goals": 5,
             "outcome": "home",
-            "probability": 1.719e-05
+            "probability": 0.00039412
           },
           {
             "home_goals": 7,
             "away_goals": 6,
             "outcome": "draw",
-            "probability": 2.48e-06
+            "probability": 9.318e-05
           },
           {
             "home_goals": 7,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 4e-07
+            "probability": 2.264e-05
           }
         ],
         "value_analysis": {
@@ -485,22 +1654,22 @@
           "items": [
             {
               "outcome": "home",
-              "model_probability": 0.468736,
-              "edge": 0.181338,
-              "decimal_odds": 3.08,
+              "model_probability": 0.553815,
+              "edge": 0.094689,
+              "decimal_odds": 1.93,
               "label": "强推荐",
               "recommendation": "小仓位候选",
               "kelly": {
-                "full": 0.213321,
-                "half": 0.10666,
-                "quarter": 0.05333
+                "full": 0.074046,
+                "half": 0.037023,
+                "quarter": 0.018512
               }
             },
             {
               "outcome": "draw",
-              "model_probability": 0.194301,
-              "edge": -0.044939,
-              "decimal_odds": 3.7,
+              "model_probability": 0.174429,
+              "edge": -0.078746,
+              "decimal_odds": 3.5,
               "label": "不推荐",
               "recommendation": "不下注",
               "kelly": {
@@ -511,9 +1680,9 @@
             },
             {
               "outcome": "away",
-              "model_probability": 0.336964,
-              "edge": -0.136398,
-              "decimal_odds": 1.87,
+              "model_probability": 0.271756,
+              "edge": -0.015943,
+              "decimal_odds": 3.08,
               "label": "不推荐",
               "recommendation": "不下注",
               "kelly": {
@@ -526,28 +1695,28 @@
           "recommended_options": [
             {
               "outcome": "home",
-              "model_probability": 0.468736,
-              "edge": 0.181338,
-              "decimal_odds": 3.08,
+              "model_probability": 0.553815,
+              "edge": 0.094689,
+              "decimal_odds": 1.93,
               "label": "强推荐",
               "recommendation": "小仓位候选",
               "kelly": {
-                "full": 0.213321,
-                "half": 0.10666,
-                "quarter": 0.05333
+                "full": 0.074046,
+                "half": 0.037023,
+                "quarter": 0.018512
               }
             }
           ],
-          "summary": "让球胜 Edge 18.1%，Kelly 21.3%。"
+          "summary": "让球胜 Edge 9.5%，Kelly 7.4%。"
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.5446552461769963,
-        "under25_prob": 0.4340263074998282,
-        "xgboost_over25_prob": 0.5290445767868288,
-        "monte_carlo_over25_prob": 0.5526,
-        "score_heatmap_over25_prob": 0.6449403862652906,
-        "final_over25_prob": 0.5659736925001718,
+        "poisson_over25_prob": 0.8343592106521962,
+        "under25_prob": 0.1404717594134719,
+        "xgboost_over25_prob": 0.8562457461337076,
+        "monte_carlo_over25_prob": 0.9193,
+        "score_heatmap_over25_prob": 0.8304721575486997,
+        "final_over25_prob": 0.8595282405865281,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -555,8 +1724,13 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
-      "predicted_score": "2-0",
-      "prediction_accuracy": null
+      "predicted_score": "3-1",
+      "prediction_accuracy": {
+        "exact_score": false,
+        "outcome_hit": true,
+        "goal_diff_error": 0,
+        "total_goal_error": 2
+      }
     }
   ]
 }
