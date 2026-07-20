@@ -1,5 +1,9 @@
 from pathlib import Path
 
+import pytest
+
+from scripts.export_static_site import static_file_path
+
 
 def test_score_heatmap_includes_team_names_and_axis_labels():
     source = Path("src/main.js").read_text(encoding="utf-8")
@@ -131,3 +135,10 @@ def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
     assert "service.get_prediction(fixture_id)" in source
     assert "service.db.list_predictions()" in source
     assert "shutil.rmtree(api_dir)" not in source
+
+
+def test_static_export_paths_match_single_decoded_http_segments():
+    assert static_file_path("1/16决赛") == "1/16决赛"
+    assert static_file_path("Bosnia and Herzegovina") == "Bosnia and Herzegovina"
+    with pytest.raises(ValueError):
+        static_file_path("../outside")
