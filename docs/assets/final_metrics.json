@@ -1,0 +1,79 @@
+{
+  "canonical_matches": 104,
+  "evaluated_predictions": 104,
+  "unmatched_prediction_records": 2,
+  "outcome_hits": 70,
+  "exact_score_hits": 24,
+  "outcome_hit_rate": 0.6730769230769231,
+  "exact_score_hit_rate": 0.23076923076923078,
+  "score_mae": 0.6923076923076923,
+  "score_rmse": 1.0515556241917166,
+  "brier_score": 0.14186342718103578,
+  "timing_groups": {
+    "post_match_or_unknown": 103,
+    "pre_match": 1
+  },
+  "stage_metrics": {
+    "1/16决赛": {
+      "matches": 16,
+      "outcome_hit_rate": 0.75,
+      "exact_score_hit_rate": 0.375
+    },
+    "1/4决赛": {
+      "matches": 4,
+      "outcome_hit_rate": 0.75,
+      "exact_score_hit_rate": 0.25
+    },
+    "1/8决赛": {
+      "matches": 8,
+      "outcome_hit_rate": 0.5,
+      "exact_score_hit_rate": 0.125
+    },
+    "决赛": {
+      "matches": 1,
+      "outcome_hit_rate": 1.0,
+      "exact_score_hit_rate": 1.0
+    },
+    "半决赛": {
+      "matches": 2,
+      "outcome_hit_rate": 1.0,
+      "exact_score_hit_rate": 0.5
+    },
+    "季军赛": {
+      "matches": 1,
+      "outcome_hit_rate": 0.0,
+      "exact_score_hit_rate": 0.0
+    },
+    "小组赛 第1轮": {
+      "matches": 24,
+      "outcome_hit_rate": 0.5416666666666666,
+      "exact_score_hit_rate": 0.20833333333333334
+    },
+    "小组赛 第2轮": {
+      "matches": 24,
+      "outcome_hit_rate": 0.75,
+      "exact_score_hit_rate": 0.20833333333333334
+    },
+    "小组赛 第3轮": {
+      "matches": 24,
+      "outcome_hit_rate": 0.7083333333333334,
+      "exact_score_hit_rate": 0.16666666666666666
+    }
+  },
+  "confidence_metrics": {
+    "High / 高": {
+      "matches": 69,
+      "outcome_hit_rate": 0.782608695652174
+    },
+    "Low / 低": {
+      "matches": 15,
+      "outcome_hit_rate": 0.6
+    },
+    "Medium / 中": {
+      "matches": 20,
+      "outcome_hit_rate": 0.35
+    }
+  },
+  "evaluation_basis": "90-minute score only; extra time and penalties are presentation details.",
+  "timing_note": "Only predictions timestamped on or before the fixture date are eligible for pre-match analysis; later records are reported separately as reconstructed audits."
+}

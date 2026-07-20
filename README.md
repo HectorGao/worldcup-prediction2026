@@ -1,5 +1,7 @@
 # World Cup Prediction 2026
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 An open-source, local-first dashboard for exploring 2026 World Cup fixtures, team strength, match probabilities, knockout paths, and daily prediction reports.
 
 The project combines Dixon-Coles and Poisson score models, Elo ratings, Monte Carlo simulation, calibrated ensembles, and optional XGBoost signals behind a FastAPI service and a dependency-free browser interface. A sanitized SQLite snapshot and precomputed API responses are included so a clean clone starts with populated match cards.
@@ -10,12 +12,12 @@ The project combines Dixon-Coles and Poisson score models, Elo ratings, Monte Ca
 
 - Complete Python prediction and data-processing source code
 - FastAPI API and the existing HTML/CSS/JavaScript dashboard
-- Sanitized `data/worldcup.sqlite3` with CC0 history, necessary match facts, and project predictions
+- Sanitized `data/worldcup.sqlite3` with CC0 history, 104 canonical final match records, project predictions, and reviewed Sporttery historical snapshots
 - Sanitized prediction exports in `outputs/`
 - Sanitized read-only API snapshots in `precomputed/api/`
 - Tests, static export, Render configuration, and maintenance tools
 
-Restricted raw provider payloads, credentials, licensed odds feeds, and unlicensed player/roster datasets are not published. See [DATA.md](DATA.md) for the exact boundary and update workflow.
+Restricted raw provider payloads, credentials, and unlicensed player/roster datasets are not published. The reviewed Sporttery snapshot is a narrow field-whitelisted historical input, not a relicensed odds feed. See [DATA.md](DATA.md) for the exact boundary and update workflow.
 
 ## Quick start
 
@@ -101,6 +103,48 @@ flowchart LR
 The model keeps 90-minute outcomes separate from extra-time and penalty-shootout advancement. Each persisted prediction contains the forecast timestamp, probabilities, expected goals, score matrix, model inputs, blend weights, market fields when locally authorized, and (once available) `post_match_evaluation` with Brier score and log loss. Regression artifacts in `outputs/` record accuracy, calibration, and per-match errors; they are regenerated after each reviewed result update rather than treated as immutable benchmarks.
 
 For a fresh, auditable update, fetch all available completed scoreboard events, retain the pre-match rows, recalculate only unfinished fixtures, attach actual 90-minute/extra-time/penalty fields, run tests, and rebuild the public snapshot. The exact command is documented in [DATA.md](DATA.md).
+
+## Final 104-match result normalization and report
+
+The tournament evaluation population is **104 unique matches**: 72 group matches, 16 round-of-32 matches, 8 round-of-16 matches, 4 quarter-finals, 2 semi-finals, the third-place match, and the final. Raw `finished_match_results` rows remain for provenance; `canonical_match_results` is the active, alias-normalized table used by the site and reports.
+
+Each result stores `home_score_90`, `away_score_90`, extra-time fields, penalty fields, and one shared `result_display`. For example: `France 1-1 England（加时 2-2，点球 4-3）`. Outcome and exact-score hits always use the 90-minute score.
+
+The currently generated audit contains 104 matched stored prediction records: 70 outcome hits (67.3%), 24 exact-score hits (23.1%), score MAE 0.692, score RMSE 1.052, and Brier score 0.142. These are **reconstructed-record audit metrics**, not a claim of live pre-match performance: only 1 stored record is timestamped on or before its fixture date; 103 are labelled post-match-or-unknown and are shown separately in the generated report.
+
+![Final overview](docs/assets/overview.svg)
+
+![Stage performance](docs/assets/stage-performance.svg)
+
+![Probability calibration](docs/assets/calibration.svg)
+
+All figures and machine-readable metrics are generated from SQLite by [`tools/generate_report_assets.py`](tools/generate_report_assets.py). See [the English report](docs/assets/final_report.en.md), [the Chinese report](docs/assets/final_report.zh-CN.md), and [the metrics JSON](docs/assets/final_metrics.json).
+
+## Match detail and evaluation labels
+
+Clicking a match card opens its single-match detail view. It shows the saved forecast timestamp, top scoreline, win/draw/loss probabilities, expected goals, model inputs and blend, available reviewed odds context, canonical final result, and a result label. The API carries `prediction_evaluation` with exact-score, outcome, partial-hit, goal-error, timing, and 90-minute-basis fields so the browser can render accessible status labels consistently.
+
+![Evaluation cases](docs/assets/case-cards.svg)
+
+## Reproducing the final report
+
+Run the canonical rebuild and attach evaluations without rerunning historical forecasts:
+
+```bash
+PYTHONPATH=backend .venv/bin/python -c "from worldcup_predictor.service import WorldCupService; s=WorldCupService('.private_data/reviewed-worldcup.sqlite3'); print(s.db.rebuild_canonical_match_results()); print(s.rebuild_prediction_evaluations())"
+PYTHONPATH=backend .venv/bin/python tools/generate_report_assets.py --database .private_data/reviewed-worldcup.sqlite3 --output docs/assets
+PYTHONPATH=backend .venv/bin/python -c "from pathlib import Path; from scripts.build_public_data_snapshot import build_public_database; print(build_public_database(Path('.private_data/reviewed-worldcup.sqlite3'), Path('data/worldcup.sqlite3')))"
+```
+
+The deliberate order prevents post-result model recomputation from being presented as a pre-match forecast. It preserves original prediction payloads, adds only a derived evaluation record, and never deletes raw source-result rows.
+
+## Next tournament improvement plan
+
+1. Persist an immutable forecast at prediction time, including an explicit timezone-aware timestamp and frozen feature/odds snapshot.
+2. Require a data-quality gate before release: one canonical fixture ID, 90-minute/extra-time/penalty completeness, alias review, and source-provenance check.
+3. Publish pre-match-only metrics separately from reconstructed diagnostics; add confidence, calibration, stage, and odds-availability slices once the timestamps support them.
+4. Add a source-rights review for every new data feed and retain only documented, safe public fields in the release builder.
+5. Keep daily changes reviewable with explicit staging, safety scan, database integrity check, regression tests, canonical rebuild, report generation, and then a normal commit/push.
 
 ## Project layout
 
