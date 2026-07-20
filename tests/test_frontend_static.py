@@ -119,6 +119,10 @@ def test_finished_results_use_the_server_canonical_display_and_accessible_hit_la
     assert "aria-label" in source
     assert "胜平负：" in source
     assert "精确比分：" in source
+    assert "is-score-hit" in source
+    assert "is-score-miss" in source
+    assert "is-outcome-hit" in source
+    assert "is-outcome-miss" in source
     assert "function evaluationSummaryCard" in source
 
 
