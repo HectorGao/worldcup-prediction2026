@@ -66,6 +66,17 @@ class FakeClient:
         return FakeResponse(self.payloads.get(date, {"events": []}))
 
 
+class SummaryFakeClient(FakeClient):
+    def __init__(self, payloads: dict[str, dict], summary: dict):
+        super().__init__(payloads)
+        self.summary = summary
+
+    def get(self, url: str, params: dict[str, str]):
+        if "summary" in url:
+            return FakeResponse(self.summary)
+        return super().get(url, params)
+
+
 class FailingClient:
     def get(self, _url: str, params: dict[str, str]):
         raise httpx.ConnectError("boom")
@@ -168,6 +179,41 @@ def test_fetch_latest_finished_matches_returns_empty_when_source_errors():
     matches = fetch_latest_finished_matches(target_date="2026-06-30", client=FailingClient())
 
     assert matches == []
+
+
+def test_fetch_latest_finished_matches_splits_extra_time_from_regulation_score():
+    event = espn_event("aet-1", "STATUS_FULL_TIME", True, "2026-07-01", 3, 2)
+    event["competitions"][0]["status"]["type"]["detail"] = "AET"
+    summary = {
+        "header": {
+            "competitions": [
+                {
+                    "competitors": [
+                        {"team": {"displayName": "Home aet-1"}},
+                        {"team": {"displayName": "Away aet-1"}},
+                    ]
+                }
+            ]
+        },
+        "keyEvents": [
+            {"scoringPlay": True, "shootout": False, "team": {"displayName": "Home aet-1"}, "period": {"number": 1}},
+            {"scoringPlay": True, "shootout": False, "team": {"displayName": "Away aet-1"}, "period": {"number": 2}},
+            {"scoringPlay": True, "shootout": False, "team": {"displayName": "Home aet-1"}, "period": {"number": 3}},
+            {"scoringPlay": True, "shootout": False, "team": {"displayName": "Home aet-1"}, "period": {"number": 4}},
+            {"scoringPlay": True, "shootout": False, "team": {"displayName": "Away aet-1"}, "period": {"number": 3}},
+        ],
+    }
+
+    matches = fetch_latest_finished_matches(
+        target_date="2026-07-01",
+        timezone="Asia/Shanghai",
+        client=SummaryFakeClient({"20260701": {"events": [event]}, "20260630": {"events": []}}, summary),
+    )
+
+    assert len(matches) == 1
+    assert (matches[0]["home_goals_90"], matches[0]["away_goals_90"]) == (1, 1)
+    assert (matches[0]["home_goals_extra_time"], matches[0]["away_goals_extra_time"]) == (2, 1)
+    assert matches[0]["score_breakdown_source"] == "ESPN match summary scoring events"
 
 
 def test_penalty_result_updates_bracket_but_not_goals():

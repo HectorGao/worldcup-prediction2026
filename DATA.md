@@ -12,7 +12,7 @@ Files in `data/`, `outputs/`, and `precomputed/` are not automatically covered b
 
 | Path | Purpose | Update pattern |
 | --- | --- | --- |
-| `data/worldcup.sqlite3` | Canonical local SQLite snapshot used by the dynamic application | Updated by local synchronization, prediction, roster, and result workflows |
+| `data/worldcup.sqlite3` | Public SQLite snapshot with raw provenance plus the active 104-match canonical-result build | Rebuilt after reviewed result, prediction, and snapshot updates |
 | `outputs/` | Prediction exports, evaluation reports, team-strength data, synchronization reports, and model diagnostics | Regenerated after results or model updates |
 | `precomputed/api/` | Read-only JSON API snapshots used by hosted/static operation | Exported from the local service and database |
 | `dist/` | Reproducible static-site build | Generated locally and intentionally ignored |
@@ -33,7 +33,7 @@ The local private source database may include fixtures, historical results, pred
 | [football-data.org](https://www.football-data.org/about) | World Cup matches and supplemental fixture data | Terms require visible attribution and tie continued use to a subscription. Raw redistribution is not expressly granted. Treat bundled responses as requiring provider confirmation. |
 | [The Odds API](https://the-odds-api.com/terms-and-conditions.html) | Market odds and derived market inputs | Terms prohibit redistribution as an API, feed, or downloadable raw-data source. Do not treat embedded raw odds as open data. Users obtain their own key. |
 | [Betfair](https://www.betfair.com/en/aboutUs/Terms.and.Conditions/) | Optional exchange odds | General terms limit data to personal, non-commercial use unless separately licensed. No Betfair credential is distributed; users obtain their own application key and session token. |
-| [China Sporttery](https://www.sporttery.cn/bzzx/20260410/10053082.html?gid=10) | Current and historical lottery odds snapshots | Published service terms restrict copying, redistribution, and third-party access without written permission. Stored Sporttery snapshots require a maintainer decision before public release. |
+| [China Sporttery](https://www.sporttery.cn/bzzx/20260410/10053082.html?gid=10) | Reviewed historical odds snapshots used as project inputs | The repository releases only a maintainer-reviewed, field-whitelisted snapshot: match number/date/teams, observed timestamp, H/D/A, handicap and totals values. It does not transfer any Sporttery intellectual-property rights, publish credentials, or authorize reuse beyond the applicable source terms. |
 
 Provider names and links are for attribution and provenance. No provider sponsors or endorses this project.
 
@@ -41,7 +41,24 @@ Provider names and links are for attribution and provenance. No provider sponsor
 
 The repository includes a compliant SQLite database, public prediction outputs, and precomputed API snapshots so that local cards and the hosted read-only site remain populated. Restricted source snapshots are retained locally under ignored `.private_data/` and are not committed.
 
-The public snapshot retains CC0 historical match data, necessary factual match fields, and project-authored prediction/model outputs. It removes raw provider payload rows, provider odds snapshots, unlicensed roster/player tables, image fields, provider URLs, and restricted embedded market/source fields. Provider integration names may remain in capability metadata and project-authored model feature names; they do not include provider payloads or credentials.
+The public snapshot retains CC0 historical match data, necessary factual match fields, the active 104-match canonical result table, project-authored prediction/model outputs, and the reviewed Sporttery historical snapshot described above. It removes raw provider payload rows, unlicensed roster/player tables, image fields, provider URLs, credentials, and restricted embedded market/source fields. Provider integration names may remain in capability metadata and project-authored model feature names; they do not include provider payloads or credentials.
+
+The checked Sporttery backup location, checksum, row/fixture count, date range, and credential-field audit are recorded in [docs/audits/sporttery-snapshot-audit-2026-07-20.md](docs/audits/sporttery-snapshot-audit-2026-07-20.md).
+
+## Canonical 104-match result set
+
+`finished_match_results` is retained as raw-source provenance. The application and report generator use `canonical_match_results`, whose active build is exactly the 104 unique tournament matches: 72 group matches, 16 round-of-32 matches, 8 round-of-16 matches, 4 quarter-finals, 2 semi-finals, a third-place match, and a final.
+
+Each canonical record stores these separate fields:
+
+- `home_score_90`, `away_score_90`
+- `home_score_extra_time`, `away_score_extra_time`
+- `home_score_penalties`, `away_score_penalties`
+- `result_display`
+
+The primary result and all hit metrics use the 90-minute score. Extra time and penalties are supplementary display and advancement information. Source records that do not explicitly distinguish an extension period from a shootout are retained with their source provenance rather than guessed.
+
+The canonical build uses final tournament records as its coverage baseline and joins compatible raw-source IDs by normalized team aliases (for example, `Czechia`/`Czech Republic`, `Curaçao`/`Curacao`, and `Congo DR`/`DR Congo`). Rebuilding does not delete raw source rows.
 
 Create the private source tree once, before sanitizing a new local collection:
 
@@ -75,7 +92,7 @@ Do not commit `.env`.
 
 ## SQLite snapshot
 
-The default database path is `data/worldcup.sqlite3`. It supplies CC0 historical training data, current factual match state, sanitized predictions, team profiles, and other cleared project outputs. Restricted live-provider roster, odds, and raw-payload details are intentionally unavailable in a clean public clone until a user configures and runs an authorized local provider sync.
+The default database path is `data/worldcup.sqlite3`. It supplies CC0 historical training data, current factual match state, the canonical 104-match result set, sanitized predictions, reviewed historical Sporttery snapshots, team profiles, and other cleared project outputs. Restricted live-provider roster and raw-payload details are intentionally unavailable in a clean public clone until a user configures and runs an authorized local provider sync.
 
 Validate it before committing:
 
@@ -92,6 +109,7 @@ Install the project and configure authorized providers first. A full result upda
 ```bash
 SPORTTERY_ENABLE_LIVE=1 .venv/bin/python scripts/update_after_results.py \
   --fetch-online-results \
+  --all-finished-results \
   --use-xgboost \
   --recalculate \
   --sync-fifa \
@@ -156,6 +174,16 @@ The repository does not promise a fixed update schedule. Maintainers may update 
 - any provider-term or attribution change.
 
 After updating private local data, rerun `scripts/build_public_data_snapshot.py`, then use `scripts/review_daily_update.sh` before staging an update. Stage reviewed paths explicitly; never use an unattended commit-and-push workflow.
+
+Regenerate the public final report and README assets from the reviewed database:
+
+```bash
+PYTHONPATH=backend .venv/bin/python tools/generate_report_assets.py \
+  --database .private_data/reviewed-worldcup.sqlite3 \
+  --output docs/assets
+```
+
+The generator writes aggregate metrics and SVGs only. It evaluates saved prediction records against canonical 90-minute results and labels records created after the fixture date as reconstructed audits, not valid pre-match evaluation.
 
 ## Reporting data-rights concerns
 

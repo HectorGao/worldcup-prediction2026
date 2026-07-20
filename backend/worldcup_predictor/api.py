@@ -300,6 +300,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         sync_sporttery_history: bool = False,
         backfill_historical_matches: bool = False,
         train_over25: bool = False,
+        all_finished_results: bool = False,
     ):
         if read_only:
             read_only_error("赛果同步和模型重训")
@@ -317,6 +318,7 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
             sync_sporttery_history=sync_sporttery_history,
             backfill_historical_matches=backfill_historical_matches,
             train_over25=train_over25,
+            fetch_all_finished_results=all_finished_results,
         )
         return maybe_export_precomputed(result, "results_update")
 

@@ -36,10 +36,11 @@ def write_json(path: Path, payload: Any) -> None:
     )
 
 
-def encode_name(value: str) -> str:
-    from urllib.parse import quote
-
-    return quote(value, safe="")
+def static_file_path(value: str) -> str:
+    path = str(value)
+    if not path or "\\" in path or any(part in {"", ".", ".."} for part in path.split("/")):
+        raise ValueError(f"Unsafe static path: {value!r}")
+    return path
 
 
 def copy_frontend() -> None:
@@ -145,30 +146,38 @@ def export_static_data(
     write_json(output_dir / "api/lyihub/rounds.json", rounds)
     all_lyihub_matches = service.lyihub_matches()
     write_json(output_dir / "api/lyihub/matches/all.json", all_lyihub_matches)
+    for match in all_lyihub_matches.get("matches", []):
+        fixture_id = str(match.get("id") or "")
+        if fixture_id:
+            exported_fixture_ids.add(fixture_id)
+        for side in ("home_team", "away_team"):
+            if match.get(side):
+                exported_teams.add(str(match[side]))
+    exported_fixture_ids.update(str(row["fixture_id"]) for row in service.db.list_predictions())
     stages = sorted({str(item.get("stage")) for item in rounds.get("rounds", []) if item.get("stage")})
     for stage in stages:
         write_json(
-            output_dir / f"api/lyihub/matches/stage-{encode_name(stage)}.json",
+            output_dir / f"api/lyihub/matches/stage-{static_file_path(stage)}.json",
             service.lyihub_matches(stage=stage),
         )
 
     for fixture_id in sorted(exported_fixture_ids):
         try:
-            prediction = service.predict_fixture(fixture_id, simulations=simulations)
-            write_json(output_dir / f"api/predictions/{encode_name(fixture_id)}.json", prediction)
+            prediction = service.get_prediction(fixture_id)
+            write_json(output_dir / f"api/predictions/{static_file_path(fixture_id)}.json", prediction)
         except (KeyError, ValueError, TypeError) as exc:
             write_json(
-                output_dir / f"api/predictions/{encode_name(fixture_id)}.json",
+                output_dir / f"api/predictions/{static_file_path(fixture_id)}.json",
                 {"available": False, "fixture_id": fixture_id, "error": str(exc)},
             )
         try:
             write_json(
-                output_dir / f"api/matches/{encode_name(fixture_id)}/analysis.json",
+                output_dir / f"api/matches/{static_file_path(fixture_id)}/analysis.json",
                 service.match_analysis(fixture_id),
             )
         except (KeyError, ValueError, TypeError) as exc:
             write_json(
-                output_dir / f"api/matches/{encode_name(fixture_id)}/analysis.json",
+                output_dir / f"api/matches/{static_file_path(fixture_id)}/analysis.json",
                 {"available": False, "fixture_id": fixture_id, "error": str(exc)},
             )
 
@@ -182,7 +191,7 @@ def export_static_data(
     write_json(output_dir / "api/teams/rankings.json", {"teams": rankings})
 
     for team in sorted(exported_teams):
-        encoded = encode_name(team)
+        encoded = static_file_path(team)
         if full_team_details:
             try:
                 detail = service.team_world_cup_detail(team)
@@ -241,8 +250,6 @@ def main() -> None:
     output_dir = Path(args.precomputed_dir) if args.precomputed else DIST_DIR
     if args.precomputed:
         api_dir = output_dir / "api"
-        if api_dir.exists():
-            shutil.rmtree(api_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
     else:
         copy_frontend()

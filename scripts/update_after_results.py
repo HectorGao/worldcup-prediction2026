@@ -29,6 +29,11 @@ def main() -> None:
     parser.add_argument("--sync-sporttery-history", action="store_true", help="Attempt China Sporttery historical odds sync without fabricating missing odds.")
     parser.add_argument("--backfill-historical", action="store_true", help="Backfill finished World Cup matches from group round 3 through 2026-06-28.")
     parser.add_argument("--train-over25", action="store_true", help="Retrain over2.5 team parameters from 90-minute World Cup scores.")
+    parser.add_argument(
+        "--all-finished-results",
+        action="store_true",
+        help="Fetch and reconcile all finished World Cup results in the configured lookback window.",
+    )
     parser.add_argument("--regression", action="store_true", help="Write stage-specific regression diagnostics after updating results.")
     parser.add_argument("--stage", default=None, help="Stage diagnostics to run, e.g. round_of_32.")
     parser.add_argument("--db-path", default="data/worldcup.sqlite3", help="SQLite database path.")
@@ -68,6 +73,7 @@ def main() -> None:
         sync_sporttery_history=args.sync_sporttery_history,
         backfill_historical_matches=args.backfill_historical,
         train_over25=args.train_over25,
+        fetch_all_finished_results=args.all_finished_results,
     )
     if args.regression and (args.stage or "").lower() in {"round_of_32", "r32", "1/16"}:
         result["r32_regression"] = service.run_round_of_32_regression(output_dir=args.output_dir)

@@ -7,7 +7,8 @@
     "iso2": "NL"
   },
   "coverage": {
-    "matches": 4
+    "matches": 4,
+    "players": 0
   },
   "matches": [
     {
@@ -21,6 +22,8 @@
       "status": "final",
       "home_score": 2,
       "away_score": 2,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "荷兰",
       "away_team_zh": "日本",
       "home_flag": "🇳🇱",
@@ -30,9 +33,43 @@
       "match_id": "54329953",
       "stage": "小组赛 第1轮",
       "has_predict": true,
+      "source_home_team_zh": "荷兰",
+      "source_away_team_zh": "日本",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
+      "finished_result": {
+        "match_id": "54329953",
+        "stage": "小组赛 第1轮",
+        "home_team": "Netherlands",
+        "away_team": "Japan",
+        "is_finished": true,
+        "home_goals_90": 2,
+        "away_goals_90": 2,
+        "home_score_90": 2,
+        "away_score_90": 2,
+        "home_goals_extra_time": null,
+        "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
+        "home_penalties": null,
+        "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "Netherlands 2-2 Japan",
+        "winner": null,
+        "loser": null,
+        "decided_by_extra_time": false,
+        "decided_by_penalties": false,
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
+      },
       "actual_score": "2-2",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -58,12 +95,12 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.6109017137721762,
-        "under25_prob": 0.33370822380084453,
-        "xgboost_over25_prob": 0.5986846342968374,
-        "monte_carlo_over25_prob": 0.6303,
-        "score_heatmap_over25_prob": 0.8497452697417492,
-        "final_over25_prob": 0.6662917761991555,
+        "poisson_over25_prob": 0.6219990404039977,
+        "under25_prob": 0.31768648047906944,
+        "xgboost_over25_prob": 0.609547160771982,
+        "monte_carlo_over25_prob": 0.6412,
+        "score_heatmap_over25_prob": 0.8836516220209751,
+        "final_over25_prob": 0.6823135195209306,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -71,12 +108,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
-      "predicted_score": "3-1",
-      "prediction_accuracy": {
-        "exact_score": false,
+      "prediction_evaluation": {
+        "predicted_score": "3-2",
+        "actual_score_90": "2-2",
+        "predicted_home_score": 3,
+        "predicted_away_score": 2,
+        "actual_home_score": 2,
+        "actual_away_score": 2,
+        "predicted_outcome": "home",
+        "actual_outcome": "draw",
         "outcome_hit": false,
-        "goal_diff_error": 2,
-        "total_goal_error": 0
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
+        "goal_diff_error": 1,
+        "total_goal_error": 1,
+        "home_goal_error": 1,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-06-15|Netherlands|Japan",
+        "result_display": "Netherlands 2-2 Japan",
+        "prediction_created_at": "2026-07-20 02:42:00",
+        "prediction_timing": "post_match_or_unknown"
+      },
+      "predicted_score": "3-2",
+      "prediction_accuracy": {
+        "predicted_score": "3-2",
+        "actual_score_90": "2-2",
+        "predicted_home_score": 3,
+        "predicted_away_score": 2,
+        "actual_home_score": 2,
+        "actual_away_score": 2,
+        "predicted_outcome": "home",
+        "actual_outcome": "draw",
+        "outcome_hit": false,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": false,
+        "goal_diff_error": 1,
+        "total_goal_error": 1,
+        "home_goal_error": 1,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -90,6 +164,8 @@
       "status": "final",
       "home_score": 5,
       "away_score": 1,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "荷兰",
       "away_team_zh": "瑞典",
       "home_flag": "🇳🇱",
@@ -99,9 +175,43 @@
       "match_id": "54329954",
       "stage": "小组赛 第2轮",
       "has_predict": true,
+      "source_home_team_zh": "荷兰",
+      "source_away_team_zh": "瑞典",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
+      "finished_result": {
+        "match_id": "54329954",
+        "stage": "小组赛 第2轮",
+        "home_team": "Netherlands",
+        "away_team": "Sweden",
+        "is_finished": true,
+        "home_goals_90": 5,
+        "away_goals_90": 1,
+        "home_score_90": 5,
+        "away_score_90": 1,
+        "home_goals_extra_time": null,
+        "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
+        "home_penalties": null,
+        "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "Netherlands 5-1 Sweden",
+        "winner": "Netherlands",
+        "loser": "Sweden",
+        "decided_by_extra_time": false,
+        "decided_by_penalties": false,
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
+      },
       "actual_score": "5-1",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -126,12 +236,12 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.8273938151764569,
-        "under25_prob": 0.14392891586423284,
-        "xgboost_over25_prob": 0.854941008977199,
-        "monte_carlo_over25_prob": 0.9258,
-        "score_heatmap_over25_prob": 0.8189082061812543,
-        "final_over25_prob": 0.8560710841357672,
+        "poisson_over25_prob": 0.8288617215130852,
+        "under25_prob": 0.1337270693722008,
+        "xgboost_over25_prob": 0.8592696272732369,
+        "monte_carlo_over25_prob": 0.9333,
+        "score_heatmap_over25_prob": 0.8506064200189438,
+        "final_over25_prob": 0.8662729306277992,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -139,12 +249,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "3-1",
+        "actual_score_90": "5-1",
+        "predicted_home_score": 3,
+        "predicted_away_score": 1,
+        "actual_home_score": 5,
+        "actual_away_score": 1,
+        "predicted_outcome": "home",
+        "actual_outcome": "home",
+        "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
+        "goal_diff_error": 2,
+        "total_goal_error": 2,
+        "home_goal_error": 2,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-06-21|Netherlands|Sweden",
+        "result_display": "Netherlands 5-1 Sweden",
+        "prediction_created_at": "2026-07-20 02:42:25",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "3-1",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "3-1",
+        "actual_score_90": "5-1",
+        "predicted_home_score": 3,
+        "predicted_away_score": 1,
+        "actual_home_score": 5,
+        "actual_away_score": 1,
+        "predicted_outcome": "home",
+        "actual_outcome": "home",
         "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
         "goal_diff_error": 2,
-        "total_goal_error": 2
+        "total_goal_error": 2,
+        "home_goal_error": 2,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -158,6 +305,8 @@
       "status": "final",
       "home_score": 1,
       "away_score": 3,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "突尼斯",
       "away_team_zh": "荷兰",
       "home_flag": "🇹🇳",
@@ -167,27 +316,43 @@
       "match_id": "54329955",
       "stage": "小组赛 第3轮",
       "has_predict": true,
+      "source_home_team_zh": "突尼斯",
+      "source_away_team_zh": "荷兰",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "1-3",
       "finished_result": {
-        "match_id": "lyihub-54329955",
+        "match_id": "54329955",
         "stage": "小组赛 第3轮",
         "home_team": "Tunisia",
         "away_team": "Netherlands",
         "is_finished": true,
         "home_goals_90": 1,
         "away_goals_90": 3,
+        "home_score_90": 1,
+        "away_score_90": 3,
         "home_goals_extra_time": null,
         "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "Tunisia 1-3 Netherlands",
         "winner": "Netherlands",
         "loser": "Tunisia",
         "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-01T13:19:53.305668+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "1-3",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": false,
         "summary": "盘口未配置，当前仅基于模型评估。",
@@ -212,12 +377,12 @@
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.7319914134508577,
-        "under25_prob": 0.23882536882870564,
-        "xgboost_over25_prob": 0.7517553906062332,
+        "poisson_over25_prob": 0.7319678629242781,
+        "under25_prob": 0.23383012485744914,
+        "xgboost_over25_prob": 0.7517415956056275,
         "monte_carlo_over25_prob": 0.8234,
-        "score_heatmap_over25_prob": 0.7404435467676398,
-        "final_over25_prob": 0.7611746311712944,
+        "score_heatmap_over25_prob": 0.7631968842694696,
+        "final_over25_prob": 0.7661698751425509,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -225,12 +390,49 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "0-3",
+        "actual_score_90": "1-3",
+        "predicted_home_score": 0,
+        "predicted_away_score": 3,
+        "actual_home_score": 1,
+        "actual_away_score": 3,
+        "predicted_outcome": "away",
+        "actual_outcome": "away",
+        "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
+        "goal_diff_error": 1,
+        "total_goal_error": 1,
+        "home_goal_error": 1,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-06-26|Tunisia|Netherlands",
+        "result_display": "Tunisia 1-3 Netherlands",
+        "prediction_created_at": "2026-07-20 02:42:52",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "0-3",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "0-3",
+        "actual_score_90": "1-3",
+        "predicted_home_score": 0,
+        "predicted_away_score": 3,
+        "actual_home_score": 1,
+        "actual_away_score": 3,
+        "predicted_outcome": "away",
+        "actual_outcome": "away",
         "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
         "goal_diff_error": 1,
-        "total_goal_error": 1
+        "total_goal_error": 1,
+        "home_goal_error": 1,
+        "away_goal_error": 0,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     },
     {
@@ -244,6 +446,8 @@
       "status": "final",
       "home_score": 1,
       "away_score": 1,
+      "source_url": null,
+      "source_name": "lyihub_worldcup_static_json",
       "home_team_zh": "荷兰",
       "away_team_zh": "摩洛哥",
       "home_flag": "🇳🇱",
@@ -253,35 +457,51 @@
       "match_id": "54327934",
       "stage": "1/16决赛",
       "has_predict": true,
+      "source_home_team_zh": "荷兰",
+      "source_away_team_zh": "摩洛哥",
+      "odds_available": false,
+      "odds_source": null,
       "historical_without_odds": true,
       "has_prediction_record": true,
-      "actual_score": "1-1",
       "finished_result": {
-        "match_id": "lyihub-54327934",
+        "match_id": "54327934",
         "stage": "1/16决赛",
         "home_team": "Netherlands",
         "away_team": "Morocco",
         "is_finished": true,
-        "home_goals_90": 3,
-        "away_goals_90": 4,
+        "home_goals_90": 1,
+        "away_goals_90": 1,
+        "home_score_90": 1,
+        "away_score_90": 1,
         "home_goals_extra_time": null,
         "away_goals_extra_time": null,
+        "home_score_extra_time": null,
+        "away_score_extra_time": null,
         "home_penalties": null,
         "away_penalties": null,
+        "home_score_penalties": null,
+        "away_score_penalties": null,
+        "result_display": "Netherlands 1-1 Morocco",
         "winner": "Morocco",
         "loser": "Netherlands",
         "decided_by_extra_time": false,
         "decided_by_penalties": false,
-        "fetched_at": "2026-07-01T12:41:46.817629+00:00"
+        "source": "lyihub_final_result_snapshot",
+        "source_url": null,
+        "fetched_at": null
       },
+      "actual_score": "1-1",
+      "odds_markets": null,
+      "lottery_market": null,
+      "odds_data_status": null,
       "value_analysis": {
         "available": true,
-        "summary": "客胜相对市场有 14.9% 正向差异。",
+        "summary": "客胜相对市场有 16.5% 正向差异。",
         "items": [
           {
             "outcome": "home",
-            "model_probability": 0.405426,
-            "edge": -0.044135,
+            "model_probability": 0.392471,
+            "edge": -0.057091,
             "decimal_odds": 1.97,
             "label": "不建议",
             "edge_label": "no edge",
@@ -294,8 +514,8 @@
           },
           {
             "outcome": "draw",
-            "model_probability": 0.190198,
-            "edge": -0.105014,
+            "model_probability": 0.187002,
+            "edge": -0.10821,
             "decimal_odds": 3.0,
             "label": "不建议",
             "edge_label": "no edge",
@@ -308,15 +528,15 @@
           },
           {
             "outcome": "away",
-            "model_probability": 0.404376,
-            "edge": 0.149149,
+            "model_probability": 0.420528,
+            "edge": 0.165301,
             "decimal_odds": 3.47,
             "label": "有价值",
             "edge_label": "value bet",
             "kelly": {
-              "full": 0.163232,
-              "half": 0.081616,
-              "quarter": 0.040808
+              "full": 0.185924,
+              "half": 0.092962,
+              "quarter": 0.046481
             },
             "recommendation": "小仓位观察"
           }
@@ -324,15 +544,15 @@
         "recommended_options": [
           {
             "outcome": "away",
-            "model_probability": 0.404376,
-            "edge": 0.149149,
+            "model_probability": 0.420528,
+            "edge": 0.165301,
             "decimal_odds": 3.47,
             "label": "有价值",
             "edge_label": "value bet",
             "kelly": {
-              "full": 0.163232,
-              "half": 0.081616,
-              "quarter": 0.040808
+              "full": 0.185924,
+              "half": 0.092962,
+              "quarter": 0.046481
             },
             "recommendation": "小仓位观察"
           }
@@ -348,396 +568,396 @@
         "available": true,
         "line": -1.0,
         "model_probabilities": {
-          "home": 0.36376,
-          "draw": 0.174911,
-          "away": 0.46133
+          "home": 0.356191,
+          "draw": 0.170689,
+          "away": 0.47312
         },
-        "tail_probability": 0.009868,
+        "tail_probability": 0.012794,
         "tail_note": "8+ tail 按可见比分让球分布比例分摊。",
         "regions": [
           {
             "home_goals": 0,
             "away_goals": 0,
             "outcome": "away",
-            "probability": 0.01148219
+            "probability": 0.00840427
           },
           {
             "home_goals": 0,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.01676249
+            "probability": 0.01308931
           },
           {
             "home_goals": 0,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.01571435
+            "probability": 0.01362724
           },
           {
             "home_goals": 0,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.00968057
+            "probability": 0.00931715
           },
           {
             "home_goals": 0,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.00447266
+            "probability": 0.00477771
           },
           {
             "home_goals": 0,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00165319
+            "probability": 0.00195996
           },
           {
             "home_goals": 0,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00050921
+            "probability": 0.00067003
           },
           {
             "home_goals": 0,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00013444
+            "probability": 0.00019633
           },
           {
             "home_goals": 1,
             "away_goals": 0,
             "outcome": "draw",
-            "probability": 0.02342472
+            "probability": 0.01782696
           },
           {
             "home_goals": 1,
             "away_goals": 1,
             "outcome": "away",
-            "probability": 0.05948741
+            "probability": 0.05013203
           },
           {
             "home_goals": 1,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.04499312
+            "probability": 0.04063911
           },
           {
             "home_goals": 1,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.02771727
+            "probability": 0.02778558
           },
           {
             "home_goals": 1,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.01280607
+            "probability": 0.01424807
           },
           {
             "home_goals": 1,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00473338
+            "probability": 0.00584497
           },
           {
             "home_goals": 1,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00145796
+            "probability": 0.00199815
           },
           {
             "home_goals": 1,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00038492
+            "probability": 0.0005855
           },
           {
             "home_goals": 2,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.03384744
+            "probability": 0.0268572
           },
           {
             "home_goals": 2,
             "away_goals": 1,
             "outcome": "draw",
-            "probability": 0.06255346
+            "probability": 0.05508804
           },
           {
             "home_goals": 2,
             "away_goals": 2,
             "outcome": "away",
-            "probability": 0.07830226
+            "probability": 0.07628202
           },
           {
             "home_goals": 2,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.03967986
+            "probability": 0.04143104
           },
           {
             "home_goals": 2,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.01833309
+            "probability": 0.02124528
           },
           {
             "home_goals": 2,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00677628
+            "probability": 0.00871543
           },
           {
             "home_goals": 2,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00208721
+            "probability": 0.00297944
           },
           {
             "home_goals": 2,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00055105
+            "probability": 0.00087304
           },
           {
             "home_goals": 3,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.03230385
+            "probability": 0.02669783
           },
           {
             "home_goals": 3,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.05970075
+            "probability": 0.05476113
           },
           {
             "home_goals": 3,
             "away_goals": 2,
             "outcome": "draw",
-            "probability": 0.05516649
+            "probability": 0.05616153
           },
           {
             "home_goals": 3,
             "away_goals": 3,
             "outcome": "away",
-            "probability": 0.046037
+            "probability": 0.05184568
           },
           {
             "home_goals": 3,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.01749702
+            "probability": 0.0211192
           },
           {
             "home_goals": 3,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00646725
+            "probability": 0.00866371
           },
           {
             "home_goals": 3,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00199202
+            "probability": 0.00296176
           },
           {
             "home_goals": 3,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00052592
+            "probability": 0.00086786
           },
           {
             "home_goals": 4,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.02312299
+            "probability": 0.01990455
           },
           {
             "home_goals": 4,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.0427336
+            "probability": 0.04082712
           },
           {
             "home_goals": 4,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.03948799
+            "probability": 0.04187119
           },
           {
             "home_goals": 4,
             "away_goals": 3,
             "outcome": "draw",
-            "probability": 0.02432593
+            "probability": 0.02862797
           },
           {
             "home_goals": 4,
             "away_goals": 4,
             "outcome": "away",
-            "probability": 0.01522518
+            "probability": 0.019821
           },
           {
             "home_goals": 4,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00462924
+            "probability": 0.00645922
           },
           {
             "home_goals": 4,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00142588
+            "probability": 0.00220814
           },
           {
             "home_goals": 4,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00037645
+            "probability": 0.00064703
           },
           {
             "home_goals": 5,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.01324109
+            "probability": 0.01187186
           },
           {
             "home_goals": 5,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.02447086
+            "probability": 0.02435091
           },
           {
             "home_goals": 5,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.0226123
+            "probability": 0.02497363
           },
           {
             "home_goals": 5,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.01392993
+            "probability": 0.01707485
           },
           {
             "home_goals": 5,
             "away_goals": 4,
             "outcome": "draw",
-            "probability": 0.00643598
+            "probability": 0.00875575
           },
           {
             "home_goals": 5,
             "away_goals": 5,
             "outcome": "away",
-            "probability": 0.00322253
+            "probability": 0.00484974
           },
           {
             "home_goals": 5,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00081651
+            "probability": 0.00131702
           },
           {
             "home_goals": 5,
             "away_goals": 7,
             "outcome": "away",
-            "probability": 0.00021557
+            "probability": 0.00038591
           },
           {
             "home_goals": 6,
             "away_goals": 0,
             "outcome": "home",
-            "probability": 0.00631862
+            "probability": 0.0059007
           },
           {
             "home_goals": 6,
             "away_goals": 1,
             "outcome": "home",
-            "probability": 0.01167744
+            "probability": 0.0121032
           },
           {
             "home_goals": 6,
             "away_goals": 2,
             "outcome": "home",
-            "probability": 0.01079054
+            "probability": 0.01241272
           },
           {
             "home_goals": 6,
             "away_goals": 3,
             "outcome": "home",
-            "probability": 0.00664733
+            "probability": 0.00848676
           },
           {
             "home_goals": 6,
             "away_goals": 4,
             "outcome": "home",
-            "probability": 0.00307124
+            "probability": 0.0043519
           },
           {
             "home_goals": 6,
             "away_goals": 5,
             "outcome": "draw",
-            "probability": 0.00113519
+            "probability": 0.00178527
           },
           {
             "home_goals": 6,
             "away_goals": 6,
             "outcome": "away",
-            "probability": 0.00047366
+            "probability": 0.00082404
           },
           {
             "home_goals": 6,
+            "away_goals": 7,
+            "outcome": "away",
+            "probability": 0.00019181
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 0,
+            "outcome": "home",
+            "probability": 0.00251387
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 1,
+            "outcome": "home",
+            "probability": 0.00515631
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 2,
+            "outcome": "home",
+            "probability": 0.00528817
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 3,
+            "outcome": "home",
+            "probability": 0.0036156
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 4,
+            "outcome": "home",
+            "probability": 0.00185403
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 5,
+            "outcome": "home",
+            "probability": 0.00076058
+          },
+          {
+            "home_goals": 7,
+            "away_goals": 6,
+            "outcome": "draw",
+            "probability": 0.00026001
+          },
+          {
+            "home_goals": 7,
             "away_goals": 7,
             "outcome": "away",
             "probability": 0.00010287
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 0,
-            "outcome": "home",
-            "probability": 0.00258448
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 1,
-            "outcome": "home",
-            "probability": 0.00477638
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 2,
-            "outcome": "home",
-            "probability": 0.00441362
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 3,
-            "outcome": "home",
-            "probability": 0.00271894
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 4,
-            "outcome": "home",
-            "probability": 0.00125622
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 5,
-            "outcome": "home",
-            "probability": 0.00046432
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 6,
-            "outcome": "draw",
-            "probability": 0.00014302
-          },
-          {
-            "home_goals": 7,
-            "away_goals": 7,
-            "outcome": "away",
-            "probability": 5.115e-05
           }
         ],
         "value_analysis": {
@@ -746,21 +966,21 @@
           "items": [
             {
               "outcome": "home",
-              "model_probability": 0.36376,
-              "edge": 0.151861,
+              "model_probability": 0.356191,
+              "edge": 0.144292,
               "decimal_odds": 4.18,
               "label": "强推荐",
               "recommendation": "小仓位候选",
               "kelly": {
-                "full": 0.163685,
-                "half": 0.081842,
-                "quarter": 0.040921
+                "full": 0.153735,
+                "half": 0.076868,
+                "quarter": 0.038434
               }
             },
             {
               "outcome": "draw",
-              "model_probability": 0.174911,
-              "edge": -0.079612,
+              "model_probability": 0.170689,
+              "edge": -0.083834,
               "decimal_odds": 3.48,
               "label": "不推荐",
               "recommendation": "不下注",
@@ -772,8 +992,8 @@
             },
             {
               "outcome": "away",
-              "model_probability": 0.46133,
-              "edge": -0.072248,
+              "model_probability": 0.47312,
+              "edge": -0.060458,
               "decimal_odds": 1.66,
               "label": "不推荐",
               "recommendation": "不下注",
@@ -787,28 +1007,28 @@
           "recommended_options": [
             {
               "outcome": "home",
-              "model_probability": 0.36376,
-              "edge": 0.151861,
+              "model_probability": 0.356191,
+              "edge": 0.144292,
               "decimal_odds": 4.18,
               "label": "强推荐",
               "recommendation": "小仓位候选",
               "kelly": {
-                "full": 0.163685,
-                "half": 0.081842,
-                "quarter": 0.040921
+                "full": 0.153735,
+                "half": 0.076868,
+                "quarter": 0.038434
               }
             }
           ],
-          "summary": "让球胜 Edge 15.2%，Kelly 16.4%。"
+          "summary": "让球胜 Edge 14.4%，Kelly 15.4%。"
         }
       },
       "over25_summary": {
-        "poisson_over25_prob": 0.7434105175443171,
-        "under25_prob": 0.23379984389845254,
-        "xgboost_over25_prob": 0.7328535362631337,
-        "monte_carlo_over25_prob": 0.7656,
-        "score_heatmap_over25_prob": 0.8294133800414346,
-        "final_over25_prob": 0.7662001561015475,
+        "poisson_over25_prob": 0.7472323477125005,
+        "under25_prob": 0.22485045011178095,
+        "xgboost_over25_prob": 0.7365406603265581,
+        "monte_carlo_over25_prob": 0.7689,
+        "score_heatmap_over25_prob": 0.8572692400326745,
+        "final_over25_prob": 0.775149549888219,
         "over25_edge": null,
         "over25_kelly": null,
         "value": {
@@ -816,15 +1036,53 @@
           "reason": "无赔率，仅模型概率。"
         }
       },
+      "prediction_evaluation": {
+        "predicted_score": "2-2",
+        "actual_score_90": "1-1",
+        "predicted_home_score": 2,
+        "predicted_away_score": 2,
+        "actual_home_score": 1,
+        "actual_away_score": 1,
+        "predicted_outcome": "draw",
+        "actual_outcome": "draw",
+        "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
+        "goal_diff_error": 0,
+        "total_goal_error": 2,
+        "home_goal_error": 1,
+        "away_goal_error": 1,
+        "evaluation_basis": "90_minute_score",
+        "canonical_match_key": "2026-06-30|Netherlands|Morocco",
+        "result_display": "Netherlands 1-1 Morocco",
+        "prediction_created_at": "2026-07-20 08:28:17",
+        "prediction_timing": "post_match_or_unknown"
+      },
       "predicted_score": "2-2",
       "prediction_accuracy": {
-        "exact_score": false,
+        "predicted_score": "2-2",
+        "actual_score_90": "1-1",
+        "predicted_home_score": 2,
+        "predicted_away_score": 2,
+        "actual_home_score": 1,
+        "actual_away_score": 1,
+        "predicted_outcome": "draw",
+        "actual_outcome": "draw",
         "outcome_hit": true,
+        "exact_score_hit": false,
+        "score_hit": false,
+        "partial_hit": true,
         "goal_diff_error": 0,
-        "total_goal_error": 2
+        "total_goal_error": 2,
+        "home_goal_error": 1,
+        "away_goal_error": 1,
+        "evaluation_basis": "90_minute_score",
+        "exact_score": false
       }
     }
   ],
+  "players": [],
   "power_rankings": [],
   "static_lightweight": true
 }

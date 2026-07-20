@@ -86,7 +86,19 @@ def create_source_database(path: Path) -> None:
     )
     connection.execute(
         "INSERT INTO sporttery_odds_snapshots VALUES (1, ?)",
-        (json.dumps({"odds": {"home": 1.9}}),),
+        (
+            json.dumps(
+                {
+                    "match_num": "001",
+                    "date": "2026-06-01",
+                    "home_team": "A",
+                    "away_team": "B",
+                    "source": "China Sporttery",
+                    "h2h": {"home": 1.9, "draw": 3.1, "away": 4.2},
+                    "api_key": "must-not-publish",
+                }
+            ),
+        ),
     )
     connection.execute(
         "INSERT INTO lyihub_players VALUES ('p1', 'Restricted Player', ?)",
@@ -151,13 +163,20 @@ def test_build_public_database_preserves_cc0_and_project_outputs(tmp_path: Path)
 
     assert file_hash(source) == original_hash
     assert summary["cleared_rows"]["raw_provider_payloads"] == 1
-    assert summary["cleared_rows"]["sporttery_odds_snapshots"] == 1
     assert summary["cleared_rows"]["lyihub_players"] == 1
 
     connection = sqlite3.connect(destination)
     assert connection.execute("SELECT COUNT(*) FROM historical_matches").fetchone()[0] == 1
     assert connection.execute("SELECT COUNT(*) FROM raw_provider_payloads").fetchone()[0] == 0
-    assert connection.execute("SELECT COUNT(*) FROM sporttery_odds_snapshots").fetchone()[0] == 0
+    sporttery = json.loads(connection.execute("SELECT payload_json FROM sporttery_odds_snapshots").fetchone()[0])
+    assert sporttery == {
+        "match_num": "001",
+        "date": "2026-06-01",
+        "home_team": "A",
+        "away_team": "B",
+        "source": "China Sporttery",
+        "h2h": {"home": 1.9, "draw": 3.1, "away": 4.2},
+    }
     assert connection.execute("SELECT COUNT(*) FROM lyihub_players").fetchone()[0] == 0
     fixture = connection.execute(
         "SELECT market_home, market_draw, market_away, market_source, sportmonks_features FROM fixtures"

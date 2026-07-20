@@ -734,6 +734,53 @@ def test_train_over25_uses_only_90_minute_scores_and_updates_profiles(tmp_path: 
         assert field in profiles["France"]
 
 
+def test_finished_result_sync_preserves_prediction_and_adds_evaluation(tmp_path: Path):
+    service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
+    service.db.upsert_fixture(
+        {
+            "id": "preserve-prediction",
+            "date": "2026-06-30",
+            "kickoff": "2026-06-30T20:00:00+08:00",
+            "home_team": "France",
+            "away_team": "Senegal",
+            "group": "1/16决赛",
+            "venue": "test",
+            "status": "scheduled",
+            "home_elo": 1900,
+            "away_elo": 1750,
+        }
+    )
+    service.predict_fixture("preserve-prediction")
+    previous = service.db.list_predictions()
+    service.db.clear_predictions()
+
+    restored = service._restore_prediction_records(
+        previous,
+        [
+            {
+                "match_id": "result-1",
+                "date": "2026-06-30",
+                "home_team": "France",
+                "away_team": "Senegal",
+                "home_goals_90": 2,
+                "away_goals_90": 1,
+                "home_goals_extra_time": None,
+                "away_goals_extra_time": None,
+                "home_penalties": None,
+                "away_penalties": None,
+                "winner": "France",
+            }
+        ],
+        recalculate=True,
+    )
+
+    prediction = service.db.get_prediction("preserve-prediction")
+    assert restored == 1
+    assert prediction["fixture"]["status"] == "final"
+    assert prediction["actual_result"]["home_goals_90"] == 2
+    assert prediction["post_match_evaluation"]["actual_outcome"] == "home"
+
+
 def test_prediction_payload_includes_over25_breakdown_and_no_value_without_totals_odds(tmp_path: Path):
     service = WorldCupService(db_path=tmp_path / "worldcup.sqlite3")
     service.db.upsert_fixture(

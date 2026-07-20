@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+from .results import canonical_match_key, format_result_display, normalized_result_fields
+from .team_metadata import canonical_team_name
 
 
 SCHEMA = """
@@ -288,6 +292,37 @@ CREATE TABLE IF NOT EXISTS finished_match_results (
   synced_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS canonical_match_results (
+  match_key TEXT PRIMARY KEY,
+  selected_match_id TEXT NOT NULL,
+  date TEXT NOT NULL,
+  stage TEXT,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  home_score_90 INTEGER,
+  away_score_90 INTEGER,
+  home_score_extra_time INTEGER,
+  away_score_extra_time INTEGER,
+  home_score_penalties INTEGER,
+  away_score_penalties INTEGER,
+  result_display TEXT,
+  winner TEXT,
+  loser TEXT,
+  decided_by_extra_time INTEGER NOT NULL DEFAULT 0,
+  decided_by_penalties INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL,
+  source_match_ids_json TEXT NOT NULL,
+  source_record_count INTEGER NOT NULL,
+  rebuild_id TEXT,
+  rebuilt_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS canonical_result_rebuild_state (
+  id INTEGER PRIMARY KEY CHECK(id = 1),
+  rebuild_id TEXT NOT NULL,
+  completed_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS rating_update_log (
   match_id TEXT PRIMARY KEY,
   processed_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -321,6 +356,7 @@ class Database:
             self._ensure_column(connection, "squad_players", "source_priority", "INTEGER NOT NULL DEFAULT 5")
             self._ensure_column(connection, "squad_players", "source_id", "TEXT")
             self._ensure_column(connection, "squad_players", "lineup_role", "TEXT")
+            self._ensure_column(connection, "canonical_match_results", "rebuild_id", "TEXT")
 
     def save_raw_provider_payload(self, provider: str, payload: dict[str, Any], fixture_id: str | None = None) -> None:
         with self.connect() as connection:
@@ -557,6 +593,204 @@ class Database:
             ).fetchall()
         return [self._finished_match_row(row) for row in rows]
 
+    def rebuild_canonical_match_results(self) -> dict[str, int]:
+        """Build derived, unique results without removing raw source records."""
+        raw_matches = self.list_finished_matches()
+        canonical_candidates = self._lyihub_final_result_candidates()
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        if canonical_candidates:
+            for match in canonical_candidates:
+                key = canonical_match_key(match.get("date", ""), match.get("home_team", ""), match.get("away_team", ""))
+                grouped.setdefault(key, []).append(match)
+        else:
+            for match in raw_matches:
+                key = canonical_match_key(match.get("date", ""), match.get("home_team", ""), match.get("away_team", ""))
+                grouped.setdefault(key, []).append(match)
+
+        def source_rank(match: dict[str, Any]) -> tuple[int, int, str]:
+            source = str(match.get("source") or "").lower()
+            priority = 0 if source == "espn" else 1 if "lyihub" in source else 2
+            fields = normalized_result_fields(match)
+            complete_score = int(fields["home_score_90"] is None or fields["away_score_90"] is None)
+            return priority, complete_score, str(match.get("match_id") or "")
+
+        rebuild_id = datetime.now(timezone.utc).isoformat(timespec="microseconds")
+        with self.connect() as connection:
+            for key, records in grouped.items():
+                ordered = sorted(records, key=source_rank)
+                selected = ordered[0]
+                fields = normalized_result_fields(selected)
+                canonical = {
+                    **selected,
+                    **fields,
+                    "home_team": canonical_team_name(str(selected.get("home_team") or "")),
+                    "away_team": canonical_team_name(str(selected.get("away_team") or "")),
+                }
+                raw_source_records = [
+                    record
+                    for record in raw_matches
+                    if canonical_team_name(str(record.get("home_team") or "")) == canonical["home_team"]
+                    and canonical_team_name(str(record.get("away_team") or "")) == canonical["away_team"]
+                ]
+                for raw_record in sorted(raw_source_records, key=source_rank):
+                    raw_fields = normalized_result_fields(raw_record)
+                    if fields["home_score_extra_time"] is None and raw_fields["home_score_extra_time"] is not None:
+                        fields["home_score_extra_time"] = raw_fields["home_score_extra_time"]
+                        fields["away_score_extra_time"] = raw_fields["away_score_extra_time"]
+                        selected["decided_by_extra_time"] = bool(raw_record.get("decided_by_extra_time"))
+                    if fields["home_score_penalties"] is None and raw_fields["home_score_penalties"] is not None:
+                        fields["home_score_penalties"] = raw_fields["home_score_penalties"]
+                        fields["away_score_penalties"] = raw_fields["away_score_penalties"]
+                        selected["decided_by_penalties"] = bool(raw_record.get("decided_by_penalties"))
+                canonical.update(fields)
+                display = format_result_display(canonical)
+                source_match_ids = list(
+                    dict.fromkeys(
+                        [str(record.get("match_id")) for record in ordered]
+                        + [str(record.get("match_id")) for record in sorted(raw_source_records, key=source_rank)]
+                    )
+                )
+                connection.execute(
+                    """
+                    INSERT INTO canonical_match_results (
+                      match_key, selected_match_id, date, stage, home_team, away_team,
+                      home_score_90, away_score_90, home_score_extra_time, away_score_extra_time,
+                      home_score_penalties, away_score_penalties, result_display, winner, loser,
+                      decided_by_extra_time, decided_by_penalties, source, source_match_ids_json, source_record_count, rebuild_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(match_key) DO UPDATE SET
+                      selected_match_id=excluded.selected_match_id,
+                      date=excluded.date,
+                      stage=excluded.stage,
+                      home_team=excluded.home_team,
+                      away_team=excluded.away_team,
+                      home_score_90=excluded.home_score_90,
+                      away_score_90=excluded.away_score_90,
+                      home_score_extra_time=excluded.home_score_extra_time,
+                      away_score_extra_time=excluded.away_score_extra_time,
+                      home_score_penalties=excluded.home_score_penalties,
+                      away_score_penalties=excluded.away_score_penalties,
+                      result_display=excluded.result_display,
+                      winner=excluded.winner,
+                      loser=excluded.loser,
+                      decided_by_extra_time=excluded.decided_by_extra_time,
+                      decided_by_penalties=excluded.decided_by_penalties,
+                      source=excluded.source,
+                      source_match_ids_json=excluded.source_match_ids_json,
+                      source_record_count=excluded.source_record_count,
+                      rebuild_id=excluded.rebuild_id,
+                      rebuilt_at=CURRENT_TIMESTAMP
+                    """,
+                    (
+                        key,
+                        selected.get("match_id"),
+                        canonical.get("date"),
+                        canonical.get("stage"),
+                        canonical.get("home_team"),
+                        canonical.get("away_team"),
+                        fields["home_score_90"],
+                        fields["away_score_90"],
+                        fields["home_score_extra_time"],
+                        fields["away_score_extra_time"],
+                        fields["home_score_penalties"],
+                        fields["away_score_penalties"],
+                        display,
+                        canonical_team_name(str(selected.get("winner") or "")) or None,
+                        canonical_team_name(str(selected.get("loser") or "")) or None,
+                        1 if selected.get("decided_by_extra_time") else 0,
+                        1 if selected.get("decided_by_penalties") else 0,
+                        selected.get("source") or "unknown",
+                        json.dumps(source_match_ids, ensure_ascii=False),
+                        len(source_match_ids),
+                        rebuild_id,
+                    ),
+                )
+            connection.execute(
+                """
+                INSERT INTO canonical_result_rebuild_state (id, rebuild_id)
+                VALUES (1, ?)
+                ON CONFLICT(id) DO UPDATE SET rebuild_id=excluded.rebuild_id, completed_at=CURRENT_TIMESTAMP
+                """,
+                (rebuild_id,),
+            )
+        return {
+            "raw_records": len(raw_matches),
+            "canonical_records": len(grouped),
+            "duplicate_source_records": len(raw_matches) - len(grouped),
+        }
+
+    def _lyihub_final_result_candidates(self) -> list[dict[str, Any]]:
+        """Read the 104-match final-result index without exposing its raw detail payload."""
+        with self.connect() as connection:
+            if not self._table_exists(connection, "lyihub_match_details"):
+                return []
+            rows = connection.execute(
+                """
+                SELECT match_id, date, stage, home_team, away_team, home_score, away_score, payload_json
+                FROM lyihub_match_details
+                WHERE status = 'final'
+                ORDER BY date, match_id
+                """
+            ).fetchall()
+        candidates: list[dict[str, Any]] = []
+        for row in rows:
+            payload = json.loads(row["payload_json"] or "{}")
+            score_90 = payload.get("score_90min") or {}
+            full_score = payload.get("score_full") or {}
+            home_90 = score_90.get("team_a", row["home_score"])
+            away_90 = score_90.get("team_b", row["away_score"])
+            home_full = full_score.get("team_a")
+            away_full = full_score.get("team_b")
+            winner = None
+            loser = None
+            if home_full is not None and away_full is not None and home_full != away_full:
+                winner = row["home_team"] if home_full > away_full else row["away_team"]
+                loser = row["away_team"] if home_full > away_full else row["home_team"]
+            elif home_90 is not None and away_90 is not None and home_90 != away_90:
+                winner = row["home_team"] if home_90 > away_90 else row["away_team"]
+                loser = row["away_team"] if home_90 > away_90 else row["home_team"]
+            candidates.append(
+                {
+                    "match_id": f"lyihub-detail-{row['match_id']}",
+                    "date": row["date"],
+                    "stage": row["stage"],
+                    "home_team": row["home_team"],
+                    "away_team": row["away_team"],
+                    "home_goals_90": home_90,
+                    "away_goals_90": away_90,
+                    "winner": winner,
+                    "loser": loser,
+                    "decided_by_extra_time": False,
+                    "decided_by_penalties": False,
+                    "source": "lyihub_final_result_snapshot",
+                }
+            )
+        return candidates
+
+    def list_canonical_match_results(self) -> list[dict[str, Any]]:
+        with self.connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT results.* FROM canonical_match_results AS results
+                JOIN canonical_result_rebuild_state AS state ON state.id = 1 AND state.rebuild_id = results.rebuild_id
+                ORDER BY results.date, results.match_key
+                """
+            ).fetchall()
+        return [self._canonical_match_row(row) for row in rows]
+
+    def find_canonical_match_result(self, date: str, home_team: str, away_team: str) -> dict[str, Any] | None:
+        key = canonical_match_key(date, home_team, away_team)
+        with self.connect() as connection:
+            row = connection.execute(
+                """
+                SELECT results.* FROM canonical_match_results AS results
+                JOIN canonical_result_rebuild_state AS state ON state.id = 1 AND state.rebuild_id = results.rebuild_id
+                WHERE results.match_key = ?
+                """,
+                (key,),
+            ).fetchone()
+        return self._canonical_match_row(row) if row else None
+
     def rating_update_processed_ids(self) -> set[str]:
         with self.connect() as connection:
             rows = connection.execute("SELECT match_id FROM rating_update_log").fetchall()
@@ -709,6 +943,12 @@ class Database:
         }
         if column not in columns:
             connection.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+    @staticmethod
+    def _table_exists(connection: sqlite3.Connection, table: str) -> bool:
+        return connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)
+        ).fetchone() is not None
 
     def upsert_fixture(self, fixture: dict[str, Any]) -> None:
         with self.connect() as connection:
@@ -986,6 +1226,47 @@ class Database:
                 (fixture_id,),
             ).fetchone()
         return json.loads(row["payload_json"]) if row else None
+
+    def list_predictions(self) -> list[dict[str, Any]]:
+        """Return persisted pre-match prediction payloads for audit/re-evaluation."""
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT fixture_id, payload_json, created_at FROM predictions ORDER BY fixture_id"
+            ).fetchall()
+        return [
+            {
+                "fixture_id": row["fixture_id"],
+                "payload": json.loads(row["payload_json"]),
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+
+    def save_prediction_evaluation(self, fixture_id: str, evaluation: dict[str, Any]) -> bool:
+        """Attach a derived audit record without changing the prediction timestamp."""
+        prediction = self.get_prediction(fixture_id)
+        if prediction is None:
+            return False
+        prediction["evaluation"] = evaluation
+        with self.connect() as connection:
+            connection.execute(
+                "UPDATE predictions SET payload_json = ? WHERE fixture_id = ?",
+                (json.dumps(prediction, ensure_ascii=False), fixture_id),
+            )
+        return True
+
+    def clear_prediction_evaluation(self, fixture_id: str) -> bool:
+        """Remove a stale derived evaluation while preserving the forecast payload."""
+        prediction = self.get_prediction(fixture_id)
+        if prediction is None or "evaluation" not in prediction:
+            return False
+        prediction.pop("evaluation", None)
+        with self.connect() as connection:
+            connection.execute(
+                "UPDATE predictions SET payload_json = ? WHERE fixture_id = ?",
+                (json.dumps(prediction, ensure_ascii=False), fixture_id),
+            )
+        return True
 
     def save_model_weight_run(self, date: str, payload: dict[str, Any]) -> None:
         with self.connect() as connection:
@@ -1636,6 +1917,24 @@ class Database:
                 "source_url": row["source_url"],
                 "fetched_at": row["fetched_at"],
                 "synced_at": row["synced_at"],
+            }
+        )
+        return payload
+
+    def _canonical_match_row(self, row: sqlite3.Row) -> dict[str, Any]:
+        payload = dict(row)
+        payload["source_match_ids"] = json.loads(payload.pop("source_match_ids_json") or "[]")
+        payload.update(
+            {
+                "home_goals_90": payload.get("home_score_90"),
+                "away_goals_90": payload.get("away_score_90"),
+                "home_goals_extra_time": payload.get("home_score_extra_time"),
+                "away_goals_extra_time": payload.get("away_score_extra_time"),
+                "home_penalties": payload.get("home_score_penalties"),
+                "away_penalties": payload.get("away_score_penalties"),
+                "is_finished": True,
+                "decided_by_extra_time": bool(payload.get("decided_by_extra_time")),
+                "decided_by_penalties": bool(payload.get("decided_by_penalties")),
             }
         )
         return payload

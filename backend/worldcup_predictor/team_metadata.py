@@ -66,6 +66,10 @@ TEAM_ALIASES: dict[str, str] = {
     "Korea Republic": "South Korea",
     "Côte d'Ivoire": "Ivory Coast",
     "Cote d'Ivoire": "Ivory Coast",
+    "Czechia": "Czech Republic",
+    "Curaçao": "Curacao",
+    "Bosnia-Herzegovina": "Bosnia and Herzegovina",
+    "Congo DR": "DR Congo",
     "Türkiye": "Turkey",
     "Turkiye": "Turkey",
 }

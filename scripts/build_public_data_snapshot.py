@@ -19,11 +19,23 @@ CLEAR_TABLES = (
     "roster_sync_queue",
     "source_conflict_warnings",
     "source_field_values",
-    "sporttery_odds_snapshots",
     "squad_players",
     "squad_strength_runs",
     "team_squads",
 )
+
+SPORTTERY_PUBLIC_FIELDS = {
+    "match_num",
+    "date",
+    "home_team",
+    "away_team",
+    "source",
+    "updated_at",
+    "h2h",
+    "handicap",
+    "handicap_line",
+    "totals",
+}
 
 BLOCKED_KEYS = {
     "api_key",
@@ -101,6 +113,17 @@ def sanitize_json(value: Any) -> Any:
     return value
 
 
+def sanitize_sporttery_snapshot(value: Any) -> dict[str, Any]:
+    """Keep the reviewed public odds fields and discard all provider payload detail."""
+    if not isinstance(value, dict):
+        return {}
+    return {
+        key: item
+        for key, item in value.items()
+        if (key in SPORTTERY_PUBLIC_FIELDS and not blocked_key(key)) or key == "source"
+    }
+
+
 def table_exists(connection: sqlite3.Connection, table: str) -> bool:
     row = connection.execute(
         "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
@@ -150,7 +173,12 @@ def sanitize_database_json(connection: sqlite3.Connection) -> int:
                     parsed = json.loads(raw_value)
                 except (TypeError, json.JSONDecodeError):
                     continue
-                sanitized = json.dumps(sanitize_json(parsed), ensure_ascii=False, separators=(",", ":"))
+                sanitized_payload = (
+                    sanitize_sporttery_snapshot(parsed)
+                    if table == "sporttery_odds_snapshots" and column == "payload_json"
+                    else sanitize_json(parsed)
+                )
+                sanitized = json.dumps(sanitized_payload, ensure_ascii=False, separators=(",", ":"))
                 connection.execute(
                     f'UPDATE "{table}" SET "{column}" = ? WHERE rowid = ?',
                     (sanitized, rowid),

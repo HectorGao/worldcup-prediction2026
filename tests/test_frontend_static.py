@@ -1,4 +1,7 @@
 from pathlib import Path
+import runpy
+
+import pytest
 
 
 def test_score_heatmap_includes_team_names_and_axis_labels():
@@ -107,6 +110,18 @@ def test_static_build_adapter_maps_dynamic_routes_to_json_files():
     assert "公开只读部署中禁用" in source
 
 
+def test_finished_results_use_the_server_canonical_display_and_accessible_hit_labels():
+    source = Path("src/main.js").read_text(encoding="utf-8")
+
+    assert "function resultDisplay(match)" in source
+    assert "result.result_display" in source
+    assert "function accuracyStatus(accuracy)" in source
+    assert "aria-label" in source
+    assert "胜平负：" in source
+    assert "精确比分：" in source
+    assert "function evaluationSummaryCard" in source
+
+
 def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
     source = Path("scripts/export_static_site.py").read_text(encoding="utf-8")
 
@@ -116,3 +131,14 @@ def test_static_export_script_injects_static_bootstrap_and_exports_core_json():
     assert "api/teams/rankings.json" in source
     assert "read_only_static_site" in source
     assert "--precomputed" in source
+    assert "service.get_prediction(fixture_id)" in source
+    assert "service.db.list_predictions()" in source
+    assert "shutil.rmtree(api_dir)" not in source
+
+
+def test_static_export_paths_match_single_decoded_http_segments():
+    static_file_path = runpy.run_path("scripts/export_static_site.py")["static_file_path"]
+    assert static_file_path("1/16决赛") == "1/16决赛"
+    assert static_file_path("Bosnia and Herzegovina") == "Bosnia and Herzegovina"
+    with pytest.raises(ValueError):
+        static_file_path("../outside")

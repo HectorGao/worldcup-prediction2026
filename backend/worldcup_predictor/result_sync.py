@@ -12,6 +12,7 @@ import httpx
 
 
 ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
+ESPN_SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary"
 DATA_SOURCES = ["espn"]
 
 
@@ -39,26 +40,76 @@ def fetch_latest_finished_matches(
         # ESPN's ``dates`` parameter is keyed to the event's US/UTC calendar day,
         # while this workflow filters by Beijing date. Evening matches in North
         # America can therefore belong to the previous ESPN date.
-        query_dates = [target_day - timedelta(days=1), target_day]
+        query_params = [
+            {"dates": day.strftime("%Y%m%d")}
+            for day in (target_day - timedelta(days=1), target_day)
+        ]
     else:
-        query_dates = [today - timedelta(days=offset) for offset in range(max(1, int(days_back)))]
+        start_day = today - timedelta(days=max(1, int(days_back)) - 1)
+        # ESPN accepts a date range and returns the whole tournament in one
+        # bounded request.  This avoids rate limiting from issuing one request
+        # per calendar day during a full historical refresh.
+        query_params = [{"dates": f"{start_day:%Y%m%d}-{today:%Y%m%d}"}]
     matches: dict[str, dict[str, Any]] = {}
     errors = []
-    for day in query_dates:
+    for params in query_params:
         try:
-            response = client.get(ESPN_SCOREBOARD_URL, params={"dates": day.strftime("%Y%m%d")})
+            response = client.get(ESPN_SCOREBOARD_URL, params=params)
             response.raise_for_status()
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
-            errors.append({"source": "espn", "date": day.isoformat(), "error": str(exc)})
+            errors.append({"source": "espn", "params": params, "error": str(exc)})
             continue
         for event in payload.get("events") or []:
             parsed = _parse_espn_event(event, timezone_name=timezone)
+            if parsed and (parsed.get("decided_by_extra_time") or parsed.get("decided_by_penalties")):
+                summary = _fetch_espn_summary(client, str(event.get("id") or ""))
+                if summary:
+                    _apply_score_breakdown(parsed, summary)
             if parsed and (not finished_only or parsed.get("is_finished")):
                 if target_date and parsed.get("date") != target_date:
                     continue
                 matches[str(parsed["match_id"])] = parsed
     return sorted(matches.values(), key=lambda item: (item["date"], item["match_id"]))
+
+
+def _fetch_espn_summary(client: httpx.Client, event_id: str) -> dict[str, Any] | None:
+    if not event_id:
+        return None
+    try:
+        response = client.get(ESPN_SUMMARY_URL, params={"event": event_id})
+        response.raise_for_status()
+        payload = response.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _apply_score_breakdown(match: dict[str, Any], summary: dict[str, Any]) -> None:
+    competitors = ((summary.get("header") or {}).get("competitions") or [{}])[0].get("competitors") or []
+    names = [str((item.get("team") or {}).get("displayName") or "") for item in competitors]
+    if len(names) != 2:
+        return
+    regulation = {name: 0 for name in names}
+    extra_time = {name: 0 for name in names}
+    scoring_events = 0
+    for event in summary.get("keyEvents") or summary.get("plays") or []:
+        if not event.get("scoringPlay") or event.get("shootout"):
+            continue
+        team = str((event.get("team") or {}).get("displayName") or "")
+        if team not in regulation:
+            continue
+        period = int((event.get("period") or {}).get("number") or 1)
+        target = regulation if period <= 2 else extra_time
+        target[team] += 1
+        scoring_events += 1
+    if not scoring_events:
+        return
+    match["home_goals_90"] = regulation[names[0]]
+    match["away_goals_90"] = regulation[names[1]]
+    match["home_goals_extra_time"] = extra_time[names[0]]
+    match["away_goals_extra_time"] = extra_time[names[1]]
+    match["score_breakdown_source"] = "ESPN match summary scoring events"
 
 
 def _parse_espn_event(event: dict[str, Any], timezone_name: str = "Asia/Shanghai") -> dict[str, Any] | None:
