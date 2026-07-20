@@ -531,15 +531,24 @@ class WorldCupService:
         use_sportmonks: bool = False,
         backfill_historical_matches: bool = False,
         train_over25: bool = False,
+        fetch_all_finished_results: bool = False,
     ) -> dict[str, Any]:
         print("[INFO] Fetching latest finished World Cup matches from online sources...")
+        previous_predictions = self.db.list_predictions()
         target_date = date or datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat()
         today_finished_matches = (
-            fetch_latest_finished_matches(target_date=target_date, timezone="Asia/Shanghai")
+            fetch_latest_finished_matches(
+                # The 2026 tournament fits inside a 45-day window.  A bounded
+                # range avoids hammering the public scoreboard endpoint with
+                # redundant requests and triggering rate limits.
+                days_back=45 if fetch_all_finished_results else 30,
+                target_date=None if fetch_all_finished_results else target_date,
+                timezone="Asia/Shanghai",
+            )
             if fetch_online_results
             else [match for match in self.db.list_finished_matches() if match.get("date") == target_date]
         )
-        if fetch_online_results and not today_finished_matches:
+        if fetch_online_results and not today_finished_matches and not fetch_all_finished_results:
             today_finished_matches = self._fetch_reference_finished_matches(target_date)
         sporttery_sync = None
         if sync_sporttery_history:
@@ -593,6 +602,11 @@ class WorldCupService:
         xgb_status["training_sample_summary"] = self._xgboost_sample_summary(target_date)
         print("[INFO] Recalculating all remaining knockout matches.")
         predictions = self._updated_prediction_rows(recalculate=recalculate, teams=teams)
+        restored_prediction_count = self._restore_prediction_records(
+            previous_predictions,
+            all_world_cup_matches,
+            recalculate=recalculate,
+        )
         regression_evaluation = self._evaluate_world_cup_regression(all_world_cup_matches)
         r32_regression = self.run_round_of_32_regression(output_dir=output_dir, before_matches=all_world_cup_matches)
         advanced_teams = sorted(
@@ -645,6 +659,7 @@ class WorldCupService:
             "r32_regression": {
                 key: value for key, value in r32_regression.items() if key != "per_match_errors"
             },
+            "restored_prediction_count": restored_prediction_count,
         }
         team_ratings_with_strength = []
         for profile in sorted(teams.values(), key=lambda item: item.get("elo", 0), reverse=True):
@@ -707,6 +722,7 @@ class WorldCupService:
             "xgboost": xgb_status,
             "external_data": external_data,
             "prediction_count": len(predictions),
+            "restored_prediction_count": restored_prediction_count,
             "outputs": outputs,
         }
 
@@ -1249,6 +1265,69 @@ class WorldCupService:
             prediction = self.predict_fixture(row["id"]) if recalculate else self.get_prediction(row["id"])
             output.append(self._prediction_output_row(prediction))
         return output
+
+    def _restore_prediction_records(
+        self,
+        previous_predictions: list[dict[str, Any]],
+        finished_matches: list[dict[str, Any]],
+        *,
+        recalculate: bool,
+    ) -> int:
+        """Keep pre-match forecasts while attaching the newly known outcome.
+
+        Result synchronization invalidates prediction rows so a future prediction
+        cannot accidentally reuse a stale fixture status.  Historical forecasts
+        are still valuable for evaluation and reproducibility, so restore them
+        after the update and recompute only the post-match metrics.
+        """
+        by_id = {str(match.get("match_id")): match for match in finished_matches}
+        by_pair = {
+            (str(match.get("home_team")), str(match.get("away_team"))): match
+            for match in finished_matches
+        }
+        restored = 0
+        for row in previous_predictions:
+            payload = dict(row.get("payload") or {})
+            fixture = dict(payload.get("fixture") or {})
+            fixture_id = str(row.get("fixture_id") or fixture.get("id") or "")
+            if not fixture_id:
+                continue
+            result = by_id.get(fixture_id)
+            if result is None:
+                result = by_pair.get((str(fixture.get("home_team")), str(fixture.get("away_team"))))
+            if result is not None:
+                home_goals = result.get("home_goals_90")
+                away_goals = result.get("away_goals_90")
+                probabilities = payload.get("probabilities") or {}
+                if home_goals is not None and away_goals is not None and all(
+                    key in probabilities for key in ("home", "draw", "away")
+                ):
+                    payload["post_match_evaluation"] = evaluate_result(
+                        probabilities,
+                        int(home_goals),
+                        int(away_goals),
+                    )
+                payload["actual_result"] = {
+                    "match_id": result.get("match_id"),
+                    "home_goals_90": home_goals,
+                    "away_goals_90": away_goals,
+                    "home_goals_extra_time": result.get("home_goals_extra_time"),
+                    "away_goals_extra_time": result.get("away_goals_extra_time"),
+                    "home_penalties": result.get("home_penalties"),
+                    "away_penalties": result.get("away_penalties"),
+                    "winner": result.get("winner"),
+                }
+                fixture["status"] = "final"
+                fixture["home_score"] = home_goals
+                fixture["away_score"] = away_goals
+                payload["fixture"] = fixture
+            elif recalculate:
+                # A recalculation already persisted a fresh row for unfinished
+                # fixtures; do not overwrite it with the old payload.
+                continue
+            self.db.save_prediction(fixture_id, payload)
+            restored += 1
+        return restored
 
     def _evaluate_world_cup_regression(self, matches: list[dict[str, Any]]) -> dict[str, Any]:
         predictions: dict[str, dict[str, Any]] = {}

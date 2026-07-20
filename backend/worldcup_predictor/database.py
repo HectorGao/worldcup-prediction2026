@@ -987,6 +987,21 @@ class Database:
             ).fetchone()
         return json.loads(row["payload_json"]) if row else None
 
+    def list_predictions(self) -> list[dict[str, Any]]:
+        """Return persisted pre-match prediction payloads for audit/re-evaluation."""
+        with self.connect() as connection:
+            rows = connection.execute(
+                "SELECT fixture_id, payload_json, created_at FROM predictions ORDER BY fixture_id"
+            ).fetchall()
+        return [
+            {
+                "fixture_id": row["fixture_id"],
+                "payload": json.loads(row["payload_json"]),
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]
+
     def save_model_weight_run(self, date: str, payload: dict[str, Any]) -> None:
         with self.connect() as connection:
             connection.execute(
